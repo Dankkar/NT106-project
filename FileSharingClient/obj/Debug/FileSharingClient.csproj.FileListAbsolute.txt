@@ -1,0 +1,12 @@
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\FileSharingClient.exe.config
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\FileSharingClient.exe
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\FileSharingClient.pdb
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.csproj.AssemblyReference.cache
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Properties.Resources.resources
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.csproj.GenerateResource.cache
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.csproj.CoreCompileInputs.cache
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.exe
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.pdb
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Login.resources
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Main.resources
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Register.resources
