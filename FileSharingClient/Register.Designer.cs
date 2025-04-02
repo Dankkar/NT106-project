@@ -31,7 +31,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.emailtxtBox = new System.Windows.Forms.TextBox();
+            this.usernametxtBox = new System.Windows.Forms.TextBox();
             this.passtxtBox = new System.Windows.Forms.TextBox();
             this.confpasstxtBox = new System.Windows.Forms.TextBox();
             this.btnRegister = new System.Windows.Forms.Button();
@@ -45,9 +45,9 @@
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.Location = new System.Drawing.Point(119, 86);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(53, 20);
+            this.label1.Size = new System.Drawing.Size(91, 20);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Email";
+            this.label1.Text = "Username";
             // 
             // label2
             // 
@@ -69,12 +69,12 @@
             this.label3.TabIndex = 2;
             this.label3.Text = "Xác nhận mật khẩu";
             // 
-            // emailtxtBox
+            // usernametxtBox
             // 
-            this.emailtxtBox.Location = new System.Drawing.Point(311, 86);
-            this.emailtxtBox.Name = "emailtxtBox";
-            this.emailtxtBox.Size = new System.Drawing.Size(279, 20);
-            this.emailtxtBox.TabIndex = 3;
+            this.usernametxtBox.Location = new System.Drawing.Point(311, 86);
+            this.usernametxtBox.Name = "usernametxtBox";
+            this.usernametxtBox.Size = new System.Drawing.Size(279, 20);
+            this.usernametxtBox.TabIndex = 3;
             // 
             // passtxtBox
             // 
@@ -99,6 +99,7 @@
             this.btnRegister.TabIndex = 6;
             this.btnRegister.Text = "Đăng ký";
             this.btnRegister.UseVisualStyleBackColor = true;
+            this.btnRegister.Click += new System.EventHandler(this.btnRegister_Click);
             // 
             // label4
             // 
@@ -130,7 +131,7 @@
             this.Controls.Add(this.btnRegister);
             this.Controls.Add(this.confpasstxtBox);
             this.Controls.Add(this.passtxtBox);
-            this.Controls.Add(this.emailtxtBox);
+            this.Controls.Add(this.usernametxtBox);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -146,7 +147,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox emailtxtBox;
+        private System.Windows.Forms.TextBox usernametxtBox;
         private System.Windows.Forms.TextBox passtxtBox;
         private System.Windows.Forms.TextBox confpasstxtBox;
         private System.Windows.Forms.Button btnRegister;
