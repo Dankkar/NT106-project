@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Data.SQLite;
+using System.IO;
 
 namespace FileSharingClient
 {
@@ -23,6 +25,74 @@ namespace FileSharingClient
             Login login = new Login();
             login.ShowDialog();
             this.Show();
+        }
+
+        private void btnRegister_Click(object sender, EventArgs e)
+        {
+            //Duong dan den file SQLite
+            string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+            string dbPath = Path.Combine(projectRoot, "test.db");
+            string connectionString = $"Data Source={dbPath};Version=3;";
+            string username;
+            string password;
+            string conf_password;
+            MessageBox.Show($"{dbPath}");
+            if (!string.IsNullOrWhiteSpace(usernametxtBox.Text) && !string.IsNullOrWhiteSpace(passtxtBox.Text) && !string.IsNullOrWhiteSpace(confpasstxtBox.Text))
+            {
+                username = usernametxtBox.Text;
+                password = passtxtBox.Text;
+                conf_password = confpasstxtBox.Text;
+                if(password == conf_password)
+                {
+                    using(SQLiteConnection conn = new SQLiteConnection(connectionString))
+                    {
+                        try
+                        {
+                            conn.Open();
+
+                            //Kiem tra username da ton tai chua
+                            string checkQuery = "SELECT COUNT(*) FROM users WHERE username = @username";
+                            using (SQLiteCommand checkCmd = new SQLiteCommand(checkQuery, conn))
+                            {
+                                checkCmd.Parameters.AddWithValue("@username", username);
+                                long userExists = (long)checkCmd.ExecuteScalar();
+
+                                if (userExists > 0)
+                                {
+                                    MessageBox.Show("Tên người dùng đã tồn tại!");
+                                    return;
+                                }
+                            }
+
+                            //Them nguoi dung moi vao co so du lieu
+                            string insertQuery = "INSERT INTO users (username, password_hash) VALUES (@username, @password_hash)";
+                            using (SQLiteCommand insertCmd = new SQLiteCommand(insertQuery, conn))
+                            {
+                                insertCmd.Parameters.AddWithValue("@username", username);
+                                insertCmd.Parameters.AddWithValue("@password_hash", password);
+                                insertCmd.ExecuteNonQuery();
+                            }
+
+                            MessageBox.Show("Đăng ký thành công!");
+                            usernametxtBox.Clear();
+                            passtxtBox.Clear();
+                            confpasstxtBox.Clear();
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Lỗi: {ex.Message}");
+                        }
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Vui lòng không nhập dấu cách vào các ô và nhập đầy đủ các ô!");
+                usernametxtBox.Clear();
+                passtxtBox.Clear();
+                confpasstxtBox.Clear();
+                return;
+            }
         }
     }
 }

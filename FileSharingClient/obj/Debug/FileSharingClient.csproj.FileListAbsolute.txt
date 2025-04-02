@@ -10,3 +10,12 @@ D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.pdb
 D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Login.resources
 D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Main.resources
 D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Register.resources
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\EntityFramework.dll
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\EntityFramework.SqlServer.dll
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\System.Data.SQLite.dll
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\System.Data.SQLite.EF6.dll
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\System.Data.SQLite.Linq.dll
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\EntityFramework.xml
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\EntityFramework.SqlServer.xml
+D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\System.Data.SQLite.xml
+D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileShar.0833404C.Up2Date
