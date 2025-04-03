@@ -19,3 +19,24 @@ D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\EntityFramework.xml
 D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\EntityFramework.SqlServer.xml
 D:\NT106 project\NT106-project\FileSharingClient\bin\Debug\System.Data.SQLite.xml
 D:\NT106 project\NT106-project\FileSharingClient\obj\Debug\FileShar.0833404C.Up2Date
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\FileSharingClient.exe.config
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\FileSharingClient.exe
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\FileSharingClient.pdb
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\EntityFramework.dll
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\EntityFramework.SqlServer.dll
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\System.Data.SQLite.dll
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\System.Data.SQLite.EF6.dll
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\System.Data.SQLite.Linq.dll
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\EntityFramework.xml
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\EntityFramework.SqlServer.xml
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\bin\Debug\System.Data.SQLite.xml
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.csproj.AssemblyReference.cache
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Login.resources
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Main.resources
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Properties.Resources.resources
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.Register.resources
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.csproj.GenerateResource.cache
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.csproj.CoreCompileInputs.cache
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileShar.0833404C.Up2Date
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.exe
+C:\Users\WINDOWS\Desktop\NT106-project\FileSharingClient\obj\Debug\FileSharingClient.pdb

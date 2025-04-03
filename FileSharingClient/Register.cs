@@ -9,6 +9,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.SQLite;
 using System.IO;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+
+
 
 namespace FileSharingClient
 {
@@ -25,6 +29,20 @@ namespace FileSharingClient
             Login login = new Login();
             login.ShowDialog();
             this.Show();
+        }
+        private Image LoadHighQualityImage(string path, int width, int height)
+        {
+            Bitmap originalImage = new Bitmap(path);
+            Bitmap highQualityImage = new Bitmap(width, height);
+
+            using (Graphics g = Graphics.FromImage(highQualityImage))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.DrawImage(originalImage, 0, 0, width, height);
+            }
+            return highQualityImage;
         }
 
         private void btnRegister_Click(object sender, EventArgs e)
@@ -93,6 +111,31 @@ namespace FileSharingClient
                 confpasstxtBox.Clear();
                 return;
             }
+        }
+
+        private void usernametxtBox_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            // Đảo trạng thái hiển thị mật khẩu
+            if (passtxtBox.UseSystemPasswordChar)
+            {
+                passtxtBox.UseSystemPasswordChar = false;
+                button1.Text = "hide password";
+            }
+            else
+            {
+                passtxtBox.UseSystemPasswordChar = true;
+                button1.Text = "show password";
+            }
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

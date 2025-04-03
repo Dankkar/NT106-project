@@ -1,36 +1,36 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "D:\\NT106 project\\NT106-project\\FileSharingServer\\",
+  "WorkspaceRootPath": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingServer\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\register.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingclient\\register.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\register.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingclient\\register.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingclient\\register.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\register.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingclient\\main.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\login.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingclient\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingclient\\main.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingclient\\main.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\main.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingclient\\login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\main.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingclient\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{319C13F2-E7C2-4E56-BC50-BABDD2DFD180}|FileSharingServer.csproj|D:\\NT106 project\\NT106-project\\FileSharingServer\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{319C13F2-E7C2-4E56-BC50-BABDD2DFD180}|FileSharingServer.csproj|c:\\users\\windows\\desktop\\nt106-project\\filesharingserver\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{319C13F2-E7C2-4E56-BC50-BABDD2DFD180}|FileSharingServer.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -41,135 +41,131 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 2,
           "Children": [
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{eefa5220-e298-11d0-8f78-00a0c9110057}"
-            },
-            {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Login.cs",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Login.cs",
-              "RelativeDocumentMoniker": "..\\FileSharingClient\\Login.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Login.cs",
-              "RelativeToolTip": "..\\FileSharingClient\\Login.cs",
-              "ViewState": "AgIAAA4AAAAAAAAAAIAxwB8AAAAAAAAAAAAAAA==",
+              "DocumentIndex": 1,
+              "Title": "Register.Designer.cs",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Register.Designer.cs",
+              "RelativeDocumentMoniker": "..\\FileSharingClient\\Register.Designer.cs",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Register.Designer.cs",
+              "RelativeToolTip": "..\\FileSharingClient\\Register.Designer.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAzwLgAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-31T09:00:37.459Z",
+              "WhenOpened": "2025-04-03T07:00:23.095Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "Register.Designer.cs",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Register.Designer.cs",
-              "RelativeDocumentMoniker": "..\\FileSharingClient\\Register.Designer.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Register.Designer.cs",
-              "RelativeToolTip": "..\\FileSharingClient\\Register.Designer.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAIsAAAAAAAAAAAAAAA==",
+              "DocumentIndex": 4,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Program.cs",
+              "RelativeDocumentMoniker": "..\\FileSharingClient\\Program.cs",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Program.cs",
+              "RelativeToolTip": "..\\FileSharingClient\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-31T09:09:08.385Z",
+              "WhenOpened": "2025-04-03T06:44:55.508Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "Register.cs",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Register.cs",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Register.cs",
               "RelativeDocumentMoniker": "..\\FileSharingClient\\Register.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Register.cs",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Register.cs",
               "RelativeToolTip": "..\\FileSharingClient\\Register.cs",
-              "ViewState": "AgIAABYAAAAAAAAAAAAowCAAAABwAAAAAAAAAA==",
+              "ViewState": "AgIAAHMAAAAAAAAAAAA5wIIAAAA4AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-31T09:09:03.184Z",
+              "WhenOpened": "2025-04-03T06:44:42.154Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Register.cs [Design]",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Register.cs",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Register.cs",
               "RelativeDocumentMoniker": "..\\FileSharingClient\\Register.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Register.cs [Design]",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Register.cs [Design]",
               "RelativeToolTip": "..\\FileSharingClient\\Register.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-31T09:02:22.641Z",
+              "WhenOpened": "2025-04-03T06:44:38.633Z",
               "EditorCaption": " [Design]"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "Login.Designer.cs",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Login.Designer.cs",
-              "RelativeDocumentMoniker": "..\\FileSharingClient\\Login.Designer.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Login.Designer.cs",
-              "RelativeToolTip": "..\\FileSharingClient\\Login.Designer.cs",
-              "ViewState": "AgIAACcAAAAAAAAAAAAowDYAAAAnAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-31T09:00:45.458Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "Login.cs [Design]",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Login.cs",
-              "RelativeDocumentMoniker": "..\\FileSharingClient\\Login.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Login.cs [Design]",
-              "RelativeToolTip": "..\\FileSharingClient\\Login.cs [Design]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-31T08:54:06.19Z",
-              "EditorCaption": " [Design]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 3,
               "Title": "Main.cs",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Main.cs",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Main.cs",
               "RelativeDocumentMoniker": "..\\FileSharingClient\\Main.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Main.cs",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Main.cs",
               "RelativeToolTip": "..\\FileSharingClient\\Main.cs",
-              "ViewState": "AgIAAB4AAAAAAAAAAAAowAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAADoAAAAAAAAAAAAvwEYAAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-31T08:53:08.551Z",
+              "WhenOpened": "2025-04-03T06:38:25.814Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 7,
-              "Title": "Main.cs [Design]",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Main.cs",
-              "RelativeDocumentMoniker": "..\\FileSharingClient\\Main.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Main.cs [Design]",
-              "RelativeToolTip": "..\\FileSharingClient\\Main.cs [Design]",
+              "Title": "Login.cs [Design]",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Login.cs",
+              "RelativeDocumentMoniker": "..\\FileSharingClient\\Login.cs",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Login.cs [Design]",
+              "RelativeToolTip": "..\\FileSharingClient\\Login.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-31T08:52:32.801Z",
+              "WhenOpened": "2025-04-03T06:37:37.337Z",
               "EditorCaption": " [Design]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 6,
-              "Title": "Program.cs",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Program.cs",
-              "RelativeDocumentMoniker": "..\\FileSharingClient\\Program.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Program.cs",
-              "RelativeToolTip": "..\\FileSharingClient\\Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAqwBIAAAAlAAAAAAAAAA==",
+              "Title": "Main.cs [Design]",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Main.cs",
+              "RelativeDocumentMoniker": "..\\FileSharingClient\\Main.cs",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Main.cs [Design]",
+              "RelativeToolTip": "..\\FileSharingClient\\Main.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-31T08:46:29.75Z",
+              "WhenOpened": "2025-04-03T06:30:47.577Z",
+              "EditorCaption": " [Design]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "App.config",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\App.config",
+              "RelativeDocumentMoniker": "..\\FileSharingClient\\App.config",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\App.config",
+              "RelativeToolTip": "..\\FileSharingClient\\App.config",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000601|",
+              "WhenOpened": "2025-04-03T06:29:46.237Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Main.Designer.cs",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Main.Designer.cs",
+              "RelativeDocumentMoniker": "..\\FileSharingClient\\Main.Designer.cs",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingClient\\Main.Designer.cs",
+              "RelativeToolTip": "..\\FileSharingClient\\Main.Designer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-03T06:29:41.033Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 9,
               "Title": "Program.cs",
-              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingServer\\Program.cs",
+              "DocumentMoniker": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingServer\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingServer\\Program.cs",
+              "ToolTip": "C:\\Users\\WINDOWS\\Desktop\\NT106-project\\FileSharingServer\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAAYAAAAAAAAAAAAqwBAAAAAMAAAAAAAAAA==",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAqwCEAAAAcAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-17T09:07:41.829Z",
               "EditorCaption": ""
