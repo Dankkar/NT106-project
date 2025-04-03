@@ -5,3 +5,19 @@ D:\NT106 project\NT106-project\FileSharingServer\obj\Debug\FileSharingServer.csp
 D:\NT106 project\NT106-project\FileSharingServer\obj\Debug\FileSharingServer.csproj.CoreCompileInputs.cache
 D:\NT106 project\NT106-project\FileSharingServer\obj\Debug\FileSharingServer.exe
 D:\NT106 project\NT106-project\FileSharingServer\obj\Debug\FileSharingServer.pdb
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\FileSharingServer.exe.config
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\FileSharingServer.exe
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\FileSharingServer.pdb
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\EntityFramework.dll
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\EntityFramework.SqlServer.dll
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\System.Data.SQLite.dll
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\System.Data.SQLite.EF6.dll
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\System.Data.SQLite.Linq.dll
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\EntityFramework.xml
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\EntityFramework.SqlServer.xml
+D:\LTMCB_Project\NT106-project\FileSharingServer\bin\Debug\System.Data.SQLite.xml
+D:\LTMCB_Project\NT106-project\FileSharingServer\obj\Debug\FileSharingServer.csproj.AssemblyReference.cache
+D:\LTMCB_Project\NT106-project\FileSharingServer\obj\Debug\FileSharingServer.csproj.CoreCompileInputs.cache
+D:\LTMCB_Project\NT106-project\FileSharingServer\obj\Debug\FileShar.E8C0AB7B.Up2Date
+D:\LTMCB_Project\NT106-project\FileSharingServer\obj\Debug\FileSharingServer.exe
+D:\LTMCB_Project\NT106-project\FileSharingServer\obj\Debug\FileSharingServer.pdb
