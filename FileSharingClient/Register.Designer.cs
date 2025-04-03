@@ -61,7 +61,6 @@
             this.label2.Size = new System.Drawing.Size(117, 29);
             this.label2.TabIndex = 1;
             this.label2.Text = "Mật khẩu";
-            this.label2.Click += new System.EventHandler(this.label2_Click);
             // 
             // label3
             // 
@@ -81,7 +80,6 @@
             this.usernametxtBox.Name = "usernametxtBox";
             this.usernametxtBox.Size = new System.Drawing.Size(416, 26);
             this.usernametxtBox.TabIndex = 3;
-            this.usernametxtBox.TextChanged += new System.EventHandler(this.usernametxtBox_TextChanged);
             // 
             // passtxtBox
             // 
