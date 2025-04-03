@@ -86,10 +86,9 @@ namespace FileSharingClient
         {
             try
             {
-                string server = "172.20.10.3";
                 using (TcpClient client = new TcpClient())
                 {
-                    await client.ConnectAsync(server, 5000);
+                    await client.ConnectAsync("127.0.0.1", 5000);
                     using (NetworkStream stream = client.GetStream())
                     using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
                     {

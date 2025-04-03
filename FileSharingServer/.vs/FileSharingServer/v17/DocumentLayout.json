@@ -3,20 +3,26 @@
   "WorkspaceRootPath": "D:\\NT106 project\\NT106-project\\FileSharingServer\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{319C13F2-E7C2-4E56-BC50-BABDD2DFD180}|FileSharingServer.csproj|d:\\nt106 project\\nt106-project\\filesharingserver\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{319C13F2-E7C2-4E56-BC50-BABDD2DFD180}|FileSharingServer.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\register.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\register.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\main.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{319C13F2-E7C2-4E56-BC50-BABDD2DFD180}|FileSharingServer.csproj|D:\\NT106 project\\NT106-project\\FileSharingServer\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{319C13F2-E7C2-4E56-BC50-BABDD2DFD180}|FileSharingServer.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{67865C9E-AE07-4B4C-856E-DEB3A0F950C2}|..\\FileSharingClient\\FileSharingClient.csproj|d:\\nt106 project\\nt106-project\\filesharingclient\\register.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -26,7 +32,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -34,7 +40,32 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 1,
+              "Title": "Main.cs [Design]",
+              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Main.cs",
+              "RelativeDocumentMoniker": "..\\FileSharingClient\\Main.cs",
+              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Main.cs [Design]",
+              "RelativeToolTip": "..\\FileSharingClient\\Main.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-03T08:18:45.854Z",
+              "EditorCaption": " [Design]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Login.cs",
+              "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Login.cs",
+              "RelativeDocumentMoniker": "..\\FileSharingClient\\Login.cs",
+              "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Login.cs",
+              "RelativeToolTip": "..\\FileSharingClient\\Login.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-03T08:18:44.349Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Program.cs",
               "RelativeDocumentMoniker": "..\\FileSharingClient\\Program.cs",
@@ -47,7 +78,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "Register.cs [Design]",
               "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Register.cs",
               "RelativeDocumentMoniker": "..\\FileSharingClient\\Register.cs",
@@ -71,13 +102,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 4,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingServer\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
               "ToolTip": "D:\\NT106 project\\NT106-project\\FileSharingServer\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAC0AAAAAAAAAAAAowFQAAAA3AAAAAAAAAA==",
+              "ViewState": "AgIAAD4AAAAAAAAAAAAwwFQAAAA3AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-17T09:07:41.829Z",
               "EditorCaption": ""
@@ -105,7 +136,7 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 6,
               "Title": "Register.cs",
               "DocumentMoniker": "D:\\NT106 project\\NT106-project\\FileSharingClient\\Register.cs",
               "RelativeDocumentMoniker": "..\\FileSharingClient\\Register.cs",
