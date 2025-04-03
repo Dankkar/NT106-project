@@ -11,6 +11,8 @@ using System.Data.SQLite;
 using System.IO;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Net.Sockets;
+using System.Runtime.Remoting.Messaging;
 
 
 
@@ -18,6 +20,10 @@ namespace FileSharingClient
 {
     public partial class Register : Form
     {
+        private TcpClient client;
+        private NetworkStream stream;
+        private const string SERVER_IP = "127.0.0.1";
+        private const int SERVER_PORT = 5000;
         public Register()
         {
             InitializeComponent();
@@ -30,93 +36,77 @@ namespace FileSharingClient
             login.ShowDialog();
             this.Show();
         }
-        private Image LoadHighQualityImage(string path, int width, int height)
-        {
-            Bitmap originalImage = new Bitmap(path);
-            Bitmap highQualityImage = new Bitmap(width, height);
 
-            using (Graphics g = Graphics.FromImage(highQualityImage))
-            {
-                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                g.CompositingQuality = CompositingQuality.HighQuality;
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                g.DrawImage(originalImage, 0, 0, width, height);
-            }
-            return highQualityImage;
-        }
-
-        private void btnRegister_Click(object sender, EventArgs e)
+        private async void btnRegister_Click(object sender, EventArgs e)
         {
-            //Duong dan den file SQLite
-            string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-            string dbPath = Path.Combine(projectRoot, "test.db");
-            string connectionString = $"Data Source={dbPath};Version=3;";
-            string username;
-            string password;
-            string conf_password;
-            MessageBox.Show($"{dbPath}");
-            if (!string.IsNullOrWhiteSpace(usernametxtBox.Text) && !string.IsNullOrWhiteSpace(passtxtBox.Text) && !string.IsNullOrWhiteSpace(confpasstxtBox.Text))
+            await Task.Run(() => HandleLogin());
+        }   
+        private async void HandleLogin()
+        {
+            try
             {
-                username = usernametxtBox.Text;
-                password = passtxtBox.Text;
-                conf_password = confpasstxtBox.Text;
-                if(password == conf_password)
+                //Ket noi den server
+                client = new TcpClient(SERVER_IP, SERVER_PORT);
+                stream = client.GetStream();
+                StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+                StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
+
+                //Lay thong tin tu textbox
+                string username = usernametxtBox.Text;
+                string password = passtxtBox.Text;
+                string conf_pass = confpasstxtBox.Text;
+
+                if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(conf_pass))
                 {
-                    using(SQLiteConnection conn = new SQLiteConnection(connectionString))
+                    this.Invoke(new Action(() =>
                     {
-                        try
-                        {
-                            conn.Open();
-
-                            //Kiem tra username da ton tai chua
-                            string checkQuery = "SELECT COUNT(*) FROM users WHERE username = @username";
-                            using (SQLiteCommand checkCmd = new SQLiteCommand(checkQuery, conn))
-                            {
-                                checkCmd.Parameters.AddWithValue("@username", username);
-                                long userExists = (long)checkCmd.ExecuteScalar();
-
-                                if (userExists > 0)
-                                {
-                                    MessageBox.Show("Tên người dùng đã tồn tại!");
-                                    return;
-                                }
-                            }
-
-                            //Them nguoi dung moi vao co so du lieu
-                            string insertQuery = "INSERT INTO users (username, password_hash) VALUES (@username, @password_hash)";
-                            using (SQLiteCommand insertCmd = new SQLiteCommand(insertQuery, conn))
-                            {
-                                insertCmd.Parameters.AddWithValue("@username", username);
-                                insertCmd.Parameters.AddWithValue("@password_hash", password);
-                                insertCmd.ExecuteNonQuery();
-                            }
-
-                            MessageBox.Show("Đăng ký thành công!");
-                            usernametxtBox.Clear();
-                            passtxtBox.Clear();
-                            confpasstxtBox.Clear();
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show($"Lỗi: {ex.Message}");
-                        }
-                    }
+                        MessageBox.Show("Vui lòng nhập đầy đủ thông tin", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }));
+                    return;
                 }
+                //Gui du lieu dang ky
+                if(conf_pass != password)
+                {
+                    this.Invoke(new Action(() =>
+                    {
+                        MessageBox.Show("Mật khẩu và xác nhận mật khẩu không trùng khớp!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }));
+                    return;
+                }
+                string message = $"REGISTER|{username}|{password}\n";
+                await writer.WriteLineAsync(message);
+
+                //Nhan phan hoi tu server
+                string response = await reader.ReadLineAsync();
+                this.Invoke(new Action(() =>
+                {
+                    if (response == "SUCCESS")
+                    {
+                        MessageBox.Show("Đăng ký thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else if (response == "USER_HAS_EXISTED")
+                    {
+                        MessageBox.Show("Username đã tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }));
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Vui lòng không nhập dấu cách vào các ô và nhập đầy đủ các ô!");
-                usernametxtBox.Clear();
-                passtxtBox.Clear();
-                confpasstxtBox.Clear();
-                return;
+                this.Invoke(new Action(() =>
+                {
+                    MessageBox.Show("Lỗi kết nối đến server: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }));
+            }
+            finally
+            {
+                //Dong ket noi
+                stream?.Close();
+                client?.Close();
             }
         }
 
-        private void usernametxtBox_TextChanged(object sender, EventArgs e)
-        {
 
-        }
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -133,9 +123,6 @@ namespace FileSharingClient
             }
         }
 
-        private void label2_Click(object sender, EventArgs e)
-        {
 
-        }
     }
 }
