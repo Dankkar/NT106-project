@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -119,6 +120,7 @@ namespace FileSharingClient
 
                 if(response == "SUCCESS")
                 {
+                    Session.LoggedInUser = username;
                     MessageBox.Show("Dang nhap thanh cong!", "Thông báo ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     this.Hide();
 
@@ -143,5 +145,9 @@ namespace FileSharingClient
                 client.Close();
             }
         }
+    }
+    public static class Session
+    {
+        public static string LoggedInUser { get; set; } = "Anonymous";
     }
 }
