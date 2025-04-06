@@ -13,6 +13,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
+using FontAwesome.Sharp;
 
 
 
@@ -20,6 +21,11 @@ namespace FileSharingClient
 {
     public partial class Register : Form
     {
+        private bool isLoginOpen = false;
+        private string username = "Tên đăng nhập";
+        private string password = "Mật khẩu";
+        private string conf_pass = "Xác nhận mật khẩu";
+        private string gmail = "Gmail";
         private TcpClient client;
         private NetworkStream stream;
         private const string SERVER_IP = "127.0.0.1";
@@ -27,14 +33,115 @@ namespace FileSharingClient
         public Register()
         {
             InitializeComponent();
+            usernametxtBox.Text = username;
+            usernametxtBox.ForeColor = Color.Gray;
+            usernametxtBox.Enter += usernametxtBox_Enter;
+            usernametxtBox.Enter += usernametxtBox_Leave;
+
+            passtxtBox.Text = password;
+            passtxtBox.ForeColor = Color.Gray;
+            passtxtBox.Enter += passtxtBox_Enter;
+            passtxtBox.Leave += passtxtBox_Leave;
+
+            confpasstxtBox.Text = conf_pass;
+            confpasstxtBox.ForeColor = Color.Gray;
+            confpasstxtBox.Enter += confpasstxtBox_Enter;
+            confpasstxtBox.Leave += confpasstxtBox_Leave;
+
+            gmailtxtBox.Text = gmail;
+            gmailtxtBox.ForeColor = Color.Gray;
+            gmailtxtBox.Enter += gmailtxtBox_Enter;
+            gmailtxtBox.Leave += gmailtxtBox_Leave;
+        }
+        private void usernametxtBox_Enter(object sender, EventArgs e)
+        {
+            if (usernametxtBox.Text == username)
+            {
+                usernametxtBox.Text = "";
+                usernametxtBox.ForeColor = Color.Black;
+            }
+        }
+        private void usernametxtBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(usernametxtBox.Text))
+            {
+                usernametxtBox.Text = username;
+                usernametxtBox.ForeColor = Color.Gray;
+            }
+        }
+        private void passtxtBox_Enter(object sender, EventArgs e)
+        {
+            if (passtxtBox.Text == password)
+            {
+                passtxtBox.Text = "";
+                passtxtBox.ForeColor = Color.Black;
+                passtxtBox.UseSystemPasswordChar = true;
+            }
+        }
+        private void passtxtBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(passtxtBox.Text))
+            {
+                passtxtBox.Text = password;
+                passtxtBox.ForeColor = Color.Gray;
+                passtxtBox.UseSystemPasswordChar = false;
+            }
+        }
+        private void confpasstxtBox_Enter(object sender, EventArgs e)
+        {
+            if (confpasstxtBox.Text == conf_pass)
+            {
+                confpasstxtBox.Text = "";
+                confpasstxtBox.ForeColor = Color.Black;
+                confpasstxtBox.UseSystemPasswordChar = true;
+            }
+        }
+        private void confpasstxtBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(confpasstxtBox.Text))
+            {
+                confpasstxtBox.Text = conf_pass;
+                confpasstxtBox.ForeColor = Color.Gray;
+                confpasstxtBox.UseSystemPasswordChar = false;
+            }
+        }
+        private void gmailtxtBox_Enter(object sender, EventArgs e)
+        {
+            if (gmailtxtBox.Text == gmail)
+            {
+                gmailtxtBox.Text = "";
+                gmailtxtBox.ForeColor = Color.Black;
+            }
+        }
+        private void gmailtxtBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(gmailtxtBox.Text))
+            {
+                gmailtxtBox.Text = gmail;
+                gmailtxtBox.ForeColor = Color.Gray;
+            }
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
+            if (isLoginOpen)
+                return;
+
+            isLoginOpen = true;
+
+            // Vô hiệu hóa LinkLabel để tránh click liên tục
+            linkLabel1.Enabled = false;
+
             this.Hide();
-            Login login = new Login();
-            login.ShowDialog();
+            using (Login login = new Login())
+            {
+                login.ShowDialog();
+            }
             this.Show();
+
+            // Kích hoạt lại LinkLabel và reset cờ
+            linkLabel1.Enabled = true;
+            isLoginOpen = false;
         }
 
         private async void btnRegister_Click(object sender, EventArgs e)
@@ -106,23 +213,19 @@ namespace FileSharingClient
             }
         }
 
-
-
-        private void button1_Click(object sender, EventArgs e)
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            // Đảo trạng thái hiển thị mật khẩu
-            if (passtxtBox.UseSystemPasswordChar)
+           if(checkBox1.Checked == true)
             {
                 passtxtBox.UseSystemPasswordChar = false;
-                button1.Text = "hide password";
+                confpasstxtBox.UseSystemPasswordChar = false;
             }
-            else
+           else
             {
                 passtxtBox.UseSystemPasswordChar = true;
-                button1.Text = "show password";
+                confpasstxtBox.UseSystemPasswordChar = true;
             }
         }
-
 
     }
 }

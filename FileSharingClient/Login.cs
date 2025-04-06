@@ -16,6 +16,9 @@ namespace FileSharingClient
 {
     public partial class Login : Form
     {
+        private bool isRegisterOpen = false;
+        private string username = "Tên đăng nhập";
+        private string password = "Mật khẩu";
         private TcpClient client;
         private NetworkStream stream;
         private const string SERVER_IP = "127.0.0.1";
@@ -23,16 +26,64 @@ namespace FileSharingClient
         public Login()
         {
             InitializeComponent();
-        }
+            usernametxtBox.Text = username;
+            usernametxtBox.ForeColor = Color.Gray;
+            usernametxtBox.Enter += usernametxtBox_Enter;
+            usernametxtBox.Leave += usernametxtBox_Leave;
 
-        
+            passtxtBox.Text = password;
+            passtxtBox.ForeColor = Color.Gray;
+            passtxtBox.Enter += passtxtBox_Enter;
+            passtxtBox.Leave += passtxtBox_Leave;
+        }
+        private void usernametxtBox_Enter(object sender, EventArgs e)
+        {
+            if (usernametxtBox.Text == username)
+            {
+                usernametxtBox.Text = "";
+                usernametxtBox.ForeColor = Color.Black;
+            }
+        }
+        private void usernametxtBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(usernametxtBox.Text))
+            {
+                usernametxtBox.Text = username;
+                usernametxtBox.ForeColor = Color.Gray;
+            }
+        }
+        private void passtxtBox_Enter(object sender, EventArgs e)
+        {
+            if (passtxtBox.Text == password)
+            {
+                passtxtBox.Text = "";
+                passtxtBox.ForeColor = Color.Black;
+                passtxtBox.UseSystemPasswordChar = true;
+            }
+        }
+        private void passtxtBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(passtxtBox.Text))
+            {
+                passtxtBox.Text = password;
+                passtxtBox.ForeColor = Color.Gray;
+                passtxtBox.UseSystemPasswordChar = false;
+            }
+        }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
+            if (isRegisterOpen)
+                return; // Nếu form Register đã được mở, bỏ qua
+
+            isRegisterOpen = true;
             this.Hide();
-            Register register = new Register();
-            register.ShowDialog();
+            using (Register register = new Register())
+            {
+                register.ShowDialog();
+            }
             this.Show();
+            isRegisterOpen = false;
         }
 
         private async void btnLogin_Click(object sender, EventArgs e)
