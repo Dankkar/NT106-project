@@ -90,6 +90,7 @@ namespace FileSharingClient
                 await SendFile(filePath, item);
             }
         }
+        private long totalStorageUsed = 0;
         private async Task SendFile(string filePath, ListViewItem item)
         {
             try
@@ -116,17 +117,35 @@ namespace FileSharingClient
                             //Yeu cau ListView ve lai
                             listView1.Invalidate();
                         }
+                        totalStorageUsed += totalSent;
                         MessageBox.Show("File đã gửi xong!");
                     }
                     
                 }
             }
+
+
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
         }
-
+        private string FormatSize(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int counter = 0;
+            decimal number = bytes;
+            while (Math.Round(number / 1024) >= 1)
+            {
+                number /= 1024;
+                counter++;
+            }
+            return string.Format("{0:n1} {1}", number, suffixes[counter]);
+        }
+        private string GetTotalStorageUsed()
+        {
+            return FormatSize(totalStorageUsed);
+        }
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
 
@@ -148,6 +167,11 @@ namespace FileSharingClient
         }
 
         private void panel1_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
         {
 
         }
