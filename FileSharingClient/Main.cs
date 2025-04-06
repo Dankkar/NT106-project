@@ -28,6 +28,7 @@ namespace FileSharingClient
             listView1.Columns.Add("Tên file", 200);
             listView1.Columns.Add("Kích thước (KB)", 100);
             listView1.Columns.Add("Tiến trình", 100);
+            listView1.Columns.Add("Loại file", 100);
 
             listView1.DrawColumnHeader += ListView1_DrawColumnHeader;
             listView1.DrawSubItem += ListView1_DrawSubItem;
@@ -74,9 +75,11 @@ namespace FileSharingClient
                 string filePath = openFileDialog.FileName;
                 FileInfo fileInfo = new FileInfo(filePath);
 
+                string extension = Path.GetExtension(filePath).ToLower().TrimStart('.');
                 ListViewItem item = new ListViewItem(fileInfo.Name);
                 item.SubItems.Add((fileInfo.Length / 1024).ToString("N0") + " KB");
                 item.SubItems.Add("0%");
+                item.SubItems.Add(extension);
                 listView1.Items.Add(item);
 
                 await SendFile(filePath, item);
@@ -117,6 +120,26 @@ namespace FileSharingClient
             {
                 MessageBox.Show(ex.Message);
             }
+        }
+
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnCreateLink_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnArrange_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
