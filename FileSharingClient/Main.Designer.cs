@@ -59,6 +59,7 @@
             this.Account.TabIndex = 12;
             this.Account.Text = "Account";
             this.Account.UseVisualStyleBackColor = true;
+            this.Account.Click += new System.EventHandler(this.Account_Click);
             // 
             // panel1
             // 

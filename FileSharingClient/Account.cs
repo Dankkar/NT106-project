@@ -51,17 +51,20 @@ namespace FileSharingClient
 
             // Gửi yêu cầu đổi mật khẩu đến server
             string response = await ChangePassword(Session.LoggedInUser, oldPassword, newPassword);
-            if (response == "SUCCESS")
+            switch (response)
             {
-                MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else if (response == "WRONG_PASSWORD")
-            {
-                MessageBox.Show("Mật khẩu cũ không đúng!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            else
-            {
-                MessageBox.Show("Lỗi khi đổi mật khẩu!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                case "SUCCESS":
+                    MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+                case "WRONG_PASSWORD":
+                    MessageBox.Show("Mật khẩu cũ không đúng!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                case "ERROR":
+                    MessageBox.Show("Lỗi khi đổi mật khẩu!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                default:
+                    MessageBox.Show("Phản hồi không xác định từ server!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
             }
         }
 
