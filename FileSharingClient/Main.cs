@@ -18,72 +18,77 @@ namespace FileSharingClient
         public Main()
         {
             InitializeComponent();
+            if (myfileView == null)
+                myfileView = new MyFileView();
+
+            LoadView(myfileView);
+            HightlightSelectedDashboard(MyFile_Dashboard);
+
+        }    
+       
+        private void LoadView(UserControl view)
+        {
+            MainContentPanel.Controls.Clear();
+            view.Dock = DockStyle.Fill;
+            MainContentPanel.Controls.Add(view);
+        }
+
+        private void ResetDashboardColors()
+        {
+            MyFile_Dashboard.BackColor = Color.LightGray;
+            SharedWithMe_Dashboard.BackColor = Color.LightGray;
+            Upload_Dashboard.BackColor = Color.LightGray;
+            TrashBin_Dashboard.BackColor = Color.LightGray;
+            Settings_Dashboard.BackColor = Color.LightGray;
+        }
+
+        private void HightlightSelectedDashboard(Control selected)
+        {
+            ResetDashboardColors();
+            selected.BackColor = Color.SteelBlue;
+        }
+
+        private void UploadPanel_Paint(object sender, PaintEventArgs e)
+        {
+            
+        }
+
+
+        private UploadView uploadView;
+        private MyFileView myfileView;
+        private SharedWithMeView sharewithmeView;
+        private TrashBinView trashbinView;
+        private SettingsView settingsView;
+        
+        private void File_Dashboard_Click(object sender, EventArgs e)
+        {
+            if (myfileView == null)
+                myfileView = new MyFileView();
+
+            LoadView(myfileView);
+            HightlightSelectedDashboard(MyFile_Dashboard);
 
         }
 
-        private async void btnSendFile_Click(object sender, EventArgs e)
+        private void lblFileName_Click(object sender, EventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                string filePath = openFileDialog.FileName;
-                FileInfo fileInfo = new FileInfo(filePath);
-                await SendFile(filePath);
-            }
-        }
-        private async Task SendFile(string filePath)
-        {
-            try
-            {
-                using (TcpClient client = new TcpClient())
-                {
-                    await client.ConnectAsync("172.20.10.3", 5000);
-                    using (NetworkStream stream = client.GetStream())
-                    using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
-                    {
-                        long totalBytes = fileStream.Length;
-                        byte[] buffer = new byte[4096];
-                        int bytesRead;
-                        long totalSent = 0;
-                        while((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                        {
-                            await stream.WriteAsync(buffer, 0, bytesRead);
-                            totalSent += bytesRead;
 
-                            //Cap nhat tien trinh
-                            int progress = (int)((totalSent * 100) / totalBytes);
-                        }
-                        MessageBox.Show("File đã gửi xong!");
-                    }
-                    
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
         }
 
-        private async void btnSendFile_Click_1(object sender, EventArgs e)
+        private void SharedWithMe_Dashboard_Click(object sender, EventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                string filePath = openFileDialog.FileName;
-                FileInfo fileInfo = new FileInfo(filePath);
+            if (sharewithmeView == null)
+                sharewithmeView = new SharedWithMeView();
+            LoadView(sharewithmeView);
+            HightlightSelectedDashboard(SharedWithMe_Dashboard);
+        }
 
-                // Lấy tên file (không gồm đường dẫn)
-                lblFileName.Text =  fileInfo.Name;
-
-                // Lấy kích thước file (theo byte)
-                lblFileSize.Text =  fileInfo.Length + " bytes";
-
-                // Lấy extension (đuôi file)
-                lblFileExtension.Text = fileInfo.Extension;
-                panelFile.Visible = true;
-                upload_progress.Visible = true;
-                // Nếu cần upload lên server, bạn có thể viết thêm logic upload ở đây
-            }
+        private void Upload_Dashboard_Click(object sender, EventArgs e)
+        {
+            if (uploadView == null)
+                uploadView = new UploadView();
+            LoadView(uploadView);
+            HightlightSelectedDashboard(Upload_Dashboard);
         }
     }
 }

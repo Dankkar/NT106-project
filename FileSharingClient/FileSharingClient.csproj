@@ -72,6 +72,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MyFileView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="MyFileView.Designer.cs">
+      <DependentUpon>MyFileView.cs</DependentUpon>
+    </Compile>
     <Compile Include="Login.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -92,6 +98,33 @@
     <Compile Include="Register.Designer.cs">
       <DependentUpon>Register.cs</DependentUpon>
     </Compile>
+    <Compile Include="SettingsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SettingsView.Designer.cs">
+      <DependentUpon>SettingsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SharedWithMeView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SharedWithMeView.Designer.cs">
+      <DependentUpon>SharedWithMeView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TrashBinView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TrashBinView.Designer.cs">
+      <DependentUpon>TrashBinView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UploadView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UploadView.Designer.cs">
+      <DependentUpon>UploadView.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="MyFileView.resx">
+      <DependentUpon>MyFileView.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Login.resx">
       <DependentUpon>Login.cs</DependentUpon>
     </EmbeddedResource>
@@ -110,6 +143,12 @@
     </Compile>
     <EmbeddedResource Include="Register.resx">
       <DependentUpon>Register.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SettingsView.resx">
+      <DependentUpon>SettingsView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UploadView.resx">
+      <DependentUpon>UploadView.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
