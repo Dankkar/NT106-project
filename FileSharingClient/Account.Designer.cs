@@ -56,7 +56,7 @@
             // 
             this.btnChangePassword.Location = new System.Drawing.Point(20, 80);
             this.btnChangePassword.Name = "btnChangePassword";
-            this.btnChangePassword.Size = new System.Drawing.Size(188, 28);
+            this.btnChangePassword.Size = new System.Drawing.Size(199, 57);
             this.btnChangePassword.TabIndex = 2;
             this.btnChangePassword.Text = "Change password";
             this.btnChangePassword.UseVisualStyleBackColor = true;

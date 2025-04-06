@@ -114,5 +114,14 @@ namespace FileSharingClient
         {
 
         }
+
+        private void Account_Click(object sender, EventArgs e)
+        {
+            Account accountForm = new Account();
+            string username = Session.LoggedInUser ?? "Unknown";
+            string storageUsed = GetTotalStorageUsed(); // Hàm đã định nghĩa trước
+            accountForm.SetAccountInfo(username, storageUsed);
+            accountForm.ShowDialog(); // Hiển thị form Account và chờ người dùng thao tác
+        }
     }
 }
