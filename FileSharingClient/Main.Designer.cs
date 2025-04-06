@@ -64,18 +64,18 @@
             // listView1
             // 
             this.listView1.HideSelection = false;
-            this.listView1.Location = new System.Drawing.Point(24, 204);
+            this.listView1.Location = new System.Drawing.Point(292, 240);
             this.listView1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.listView1.Name = "listView1";
             this.listView1.OwnerDraw = true;
-            this.listView1.Size = new System.Drawing.Size(1390, 618);
+            this.listView1.Size = new System.Drawing.Size(1642, 583);
             this.listView1.TabIndex = 1;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged);
             // 
             // btnDownloadFile
             // 
-            this.btnDownloadFile.Location = new System.Drawing.Point(432, 48);
+            this.btnDownloadFile.Location = new System.Drawing.Point(484, 48);
             this.btnDownloadFile.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnDownloadFile.Name = "btnDownloadFile";
             this.btnDownloadFile.Size = new System.Drawing.Size(150, 44);
@@ -85,7 +85,7 @@
             // 
             // btnDeleteFile
             // 
-            this.btnDeleteFile.Location = new System.Drawing.Point(224, 48);
+            this.btnDeleteFile.Location = new System.Drawing.Point(250, 48);
             this.btnDeleteFile.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnDeleteFile.Name = "btnDeleteFile";
             this.btnDeleteFile.Size = new System.Drawing.Size(150, 44);
@@ -95,27 +95,27 @@
             // 
             // btnMakeDirectory
             // 
-            this.btnMakeDirectory.Location = new System.Drawing.Point(830, 125);
+            this.btnMakeDirectory.Location = new System.Drawing.Point(24, 331);
             this.btnMakeDirectory.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnMakeDirectory.Name = "btnMakeDirectory";
-            this.btnMakeDirectory.Size = new System.Drawing.Size(179, 44);
+            this.btnMakeDirectory.Size = new System.Drawing.Size(190, 44);
             this.btnMakeDirectory.TabIndex = 4;
             this.btnMakeDirectory.Text = "Make Directory";
             this.btnMakeDirectory.UseVisualStyleBackColor = true;
             // 
             // btnFindFile
             // 
-            this.btnFindFile.Location = new System.Drawing.Point(630, 48);
+            this.btnFindFile.Location = new System.Drawing.Point(24, 240);
             this.btnFindFile.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnFindFile.Name = "btnFindFile";
-            this.btnFindFile.Size = new System.Drawing.Size(150, 44);
+            this.btnFindFile.Size = new System.Drawing.Size(190, 44);
             this.btnFindFile.TabIndex = 5;
             this.btnFindFile.Text = "Find";
             this.btnFindFile.UseVisualStyleBackColor = true;
             // 
             // btnCreateLink
             // 
-            this.btnCreateLink.Location = new System.Drawing.Point(840, 48);
+            this.btnCreateLink.Location = new System.Drawing.Point(728, 48);
             this.btnCreateLink.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnCreateLink.Name = "btnCreateLink";
             this.btnCreateLink.Size = new System.Drawing.Size(150, 44);
@@ -126,10 +126,10 @@
             // 
             // btnSettings
             // 
-            this.btnSettings.Location = new System.Drawing.Point(1264, 125);
-            this.btnSettings.Margin = new System.Windows.Forms.Padding(6);
+            this.btnSettings.Location = new System.Drawing.Point(24, 596);
+            this.btnSettings.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnSettings.Name = "btnSettings";
-            this.btnSettings.Size = new System.Drawing.Size(150, 44);
+            this.btnSettings.Size = new System.Drawing.Size(190, 44);
             this.btnSettings.TabIndex = 7;
             this.btnSettings.Text = "Settings";
             this.btnSettings.UseVisualStyleBackColor = true;
@@ -137,8 +137,8 @@
             // 
             // btnShareFile
             // 
-            this.btnShareFile.Location = new System.Drawing.Point(1057, 48);
-            this.btnShareFile.Margin = new System.Windows.Forms.Padding(6);
+            this.btnShareFile.Location = new System.Drawing.Point(976, 48);
+            this.btnShareFile.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnShareFile.Name = "btnShareFile";
             this.btnShareFile.Size = new System.Drawing.Size(150, 44);
             this.btnShareFile.TabIndex = 8;
@@ -147,8 +147,8 @@
             // 
             // btnMoveFile
             // 
-            this.btnMoveFile.Location = new System.Drawing.Point(1264, 48);
-            this.btnMoveFile.Margin = new System.Windows.Forms.Padding(6);
+            this.btnMoveFile.Location = new System.Drawing.Point(1216, 48);
+            this.btnMoveFile.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnMoveFile.Name = "btnMoveFile";
             this.btnMoveFile.Size = new System.Drawing.Size(150, 44);
             this.btnMoveFile.TabIndex = 9;
@@ -157,8 +157,8 @@
             // 
             // btnRename
             // 
-            this.btnRename.Location = new System.Drawing.Point(24, 125);
-            this.btnRename.Margin = new System.Windows.Forms.Padding(6);
+            this.btnRename.Location = new System.Drawing.Point(1440, 48);
+            this.btnRename.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnRename.Name = "btnRename";
             this.btnRename.Size = new System.Drawing.Size(150, 44);
             this.btnRename.TabIndex = 10;
@@ -167,8 +167,8 @@
             // 
             // btnPermissions
             // 
-            this.btnPermissions.Location = new System.Drawing.Point(224, 125);
-            this.btnPermissions.Margin = new System.Windows.Forms.Padding(6);
+            this.btnPermissions.Location = new System.Drawing.Point(1656, 48);
+            this.btnPermissions.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnPermissions.Name = "btnPermissions";
             this.btnPermissions.Size = new System.Drawing.Size(150, 44);
             this.btnPermissions.TabIndex = 11;
@@ -177,8 +177,8 @@
             // 
             // Information
             // 
-            this.Information.Location = new System.Drawing.Point(432, 125);
-            this.Information.Margin = new System.Windows.Forms.Padding(6);
+            this.Information.Location = new System.Drawing.Point(1872, 48);
+            this.Information.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.Information.Name = "Information";
             this.Information.Size = new System.Drawing.Size(150, 44);
             this.Information.TabIndex = 12;
@@ -187,20 +187,20 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(1057, 125);
-            this.button1.Margin = new System.Windows.Forms.Padding(6);
+            this.button1.Location = new System.Drawing.Point(24, 510);
+            this.button1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(150, 44);
+            this.button1.Size = new System.Drawing.Size(190, 44);
             this.button1.TabIndex = 13;
             this.button1.Text = "Account";
             this.button1.UseVisualStyleBackColor = true;
             // 
             // btnArrange
             // 
-            this.btnArrange.Location = new System.Drawing.Point(630, 125);
-            this.btnArrange.Margin = new System.Windows.Forms.Padding(6);
+            this.btnArrange.Location = new System.Drawing.Point(24, 415);
+            this.btnArrange.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.btnArrange.Name = "btnArrange";
-            this.btnArrange.Size = new System.Drawing.Size(150, 44);
+            this.btnArrange.Size = new System.Drawing.Size(190, 44);
             this.btnArrange.TabIndex = 14;
             this.btnArrange.Text = "Arrange";
             this.btnArrange.UseVisualStyleBackColor = true;
@@ -210,7 +210,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1444, 865);
+            this.ClientSize = new System.Drawing.Size(2050, 865);
             this.Controls.Add(this.btnArrange);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.Information);
@@ -228,6 +228,7 @@
             this.Controls.Add(this.btnSendFile);
             this.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.Name = "Main";
+            this.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.Text = "Form1";
             this.ResumeLayout(false);
 

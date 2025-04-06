@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -29,7 +30,8 @@ namespace FileSharingClient
             listView1.Columns.Add("Kích thước (KB)", 100);
             listView1.Columns.Add("Tiến trình", 100);
             listView1.Columns.Add("Loại file", 100);
-
+            listView1.Columns.Add("Chủ sở hũu", 150);
+            listView1.Columns.Add("Ngày chỉnh sửa", 150);
             listView1.DrawColumnHeader += ListView1_DrawColumnHeader;
             listView1.DrawSubItem += ListView1_DrawSubItem;
         }
@@ -76,12 +78,15 @@ namespace FileSharingClient
                 FileInfo fileInfo = new FileInfo(filePath);
 
                 string extension = Path.GetExtension(filePath).ToLower().TrimStart('.');
+                string owner = Session.LoggedInUser;
+                string dateModified = fileInfo.LastWriteTime.ToString("dd/MM/yyyy HH:mm");
                 ListViewItem item = new ListViewItem(fileInfo.Name);
                 item.SubItems.Add((fileInfo.Length / 1024).ToString("N0") + " KB");
                 item.SubItems.Add("0%");
                 item.SubItems.Add(extension);
+                item.SubItems.Add(owner);
+                item.SubItems.Add(dateModified);
                 listView1.Items.Add(item);
-
                 await SendFile(filePath, item);
             }
         }
@@ -138,6 +143,11 @@ namespace FileSharingClient
         }
 
         private void btnArrange_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void panel1_Paint(object sender, PaintEventArgs e)
         {
 
         }
