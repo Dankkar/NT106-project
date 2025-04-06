@@ -18,57 +18,9 @@ namespace FileSharingClient
         public Main()
         {
             InitializeComponent();
-            SetUpListView();
-        }
-        private void SetUpListView()
-        {
-            listView1.View = View.Details;
-            listView1.GridLines = true;
-            listView1.FullRowSelect = true;
-            listView1.OwnerDraw = true;
-            listView1.Columns.Add("Tên file", 200);
-            listView1.Columns.Add("Kích thước (KB)", 100);
-            listView1.Columns.Add("Tiến trình", 100);
-            listView1.Columns.Add("Loại file", 100);
-            listView1.Columns.Add("Chủ sở hũu", 150);
-            listView1.Columns.Add("Ngày chỉnh sửa", 150);
-            listView1.DrawColumnHeader += ListView1_DrawColumnHeader;
-            listView1.DrawSubItem += ListView1_DrawSubItem;
-        }
-        // Vẽ tiêu đề cột
-        private void ListView1_DrawColumnHeader(object sender, DrawListViewColumnHeaderEventArgs e)
-        {
-            e.DrawDefault = true;
+
         }
 
-        // Vẽ từng ô trong ListView (cột tiến trình sẽ có ProgressBar)
-        private void ListView1_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
-        {
-            if (e.ColumnIndex == 2) // Cột tiến trình
-            {
-                int progress;
-                if (int.TryParse(e.Item.SubItems[2].Text.Replace("%", ""), out progress))
-                {
-                    Rectangle rect = e.Bounds;
-                    rect.Inflate(-2, -6); // Giảm kích thước để không bị lấn ra ngoài
-                    ProgressBarRenderer.DrawHorizontalBar(e.Graphics, rect);
-
-                    if (progress > 0)
-                    {
-                        rect.Inflate(-1, -1);
-                        rect.Width = (int)(rect.Width * (progress / 100.0));
-                        e.Graphics.FillRectangle(Brushes.Blue, rect);
-                    }
-
-                    // Vẽ số %
-                    TextRenderer.DrawText(e.Graphics, $"{progress}%", e.Item.Font, e.Bounds, Color.Black, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
-                }
-            }
-            else
-            {
-                e.DrawDefault = true;
-            }
-        }
         private async void btnSendFile_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -76,22 +28,11 @@ namespace FileSharingClient
             {
                 string filePath = openFileDialog.FileName;
                 FileInfo fileInfo = new FileInfo(filePath);
-
-                string extension = Path.GetExtension(filePath).ToLower().TrimStart('.');
-                string owner = Session.LoggedInUser;
-                string dateModified = fileInfo.LastWriteTime.ToString("dd/MM/yyyy HH:mm");
-                ListViewItem item = new ListViewItem(fileInfo.Name);
-                item.SubItems.Add((fileInfo.Length / 1024).ToString("N0") + " KB");
-                item.SubItems.Add("0%");
-                item.SubItems.Add(extension);
-                item.SubItems.Add(owner);
-                item.SubItems.Add(dateModified);
-                listView1.Items.Add(item);
-                await SendFile(filePath, item);
+                await SendFile(filePath);
             }
         }
         private long totalStorageUsed = 0;
-        private async Task SendFile(string filePath, ListViewItem item)
+        private async Task SendFile(string filePath)
         {
             try
             {
@@ -112,10 +53,6 @@ namespace FileSharingClient
 
                             //Cap nhat tien trinh
                             int progress = (int)((totalSent * 100) / totalBytes);
-                            item.SubItems[2].Text = $"{progress}%";
-
-                            //Yeu cau ListView ve lai
-                            listView1.Invalidate();
                         }
                         totalStorageUsed += totalSent;
                         MessageBox.Show("File đã gửi xong!");
@@ -151,24 +88,26 @@ namespace FileSharingClient
 
         }
 
-        private void btnCreateLink_Click(object sender, EventArgs e)
+        private async void btnSendFile_Click_1(object sender, EventArgs e)
         {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                string filePath = openFileDialog.FileName;
+                FileInfo fileInfo = new FileInfo(filePath);
 
-        }
+                // Lấy tên file (không gồm đường dẫn)
+                lblFileName.Text =  fileInfo.Name;
 
-        private void button1_Click(object sender, EventArgs e)
-        {
+                // Lấy kích thước file (theo byte)
+                lblFileSize.Text =  fileInfo.Length + " bytes";
 
-        }
-
-        private void btnArrange_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void panel1_Paint(object sender, PaintEventArgs e)
-        {
-
+                // Lấy extension (đuôi file)
+                lblFileExtension.Text = fileInfo.Extension;
+                panelFile.Visible = true;
+                upload_progress.Visible = true;
+                // Nếu cần upload lên server, bạn có thể viết thêm logic upload ở đây
+            }
         }
 
         private void button1_Click_1(object sender, EventArgs e)
