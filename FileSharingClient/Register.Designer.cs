@@ -28,83 +28,47 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
-            this.label3 = new System.Windows.Forms.Label();
             this.usernametxtBox = new System.Windows.Forms.TextBox();
             this.passtxtBox = new System.Windows.Forms.TextBox();
             this.confpasstxtBox = new System.Windows.Forms.TextBox();
             this.btnRegister = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
-            this.button1 = new System.Windows.Forms.Button();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.gmailtxtBox = new System.Windows.Forms.TextBox();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(178, 132);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(132, 29);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Username";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(178, 198);
-            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(117, 29);
-            this.label2.TabIndex = 1;
-            this.label2.Text = "Mật khẩu";
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(178, 271);
-            this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(232, 29);
-            this.label3.TabIndex = 2;
-            this.label3.Text = "Xác nhận mật khẩu";
             // 
             // usernametxtBox
             // 
-            this.usernametxtBox.Location = new System.Drawing.Point(466, 132);
-            this.usernametxtBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.usernametxtBox.BackColor = System.Drawing.SystemColors.Window;
+            this.usernametxtBox.Location = new System.Drawing.Point(222, 83);
             this.usernametxtBox.Name = "usernametxtBox";
-            this.usernametxtBox.Size = new System.Drawing.Size(416, 26);
+            this.usernametxtBox.Size = new System.Drawing.Size(279, 20);
             this.usernametxtBox.TabIndex = 3;
             // 
             // passtxtBox
             // 
-            this.passtxtBox.Location = new System.Drawing.Point(466, 198);
-            this.passtxtBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.passtxtBox.AllowDrop = true;
+            this.passtxtBox.Location = new System.Drawing.Point(222, 191);
             this.passtxtBox.Name = "passtxtBox";
-            this.passtxtBox.Size = new System.Drawing.Size(416, 26);
+            this.passtxtBox.Size = new System.Drawing.Size(279, 20);
             this.passtxtBox.TabIndex = 4;
-            this.passtxtBox.UseSystemPasswordChar = true;
             // 
             // confpasstxtBox
             // 
-            this.confpasstxtBox.Location = new System.Drawing.Point(466, 274);
-            this.confpasstxtBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.confpasstxtBox.Location = new System.Drawing.Point(222, 249);
             this.confpasstxtBox.Name = "confpasstxtBox";
-            this.confpasstxtBox.Size = new System.Drawing.Size(416, 26);
+            this.confpasstxtBox.Size = new System.Drawing.Size(279, 20);
             this.confpasstxtBox.TabIndex = 5;
             // 
             // btnRegister
             // 
             this.btnRegister.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRegister.Location = new System.Drawing.Point(538, 392);
-            this.btnRegister.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.btnRegister.Location = new System.Drawing.Point(300, 330);
             this.btnRegister.Name = "btnRegister";
-            this.btnRegister.Size = new System.Drawing.Size(183, 62);
+            this.btnRegister.Size = new System.Drawing.Size(122, 40);
             this.btnRegister.TabIndex = 6;
             this.btnRegister.Text = "Đăng ký";
             this.btnRegister.UseVisualStyleBackColor = true;
@@ -113,71 +77,83 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(462, 477);
-            this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label4.Location = new System.Drawing.Point(271, 373);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(133, 20);
+            this.label4.Size = new System.Drawing.Size(92, 13);
             this.label4.TabIndex = 7;
             this.label4.Text = "Đã có tài khoản ?";
             // 
             // linkLabel1
             // 
             this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(609, 477);
-            this.linkLabel1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.linkLabel1.Location = new System.Drawing.Point(369, 373);
             this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.Size = new System.Drawing.Size(126, 20);
+            this.linkLabel1.Size = new System.Drawing.Size(86, 13);
             this.linkLabel1.TabIndex = 8;
             this.linkLabel1.TabStop = true;
             this.linkLabel1.Text = "Đăng nhập ngay";
             this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
             // 
-            // button1
+            // checkBox1
             // 
-            this.button1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.button1.Location = new System.Drawing.Point(889, 197);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(137, 29);
-            this.button1.TabIndex = 9;
-            this.button1.Text = "show password";
-            this.button1.TextAlign = System.Drawing.ContentAlignment.TopLeft;
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(225, 307);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(94, 17);
+            this.checkBox1.TabIndex = 10;
+            this.checkBox1.Text = "Xem mật khẩu";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
+            // 
+            // panel1
+            // 
+            this.panel1.BackColor = System.Drawing.Color.AntiqueWhite;
+            this.panel1.Controls.Add(this.gmailtxtBox);
+            this.panel1.Controls.Add(this.linkLabel1);
+            this.panel1.Controls.Add(this.checkBox1);
+            this.panel1.Controls.Add(this.label4);
+            this.panel1.Controls.Add(this.usernametxtBox);
+            this.panel1.Controls.Add(this.btnRegister);
+            this.panel1.Controls.Add(this.passtxtBox);
+            this.panel1.Controls.Add(this.confpasstxtBox);
+            this.panel1.Location = new System.Drawing.Point(182, 37);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(698, 443);
+            this.panel1.TabIndex = 11;
+            // 
+            // gmailtxtBox
+            // 
+            this.gmailtxtBox.AllowDrop = true;
+            this.gmailtxtBox.Location = new System.Drawing.Point(222, 138);
+            this.gmailtxtBox.Name = "gmailtxtBox";
+            this.gmailtxtBox.Size = new System.Drawing.Size(279, 20);
+            this.gmailtxtBox.TabIndex = 12;
             // 
             // Register
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1200, 692);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.linkLabel1);
-            this.Controls.Add(this.label4);
-            this.Controls.Add(this.btnRegister);
-            this.Controls.Add(this.confpasstxtBox);
-            this.Controls.Add(this.passtxtBox);
-            this.Controls.Add(this.usernametxtBox);
-            this.Controls.Add(this.label3);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
-            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.BackColor = System.Drawing.Color.AntiqueWhite;
+            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.ClientSize = new System.Drawing.Size(1068, 548);
+            this.Controls.Add(this.panel1);
             this.Name = "Register";
             this.Text = "Register";
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
-
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox usernametxtBox;
         private System.Windows.Forms.TextBox passtxtBox;
         private System.Windows.Forms.TextBox confpasstxtBox;
         private System.Windows.Forms.Button btnRegister;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.LinkLabel linkLabel1;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.TextBox gmailtxtBox;
     }
 }
