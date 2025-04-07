@@ -99,7 +99,8 @@ namespace FileSharingClient
         private MyFileView myfileView = new MyFileView();
         private ShareView shareView = new ShareView();
         private FilePreview filepreviewView = new FilePreview();
-
+        private TrashBinView trashbinView = new TrashBinView();
+        private UploadView uploadView = new UploadView();
 
         private void Account_Click(object sender, EventArgs e)
         {
@@ -163,6 +164,18 @@ namespace FileSharingClient
         {
             LoadView(filepreviewView);
             HightlightSelectedDashboard(FilePreview_Dashboard);
+        }
+
+        private void TrashBin_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(trashbinView);
+            HightlightSelectedDashboard(TrashBin_Dashboard);
+        }
+
+        private void Upload_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(uploadView);
+            HightlightSelectedDashboard(Upload_Dashboard);
         }
     }
 }

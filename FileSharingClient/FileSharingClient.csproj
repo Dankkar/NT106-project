@@ -122,6 +122,18 @@
     <Compile Include="ShareView.Designer.cs">
       <DependentUpon>ShareView.cs</DependentUpon>
     </Compile>
+    <Compile Include="TrashBinView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TrashBinView.Designer.cs">
+      <DependentUpon>TrashBinView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UploadView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UploadView.Designer.cs">
+      <DependentUpon>UploadView.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="Account.resx">
       <DependentUpon>Account.cs</DependentUpon>
     </EmbeddedResource>
@@ -155,6 +167,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="ShareView.resx">
       <DependentUpon>ShareView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TrashBinView.resx">
+      <DependentUpon>TrashBinView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UploadView.resx">
+      <DependentUpon>UploadView.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
