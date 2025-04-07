@@ -149,6 +149,7 @@ namespace FileSharingClient
                 client.Close();
             }
         }
+
     }
     public static class Session
     {

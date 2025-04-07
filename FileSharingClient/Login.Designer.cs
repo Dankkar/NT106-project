@@ -34,19 +34,21 @@
             this.label3 = new System.Windows.Forms.Label();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // usernametxtBox
             // 
-            this.usernametxtBox.Location = new System.Drawing.Point(71, 40);
+            this.usernametxtBox.Location = new System.Drawing.Point(38, 108);
             this.usernametxtBox.Name = "usernametxtBox";
             this.usernametxtBox.Size = new System.Drawing.Size(257, 20);
             this.usernametxtBox.TabIndex = 0;
             // 
             // passtxtBox
             // 
-            this.passtxtBox.Location = new System.Drawing.Point(71, 112);
+            this.passtxtBox.Location = new System.Drawing.Point(38, 157);
             this.passtxtBox.Name = "passtxtBox";
             this.passtxtBox.Size = new System.Drawing.Size(257, 20);
             this.passtxtBox.TabIndex = 3;
@@ -54,7 +56,7 @@
             // btnLogin
             // 
             this.btnLogin.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnLogin.Location = new System.Drawing.Point(139, 177);
+            this.btnLogin.Location = new System.Drawing.Point(107, 225);
             this.btnLogin.Name = "btnLogin";
             this.btnLogin.Size = new System.Drawing.Size(122, 40);
             this.btnLogin.TabIndex = 4;
@@ -65,7 +67,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(93, 249);
+            this.label3.Location = new System.Drawing.Point(60, 279);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(124, 13);
             this.label3.TabIndex = 5;
@@ -74,7 +76,7 @@
             // linkLabel1
             // 
             this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(223, 249);
+            this.linkLabel1.Location = new System.Drawing.Point(190, 279);
             this.linkLabel1.Name = "linkLabel1";
             this.linkLabel1.Size = new System.Drawing.Size(73, 13);
             this.linkLabel1.TabIndex = 6;
@@ -84,22 +86,46 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.label2);
+            this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.usernametxtBox);
             this.panel1.Controls.Add(this.linkLabel1);
             this.panel1.Controls.Add(this.passtxtBox);
             this.panel1.Controls.Add(this.label3);
             this.panel1.Controls.Add(this.btnLogin);
-            this.panel1.Location = new System.Drawing.Point(364, 73);
+            this.panel1.Location = new System.Drawing.Point(12, 12);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(389, 323);
+            this.panel1.Size = new System.Drawing.Size(344, 421);
             this.panel1.TabIndex = 7;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Segoe UI Semibold", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.ForeColor = System.Drawing.Color.Maroon;
+            this.label1.Location = new System.Drawing.Point(84, 13);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(169, 30);
+            this.label1.TabIndex = 7;
+            this.label1.Text = "File Sharing App";
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Segoe UI Semibold", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
+            this.label2.Location = new System.Drawing.Point(111, 53);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(118, 30);
+            this.label2.TabIndex = 8;
+            this.label2.Text = "Đăng nhập";
             // 
             // Login
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.AntiqueWhite;
-            this.ClientSize = new System.Drawing.Size(1113, 624);
+            this.ClientSize = new System.Drawing.Size(370, 445);
             this.Controls.Add(this.panel1);
             this.Name = "Login";
             this.Text = "Login";
@@ -117,5 +143,7 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.LinkLabel linkLabel1;
         private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
     }
 }
