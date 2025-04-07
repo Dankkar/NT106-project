@@ -88,32 +88,10 @@ namespace FileSharingClient
 
         }
 
-        private async void btnSendFile_Click_1(object sender, EventArgs e)
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                string filePath = openFileDialog.FileName;
-                FileInfo fileInfo = new FileInfo(filePath);
+        //private void
 
-                // Lấy tên file (không gồm đường dẫn)
-                lblFileName.Text =  fileInfo.Name;
+        
 
-                // Lấy kích thước file (theo byte)
-                lblFileSize.Text =  fileInfo.Length + " bytes";
-
-                // Lấy extension (đuôi file)
-                lblFileExtension.Text = fileInfo.Extension;
-                panelFile.Visible = true;
-                upload_progress.Visible = true;
-                // Nếu cần upload lên server, bạn có thể viết thêm logic upload ở đây
-            }
-        }
-
-        private void button1_Click_1(object sender, EventArgs e)
-        {
-
-        }
 
         private void Account_Click(object sender, EventArgs e)
         {
@@ -122,6 +100,11 @@ namespace FileSharingClient
             string storageUsed = GetTotalStorageUsed(); // Hàm đã định nghĩa trước
             accountForm.SetAccountInfo(username, storageUsed);
             accountForm.ShowDialog(); // Hiển thị form Account và chờ người dùng thao tác
+        }
+
+        private void Main_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }
