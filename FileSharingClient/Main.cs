@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SQLite;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -18,6 +21,7 @@ namespace FileSharingClient
         public Main()
         {
             InitializeComponent();
+
 
         }
 
@@ -88,8 +92,15 @@ namespace FileSharingClient
 
         }
 
-        //private void
+        private void LoadView(UserControl view)
+        {
+            MainContentPanel.Controls.Clear();
+            view.Dock = DockStyle.Fill;
+            MainContentPanel.Controls.Add(view);
+        }
 
+        private MyFileView myfileView = new MyFileView();
+        private ShareView shareView = new ShareView();
         
 
 
@@ -102,9 +113,53 @@ namespace FileSharingClient
             accountForm.ShowDialog(); // Hiển thị form Account và chờ người dùng thao tác
         }
 
+        private List<Control> dashboardButtons;
+
+        private void HightlightSelectedDashboard(Button selectedButton)
+        {
+            foreach (Button btn in dashboardButtons)
+            {
+                btn.BackColor = Color.RosyBrown;
+                btn.ForeColor = Color.White;
+                btn.Font = new Font(btn.Font, FontStyle.Bold);
+            }
+            selectedButton.BackColor = Color.DodgerBlue;
+            selectedButton.ForeColor = Color.Black;
+            selectedButton.Font = new Font(selectedButton.Font, FontStyle.Bold);
+        }
+
         private void Main_Load(object sender, EventArgs e)
         {
+            InitDashboardButtons();
+        }
 
+        private void InitDashboardButtons()
+        {
+            dashboardButtons = new List<Control>
+                {
+                    MyFile_Dashboard,
+                    Share_Dashboard,
+                    Upload_Dashboard,
+                    TrashBin_Dashboard,
+                    Settings_Dashboard
+                };
+        }
+        private void Share_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(shareView);
+            HightlightSelectedDashboard(Share_Dashboard);
+            
+        }
+
+        private void NavBarPanel_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void MyFile_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(myfileView);
+            HightlightSelectedDashboard(MyFile_Dashboard);
         }
     }
 }
