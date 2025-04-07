@@ -72,11 +72,19 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+<<<<<<< HEAD
     <Compile Include="MyFileView.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="MyFileView.Designer.cs">
       <DependentUpon>MyFileView.cs</DependentUpon>
+=======
+    <Compile Include="Account.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Account.Designer.cs">
+      <DependentUpon>Account.cs</DependentUpon>
+>>>>>>> fbd78884b7b4625040ce7540e7aa773ba12cccd1
     </Compile>
     <Compile Include="Login.cs">
       <SubType>Form</SubType>
@@ -98,6 +106,7 @@
     <Compile Include="Register.Designer.cs">
       <DependentUpon>Register.cs</DependentUpon>
     </Compile>
+<<<<<<< HEAD
     <Compile Include="SettingsView.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -124,6 +133,10 @@
     </Compile>
     <EmbeddedResource Include="MyFileView.resx">
       <DependentUpon>MyFileView.cs</DependentUpon>
+=======
+    <EmbeddedResource Include="Account.resx">
+      <DependentUpon>Account.cs</DependentUpon>
+>>>>>>> fbd78884b7b4625040ce7540e7aa773ba12cccd1
     </EmbeddedResource>
     <EmbeddedResource Include="Login.resx">
       <DependentUpon>Login.cs</DependentUpon>

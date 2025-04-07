@@ -129,6 +129,10 @@ namespace FileSharingClient
                     mainform.Show();
                     this.Close();
                 }
+                else if (response == "FAIL")
+                {
+                    MessageBox.Show("Sai tài khoản hoặc mật khẩu!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
                 else
                 {
                     MessageBox.Show("Sai tai khoan hoac mat khau", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);

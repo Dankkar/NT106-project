@@ -27,6 +27,23 @@ namespace FileSharingServer
             }
         }
 
+        static async Task CreateDatabase()
+        {
+            if (!File.Exists(dbPath))
+            {
+                SQLiteConnection.CreateFile(dbPath);
+            }
+
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+            {
+                await conn.OpenAsync();
+                string createTableQuery = "CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password_hash TEXT)";
+                using (SQLiteCommand cmd = new SQLiteCommand(createTableQuery, conn))
+                {
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+        }
         static async Task HandleClientAsync(TcpClient client)
         {
             Console.WriteLine($"Client {client.Client.RemoteEndPoint} đã kết nối.");
@@ -76,12 +93,19 @@ namespace FileSharingServer
             string username = parts[1];
             string password = parts[2];
 
-            if (command == "REGISTER")
+            switch (command)
             {
-                return await RegisterUser(username, password);
+                case "REGISTER":
+                    return await RegisterUser(username, password);
+                case "LOGIN":
+                    return await LoginUser(username, password);
+                case "CHANGE_PASSWORD":
+                    if (parts.Length != 4) return "ERROR";
+                    string newPassword = parts[3];
+                    return await ChangePassword(username, password, newPassword);
+                default:
+                    return "ERROR";
             }
-
-            return "ERROR\n";
         }
 
         static async Task<string> RegisterUser(string username, string password)
@@ -122,5 +146,72 @@ namespace FileSharingServer
                 return "ERROR\n";
             }
         }
+        static async Task<string> LoginUser(string username, string password)
+        {
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT password_hash FROM users WHERE username = @username";
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@username", username);
+                        string storedPassword = await cmd.ExecuteScalarAsync() as string;
+
+                        if (storedPassword != null && storedPassword == password)
+                        {
+                            return "SUCCESS";
+                        }
+                        return "FAIL";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi đăng nhập: {ex.Message}");
+                return "ERROR";
+            }
+        }
+
+        static async Task<string> ChangePassword(string username, string oldPassword, string newPassword)
+        {
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // Kiểm tra mật khẩu cũ
+                    string checkQuery = "SELECT password_hash FROM users WHERE username = @username";
+                    using (SQLiteCommand checkCmd = new SQLiteCommand(checkQuery, conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@username", username);
+                        string storedPassword = await checkCmd.ExecuteScalarAsync() as string;
+
+                        if (storedPassword != oldPassword)
+                        {
+                            return "WRONG_PASSWORD";
+                        }
+                    }
+
+                    // Cập nhật mật khẩu mới
+                    string updateQuery = "UPDATE users SET password_hash = @newPassword WHERE username = @username";
+                    using (SQLiteCommand updateCmd = new SQLiteCommand(updateQuery, conn))
+                    {
+                        updateCmd.Parameters.AddWithValue("@username", username);
+                        updateCmd.Parameters.AddWithValue("@newPassword", newPassword);
+                        await updateCmd.ExecuteNonQueryAsync();
+                    }
+                    return "SUCCESS";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi đổi mật khẩu: {ex.Message}");
+                return "ERROR";
+            }
+        }
     }
 }
+
