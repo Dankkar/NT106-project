@@ -1,6 +1,6 @@
 ﻿namespace FileSharingClient
 {
-    partial class MyFileView
+    partial class ShareView
     {
         /// <summary> 
         /// Required designer variable.
@@ -28,16 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.SuspendLayout();
-            // 
-            // MyFileView
-            // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
+            components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Name = "MyFileView";
-            this.Size = new System.Drawing.Size(1611, 884);
-            this.ResumeLayout(false);
-
         }
 
         #endregion

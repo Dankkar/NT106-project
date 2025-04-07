@@ -110,6 +110,12 @@
     <Compile Include="Register.Designer.cs">
       <DependentUpon>Register.cs</DependentUpon>
     </Compile>
+    <Compile Include="ShareView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ShareView.Designer.cs">
+      <DependentUpon>ShareView.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="Account.resx">
       <DependentUpon>Account.cs</DependentUpon>
     </EmbeddedResource>
@@ -121,6 +127,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Main.resx">
       <DependentUpon>Main.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MyFileView.resx">
+      <DependentUpon>MyFileView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
