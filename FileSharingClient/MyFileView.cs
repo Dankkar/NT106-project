@@ -36,5 +36,7 @@ namespace FileSharingClient
                 contextMenuStrip2.Show(Cursor.Position);
             }
         }
+
+        
     }
 }

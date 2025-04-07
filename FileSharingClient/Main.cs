@@ -50,7 +50,7 @@ namespace FileSharingClient
                         byte[] buffer = new byte[4096];
                         int bytesRead;
                         long totalSent = 0;
-                        while((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         {
                             await stream.WriteAsync(buffer, 0, bytesRead);
                             totalSent += bytesRead;
@@ -61,7 +61,7 @@ namespace FileSharingClient
                         totalStorageUsed += totalSent;
                         MessageBox.Show("File đã gửi xong!");
                     }
-                    
+
                 }
             }
 
@@ -87,10 +87,7 @@ namespace FileSharingClient
         {
             return FormatSize(totalStorageUsed);
         }
-        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
-        {
 
-        }
 
         private void LoadView(UserControl view)
         {
@@ -101,8 +98,9 @@ namespace FileSharingClient
 
         private MyFileView myfileView = new MyFileView();
         private ShareView shareView = new ShareView();
-        
-
+        private FilePreview filepreviewView = new FilePreview();
+        private TrashBinView trashbinView = new TrashBinView();
+        private UploadView uploadView = new UploadView();
 
         private void Account_Click(object sender, EventArgs e)
         {
@@ -122,15 +120,18 @@ namespace FileSharingClient
                 btn.BackColor = Color.RosyBrown;
                 btn.ForeColor = Color.White;
                 btn.Font = new Font(btn.Font, FontStyle.Bold);
+                btn.Enabled = true;
             }
             selectedButton.BackColor = Color.DodgerBlue;
             selectedButton.ForeColor = Color.Black;
             selectedButton.Font = new Font(selectedButton.Font, FontStyle.Bold);
+            selectedButton.Enabled = false;
         }
 
         private void Main_Load(object sender, EventArgs e)
         {
             InitDashboardButtons();
+            LoadView(myfileView);
         }
 
         private void InitDashboardButtons()
@@ -141,25 +142,40 @@ namespace FileSharingClient
                     Share_Dashboard,
                     Upload_Dashboard,
                     TrashBin_Dashboard,
-                    Settings_Dashboard
+                    FilePreview_Dashboard
                 };
         }
         private void Share_Dashboard_Click(object sender, EventArgs e)
         {
             LoadView(shareView);
             HightlightSelectedDashboard(Share_Dashboard);
-            
-        }
-
-        private void NavBarPanel_Paint(object sender, PaintEventArgs e)
-        {
 
         }
+
 
         private void MyFile_Dashboard_Click(object sender, EventArgs e)
         {
             LoadView(myfileView);
             HightlightSelectedDashboard(MyFile_Dashboard);
+        }
+
+
+        private void FilePreview_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(filepreviewView);
+            HightlightSelectedDashboard(FilePreview_Dashboard);
+        }
+
+        private void TrashBin_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(trashbinView);
+            HightlightSelectedDashboard(TrashBin_Dashboard);
+        }
+
+        private void Upload_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(uploadView);
+            HightlightSelectedDashboard(Upload_Dashboard);
         }
     }
 }
