@@ -16,5 +16,19 @@ namespace FileSharingClient
         {
             InitializeComponent();
         }
+
+        
+
+        private void ShareView_Load(object sender, EventArgs e)
+        {
+            PasswordPanel.Visible = false;
+        }
+
+        private void btnShare_Click(object sender, EventArgs e)
+        {
+            PasswordPanel.Visible = true;
+        }
+
+        
     }
 }

@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SQLite;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -18,6 +21,7 @@ namespace FileSharingClient
         public Main()
         {
             InitializeComponent();
+
 
         }
 
@@ -46,7 +50,7 @@ namespace FileSharingClient
                         byte[] buffer = new byte[4096];
                         int bytesRead;
                         long totalSent = 0;
-                        while((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         {
                             await stream.WriteAsync(buffer, 0, bytesRead);
                             totalSent += bytesRead;
@@ -57,7 +61,7 @@ namespace FileSharingClient
                         totalStorageUsed += totalSent;
                         MessageBox.Show("File đã gửi xong!");
                     }
-                    
+
                 }
             }
 
@@ -83,15 +87,20 @@ namespace FileSharingClient
         {
             return FormatSize(totalStorageUsed);
         }
-        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
-        {
 
+
+        private void LoadView(UserControl view)
+        {
+            MainContentPanel.Controls.Clear();
+            view.Dock = DockStyle.Fill;
+            MainContentPanel.Controls.Add(view);
         }
 
-        //private void
-
-        
-
+        private MyFileView myfileView = new MyFileView();
+        private ShareView shareView = new ShareView();
+        private FilePreview filepreviewView = new FilePreview();
+        private TrashBinView trashbinView = new TrashBinView();
+        private UploadView uploadView = new UploadView();
 
         private void Account_Click(object sender, EventArgs e)
         {
@@ -102,9 +111,71 @@ namespace FileSharingClient
             accountForm.ShowDialog(); // Hiển thị form Account và chờ người dùng thao tác
         }
 
+        private List<Control> dashboardButtons;
+
+        private void HightlightSelectedDashboard(Button selectedButton)
+        {
+            foreach (Button btn in dashboardButtons)
+            {
+                btn.BackColor = Color.RosyBrown;
+                btn.ForeColor = Color.White;
+                btn.Font = new Font(btn.Font, FontStyle.Bold);
+                btn.Enabled = true;
+            }
+            selectedButton.BackColor = Color.DodgerBlue;
+            selectedButton.ForeColor = Color.Black;
+            selectedButton.Font = new Font(selectedButton.Font, FontStyle.Bold);
+            selectedButton.Enabled = false;
+        }
+
         private void Main_Load(object sender, EventArgs e)
         {
+            InitDashboardButtons();
+            LoadView(myfileView);
+        }
 
+        private void InitDashboardButtons()
+        {
+            dashboardButtons = new List<Control>
+                {
+                    MyFile_Dashboard,
+                    Share_Dashboard,
+                    Upload_Dashboard,
+                    TrashBin_Dashboard,
+                    FilePreview_Dashboard
+                };
+        }
+        private void Share_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(shareView);
+            HightlightSelectedDashboard(Share_Dashboard);
+
+        }
+
+
+        private void MyFile_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(myfileView);
+            HightlightSelectedDashboard(MyFile_Dashboard);
+        }
+
+
+        private void FilePreview_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(filepreviewView);
+            HightlightSelectedDashboard(FilePreview_Dashboard);
+        }
+
+        private void TrashBin_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(trashbinView);
+            HightlightSelectedDashboard(TrashBin_Dashboard);
+        }
+
+        private void Upload_Dashboard_Click(object sender, EventArgs e)
+        {
+            LoadView(uploadView);
+            HightlightSelectedDashboard(Upload_Dashboard);
         }
     }
 }

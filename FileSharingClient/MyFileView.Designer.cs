@@ -36,7 +36,11 @@
             this.DateUpload = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Option = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.contextMenuStrip2 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.tảiFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.chiaSẻFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.xóaFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.MyFile_dataGridView)).BeginInit();
+            this.contextMenuStrip2.SuspendLayout();
             this.SuspendLayout();
             // 
             // MyFile_dataGridView
@@ -48,9 +52,9 @@
             this.FileExtension,
             this.DateUpload,
             this.Option});
-            this.MyFile_dataGridView.Location = new System.Drawing.Point(122, 19);
+            this.MyFile_dataGridView.Location = new System.Drawing.Point(0, 0);
             this.MyFile_dataGridView.Name = "MyFile_dataGridView";
-            this.MyFile_dataGridView.Size = new System.Drawing.Size(544, 424);
+            this.MyFile_dataGridView.Size = new System.Drawing.Size(601, 392);
             this.MyFile_dataGridView.TabIndex = 0;
             // 
             // FileName
@@ -88,18 +92,41 @@
             // 
             // contextMenuStrip2
             // 
+            this.contextMenuStrip2.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tảiFileToolStripMenuItem,
+            this.chiaSẻFileToolStripMenuItem,
+            this.xóaFileToolStripMenuItem});
             this.contextMenuStrip2.Name = "contextMenuStrip2";
-            this.contextMenuStrip2.Size = new System.Drawing.Size(61, 4);
+            this.contextMenuStrip2.Size = new System.Drawing.Size(142, 70);
+            // 
+            // tảiFileToolStripMenuItem
+            // 
+            this.tảiFileToolStripMenuItem.Name = "tảiFileToolStripMenuItem";
+            this.tảiFileToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
+            this.tảiFileToolStripMenuItem.Text = "Tải File";
+            // 
+            // chiaSẻFileToolStripMenuItem
+            // 
+            this.chiaSẻFileToolStripMenuItem.Name = "chiaSẻFileToolStripMenuItem";
+            this.chiaSẻFileToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
+            this.chiaSẻFileToolStripMenuItem.Text = "Chia sẻ File";
+            // 
+            // xóaFileToolStripMenuItem
+            // 
+            this.xóaFileToolStripMenuItem.Name = "xóaFileToolStripMenuItem";
+            this.xóaFileToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
+            this.xóaFileToolStripMenuItem.Text = "Xóa File";
             // 
             // MyFileView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.MyFile_dataGridView);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "MyFileView";
-            this.Size = new System.Drawing.Size(806, 460);
+            this.Size = new System.Drawing.Size(601, 392);
             ((System.ComponentModel.ISupportInitialize)(this.MyFile_dataGridView)).EndInit();
+            this.contextMenuStrip2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -113,5 +140,8 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn DateUpload;
         private System.Windows.Forms.DataGridViewTextBoxColumn Option;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip2;
+        private System.Windows.Forms.ToolStripMenuItem tảiFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem chiaSẻFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem xóaFileToolStripMenuItem;
     }
 }
