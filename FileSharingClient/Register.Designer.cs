@@ -37,13 +37,14 @@
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.gmailtxtBox = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // usernametxtBox
             // 
             this.usernametxtBox.BackColor = System.Drawing.SystemColors.Window;
-            this.usernametxtBox.Location = new System.Drawing.Point(222, 83);
+            this.usernametxtBox.Location = new System.Drawing.Point(21, 94);
             this.usernametxtBox.Name = "usernametxtBox";
             this.usernametxtBox.Size = new System.Drawing.Size(279, 20);
             this.usernametxtBox.TabIndex = 3;
@@ -51,22 +52,22 @@
             // passtxtBox
             // 
             this.passtxtBox.AllowDrop = true;
-            this.passtxtBox.Location = new System.Drawing.Point(222, 191);
+            this.passtxtBox.Location = new System.Drawing.Point(21, 202);
             this.passtxtBox.Name = "passtxtBox";
             this.passtxtBox.Size = new System.Drawing.Size(279, 20);
             this.passtxtBox.TabIndex = 4;
             // 
             // confpasstxtBox
             // 
-            this.confpasstxtBox.Location = new System.Drawing.Point(222, 249);
+            this.confpasstxtBox.Location = new System.Drawing.Point(21, 260);
             this.confpasstxtBox.Name = "confpasstxtBox";
             this.confpasstxtBox.Size = new System.Drawing.Size(279, 20);
             this.confpasstxtBox.TabIndex = 5;
             // 
             // btnRegister
             // 
-            this.btnRegister.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRegister.Location = new System.Drawing.Point(300, 330);
+            this.btnRegister.Font = new System.Drawing.Font("Segoe UI Semibold", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRegister.Location = new System.Drawing.Point(99, 341);
             this.btnRegister.Name = "btnRegister";
             this.btnRegister.Size = new System.Drawing.Size(122, 40);
             this.btnRegister.TabIndex = 6;
@@ -77,18 +78,20 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(271, 373);
+            this.label4.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label4.Location = new System.Drawing.Point(70, 384);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(92, 13);
+            this.label4.Size = new System.Drawing.Size(96, 13);
             this.label4.TabIndex = 7;
             this.label4.Text = "Đã có tài khoản ?";
             // 
             // linkLabel1
             // 
             this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(369, 373);
+            this.linkLabel1.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.linkLabel1.Location = new System.Drawing.Point(168, 384);
             this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.Size = new System.Drawing.Size(86, 13);
+            this.linkLabel1.Size = new System.Drawing.Size(93, 13);
             this.linkLabel1.TabIndex = 8;
             this.linkLabel1.TabStop = true;
             this.linkLabel1.Text = "Đăng nhập ngay";
@@ -97,9 +100,10 @@
             // checkBox1
             // 
             this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(225, 307);
+            this.checkBox1.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.checkBox1.Location = new System.Drawing.Point(21, 297);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(94, 17);
+            this.checkBox1.Size = new System.Drawing.Size(98, 17);
             this.checkBox1.TabIndex = 10;
             this.checkBox1.Text = "Xem mật khẩu";
             this.checkBox1.UseVisualStyleBackColor = true;
@@ -108,6 +112,7 @@
             // panel1
             // 
             this.panel1.BackColor = System.Drawing.Color.AntiqueWhite;
+            this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.gmailtxtBox);
             this.panel1.Controls.Add(this.linkLabel1);
             this.panel1.Controls.Add(this.checkBox1);
@@ -116,18 +121,28 @@
             this.panel1.Controls.Add(this.btnRegister);
             this.panel1.Controls.Add(this.passtxtBox);
             this.panel1.Controls.Add(this.confpasstxtBox);
-            this.panel1.Location = new System.Drawing.Point(182, 37);
+            this.panel1.Location = new System.Drawing.Point(12, 12);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(698, 443);
+            this.panel1.Size = new System.Drawing.Size(317, 443);
             this.panel1.TabIndex = 11;
             // 
             // gmailtxtBox
             // 
             this.gmailtxtBox.AllowDrop = true;
-            this.gmailtxtBox.Location = new System.Drawing.Point(222, 138);
+            this.gmailtxtBox.Location = new System.Drawing.Point(21, 149);
             this.gmailtxtBox.Name = "gmailtxtBox";
             this.gmailtxtBox.Size = new System.Drawing.Size(279, 20);
             this.gmailtxtBox.TabIndex = 12;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Segoe UI Semibold", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.Location = new System.Drawing.Point(108, 23);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(92, 30);
+            this.label1.TabIndex = 13;
+            this.label1.Text = "Đăng ký";
             // 
             // Register
             // 
@@ -135,7 +150,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.AntiqueWhite;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.ClientSize = new System.Drawing.Size(1068, 548);
+            this.ClientSize = new System.Drawing.Size(344, 469);
             this.Controls.Add(this.panel1);
             this.Name = "Register";
             this.Text = "Register";
@@ -155,5 +170,6 @@
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.TextBox gmailtxtBox;
+        private System.Windows.Forms.Label label1;
     }
 }

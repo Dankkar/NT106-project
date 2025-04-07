@@ -52,10 +52,9 @@
             // 
             // Account
             // 
-            this.Account.Location = new System.Drawing.Point(1572, 45);
-            this.Account.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.Account.Location = new System.Drawing.Point(1048, 29);
             this.Account.Name = "Account";
-            this.Account.Size = new System.Drawing.Size(112, 35);
+            this.Account.Size = new System.Drawing.Size(75, 23);
             this.Account.TabIndex = 12;
             this.Account.Text = "Account";
             this.Account.UseVisualStyleBackColor = true;
@@ -66,10 +65,9 @@
             this.panel1.BackColor = System.Drawing.SystemColors.AppWorkspace;
             this.panel1.Controls.Add(this.File_Dashboard);
             this.panel1.Controls.Add(this.Upload_DashBoard);
-            this.panel1.Location = new System.Drawing.Point(0, 123);
-            this.panel1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.panel1.Location = new System.Drawing.Point(0, 80);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(300, 757);
+            this.panel1.Size = new System.Drawing.Size(200, 492);
             this.panel1.TabIndex = 15;
             // 
             // File_Dashboard
@@ -83,10 +81,9 @@
             this.File_Dashboard.IconColor = System.Drawing.Color.Black;
             this.File_Dashboard.IconFont = FontAwesome.Sharp.IconFont.Auto;
             this.File_Dashboard.IconSize = 40;
-            this.File_Dashboard.Location = new System.Drawing.Point(0, 63);
-            this.File_Dashboard.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.File_Dashboard.Location = new System.Drawing.Point(0, 41);
             this.File_Dashboard.Name = "File_Dashboard";
-            this.File_Dashboard.Size = new System.Drawing.Size(300, 63);
+            this.File_Dashboard.Size = new System.Drawing.Size(200, 41);
             this.File_Dashboard.TabIndex = 1;
             this.File_Dashboard.Text = "File";
             this.File_Dashboard.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -106,9 +103,8 @@
             this.Upload_DashBoard.IconFont = FontAwesome.Sharp.IconFont.Auto;
             this.Upload_DashBoard.IconSize = 40;
             this.Upload_DashBoard.Location = new System.Drawing.Point(0, 0);
-            this.Upload_DashBoard.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Upload_DashBoard.Name = "Upload_DashBoard";
-            this.Upload_DashBoard.Size = new System.Drawing.Size(300, 63);
+            this.Upload_DashBoard.Size = new System.Drawing.Size(200, 41);
             this.Upload_DashBoard.TabIndex = 0;
             this.Upload_DashBoard.Text = "Upload";
             this.Upload_DashBoard.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -119,27 +115,24 @@
             // 
             this.panel2.Controls.Add(this.Account);
             this.panel2.Location = new System.Drawing.Point(0, 0);
-            this.panel2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(1702, 126);
+            this.panel2.Size = new System.Drawing.Size(1135, 82);
             this.panel2.TabIndex = 16;
             // 
             // upload_progress
             // 
-            this.upload_progress.Location = new System.Drawing.Point(693, 642);
-            this.upload_progress.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.upload_progress.Location = new System.Drawing.Point(462, 417);
             this.upload_progress.Name = "upload_progress";
-            this.upload_progress.Size = new System.Drawing.Size(704, 35);
+            this.upload_progress.Size = new System.Drawing.Size(469, 23);
             this.upload_progress.TabIndex = 19;
             this.upload_progress.Visible = false;
             // 
             // btnSendFile
             // 
             this.btnSendFile.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSendFile.Location = new System.Drawing.Point(693, 212);
-            this.btnSendFile.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.btnSendFile.Location = new System.Drawing.Point(462, 138);
             this.btnSendFile.Name = "btnSendFile";
-            this.btnSendFile.Size = new System.Drawing.Size(704, 160);
+            this.btnSendFile.Size = new System.Drawing.Size(469, 104);
             this.btnSendFile.TabIndex = 20;
             this.btnSendFile.Text = "Nhấn vào đây để tải file lên";
             this.btnSendFile.UseVisualStyleBackColor = true;
@@ -153,10 +146,9 @@
             this.panelFile.Controls.Add(this.lblFileExtension);
             this.panelFile.Controls.Add(this.lblFileSize);
             this.panelFile.Controls.Add(this.lblFileName);
-            this.panelFile.Location = new System.Drawing.Point(693, 574);
-            this.panelFile.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.panelFile.Location = new System.Drawing.Point(462, 373);
             this.panelFile.Name = "panelFile";
-            this.panelFile.Size = new System.Drawing.Size(704, 38);
+            this.panelFile.Size = new System.Drawing.Size(469, 25);
             this.panelFile.TabIndex = 21;
             this.panelFile.Visible = false;
             // 
@@ -168,10 +160,9 @@
             this.iconButton1.IconColor = System.Drawing.Color.Black;
             this.iconButton1.IconFont = FontAwesome.Sharp.IconFont.Auto;
             this.iconButton1.IconSize = 20;
-            this.iconButton1.Location = new System.Drawing.Point(668, 2);
-            this.iconButton1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.iconButton1.Location = new System.Drawing.Point(445, 1);
             this.iconButton1.Name = "iconButton1";
-            this.iconButton1.Size = new System.Drawing.Size(36, 35);
+            this.iconButton1.Size = new System.Drawing.Size(24, 23);
             this.iconButton1.TabIndex = 3;
             this.iconButton1.UseVisualStyleBackColor = true;
             // 
@@ -179,10 +170,9 @@
             // 
             this.lblFileExtension.AutoSize = true;
             this.lblFileExtension.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFileExtension.Location = new System.Drawing.Point(430, 0);
-            this.lblFileExtension.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblFileExtension.Location = new System.Drawing.Point(287, 0);
             this.lblFileExtension.Name = "lblFileExtension";
-            this.lblFileExtension.Size = new System.Drawing.Size(153, 32);
+            this.lblFileExtension.Size = new System.Drawing.Size(100, 21);
             this.lblFileExtension.TabIndex = 2;
             this.lblFileExtension.Text = "FileExtension";
             // 
@@ -190,10 +180,9 @@
             // 
             this.lblFileSize.AutoSize = true;
             this.lblFileSize.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFileSize.Location = new System.Drawing.Point(206, 2);
-            this.lblFileSize.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblFileSize.Location = new System.Drawing.Point(137, 1);
             this.lblFileSize.Name = "lblFileSize";
-            this.lblFileSize.Size = new System.Drawing.Size(94, 32);
+            this.lblFileSize.Size = new System.Drawing.Size(62, 21);
             this.lblFileSize.TabIndex = 1;
             this.lblFileSize.Text = "FileSize";
             // 
@@ -203,23 +192,21 @@
             this.lblFileName.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblFileName.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblFileName.Location = new System.Drawing.Point(0, 0);
-            this.lblFileName.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFileName.Name = "lblFileName";
-            this.lblFileName.Size = new System.Drawing.Size(115, 32);
+            this.lblFileName.Size = new System.Drawing.Size(76, 21);
             this.lblFileName.TabIndex = 0;
             this.lblFileName.Text = "FileName";
             // 
             // Main
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1702, 877);
+            this.ClientSize = new System.Drawing.Size(1135, 570);
             this.Controls.Add(this.panelFile);
             this.Controls.Add(this.btnSendFile);
             this.Controls.Add(this.upload_progress);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
-            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "Main";
             this.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.Text = "Form1";
