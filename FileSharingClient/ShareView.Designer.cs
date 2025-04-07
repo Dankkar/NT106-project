@@ -28,10 +28,197 @@
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
+            this.ShareWithPanel = new System.Windows.Forms.Panel();
+            this.btnShare = new System.Windows.Forms.Button();
+            this.PasswordPanel = new System.Windows.Forms.Panel();
+            this.tbPassword = new System.Windows.Forms.TextBox();
+            this.lblPassword = new System.Windows.Forms.Label();
+            this.cbBrowseFile = new System.Windows.Forms.ComboBox();
+            this.lblFileToShare = new System.Windows.Forms.Label();
+            this.lblShareWith = new System.Windows.Forms.Label();
+            this.GetSharePanel = new System.Windows.Forms.Panel();
+            this.lblGetFile = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
+            this.lblInputPassword = new System.Windows.Forms.Label();
+            this.tbInputPassword = new System.Windows.Forms.TextBox();
+            this.btnGet = new System.Windows.Forms.Button();
+            this.ShareWithPanel.SuspendLayout();
+            this.PasswordPanel.SuspendLayout();
+            this.GetSharePanel.SuspendLayout();
+            this.SuspendLayout();
+            // 
+            // ShareWithPanel
+            // 
+            this.ShareWithPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.ShareWithPanel.Controls.Add(this.btnShare);
+            this.ShareWithPanel.Controls.Add(this.PasswordPanel);
+            this.ShareWithPanel.Controls.Add(this.cbBrowseFile);
+            this.ShareWithPanel.Controls.Add(this.lblFileToShare);
+            this.ShareWithPanel.Controls.Add(this.lblShareWith);
+            this.ShareWithPanel.Location = new System.Drawing.Point(3, 0);
+            this.ShareWithPanel.Name = "ShareWithPanel";
+            this.ShareWithPanel.Size = new System.Drawing.Size(300, 389);
+            this.ShareWithPanel.TabIndex = 0;
+            // 
+            // btnShare
+            // 
+            this.btnShare.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.btnShare.Location = new System.Drawing.Point(92, 183);
+            this.btnShare.Name = "btnShare";
+            this.btnShare.Size = new System.Drawing.Size(104, 48);
+            this.btnShare.TabIndex = 4;
+            this.btnShare.Text = "Share";
+            this.btnShare.UseVisualStyleBackColor = true;
+            this.btnShare.Click += new System.EventHandler(this.btnShare_Click);
+            // 
+            // PasswordPanel
+            // 
+            this.PasswordPanel.Controls.Add(this.tbPassword);
+            this.PasswordPanel.Controls.Add(this.lblPassword);
+            this.PasswordPanel.Location = new System.Drawing.Point(22, 250);
+            this.PasswordPanel.Name = "PasswordPanel";
+            this.PasswordPanel.Size = new System.Drawing.Size(244, 116);
+            this.PasswordPanel.TabIndex = 3;
+            // 
+            // tbPassword
+            // 
+            this.tbPassword.Location = new System.Drawing.Point(123, 28);
+            this.tbPassword.Name = "tbPassword";
+            this.tbPassword.ReadOnly = true;
+            this.tbPassword.Size = new System.Drawing.Size(100, 20);
+            this.tbPassword.TabIndex = 1;
+            // 
+            // lblPassword
+            // 
+            this.lblPassword.AutoSize = true;
+            this.lblPassword.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.lblPassword.Location = new System.Drawing.Point(24, 28);
+            this.lblPassword.Name = "lblPassword";
+            this.lblPassword.Size = new System.Drawing.Size(76, 21);
+            this.lblPassword.TabIndex = 0;
+            this.lblPassword.Text = "Password";
+            // 
+            // cbBrowseFile
+            // 
+            this.cbBrowseFile.FormattingEnabled = true;
+            this.cbBrowseFile.Location = new System.Drawing.Point(145, 86);
+            this.cbBrowseFile.Name = "cbBrowseFile";
+            this.cbBrowseFile.Size = new System.Drawing.Size(121, 21);
+            this.cbBrowseFile.TabIndex = 2;
+            // 
+            // lblFileToShare
+            // 
+            this.lblFileToShare.AutoSize = true;
+            this.lblFileToShare.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.lblFileToShare.Location = new System.Drawing.Point(18, 86);
+            this.lblFileToShare.Name = "lblFileToShare";
+            this.lblFileToShare.Size = new System.Drawing.Size(96, 21);
+            this.lblFileToShare.TabIndex = 1;
+            this.lblFileToShare.Text = "File to Share";
+            // 
+            // lblShareWith
+            // 
+            this.lblShareWith.AutoSize = true;
+            this.lblShareWith.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Bold);
+            this.lblShareWith.Location = new System.Drawing.Point(87, 33);
+            this.lblShareWith.Name = "lblShareWith";
+            this.lblShareWith.Size = new System.Drawing.Size(109, 25);
+            this.lblShareWith.TabIndex = 0;
+            this.lblShareWith.Text = "Share With";
+            // 
+            // GetSharePanel
+            // 
+            this.GetSharePanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.GetSharePanel.Controls.Add(this.btnGet);
+            this.GetSharePanel.Controls.Add(this.tbInputPassword);
+            this.GetSharePanel.Controls.Add(this.lblInputPassword);
+            this.GetSharePanel.Controls.Add(this.lblGetFile);
+            this.GetSharePanel.Location = new System.Drawing.Point(309, 0);
+            this.GetSharePanel.Name = "GetSharePanel";
+            this.GetSharePanel.Size = new System.Drawing.Size(287, 389);
+            this.GetSharePanel.TabIndex = 1;
+            // 
+            // lblGetFile
+            // 
+            this.lblGetFile.AutoSize = true;
+            this.lblGetFile.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Bold);
+            this.lblGetFile.Location = new System.Drawing.Point(104, 33);
+            this.lblGetFile.Name = "lblGetFile";
+            this.lblGetFile.Size = new System.Drawing.Size(78, 25);
+            this.lblGetFile.TabIndex = 5;
+            this.lblGetFile.Text = "Get File";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(398, 37);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(0, 13);
+            this.label1.TabIndex = 2;
+            // 
+            // lblInputPassword
+            // 
+            this.lblInputPassword.AutoSize = true;
+            this.lblInputPassword.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.lblInputPassword.Location = new System.Drawing.Point(22, 83);
+            this.lblInputPassword.Name = "lblInputPassword";
+            this.lblInputPassword.Size = new System.Drawing.Size(116, 21);
+            this.lblInputPassword.TabIndex = 5;
+            this.lblInputPassword.Text = "Input Password";
+            // 
+            // tbInputPassword
+            // 
+            this.tbInputPassword.Location = new System.Drawing.Point(153, 84);
+            this.tbInputPassword.Name = "tbInputPassword";
+            this.tbInputPassword.Size = new System.Drawing.Size(100, 20);
+            this.tbInputPassword.TabIndex = 2;
+            // 
+            // btnGet
+            // 
+            this.btnGet.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.btnGet.Location = new System.Drawing.Point(91, 183);
+            this.btnGet.Name = "btnGet";
+            this.btnGet.Size = new System.Drawing.Size(104, 48);
+            this.btnGet.TabIndex = 5;
+            this.btnGet.Text = "Get";
+            this.btnGet.UseVisualStyleBackColor = true;
+            // 
+            // ShareView
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.GetSharePanel);
+            this.Controls.Add(this.ShareWithPanel);
+            this.Name = "ShareView";
+            this.Size = new System.Drawing.Size(601, 392);
+            this.Load += new System.EventHandler(this.ShareView_Load);
+            this.ShareWithPanel.ResumeLayout(false);
+            this.ShareWithPanel.PerformLayout();
+            this.PasswordPanel.ResumeLayout(false);
+            this.PasswordPanel.PerformLayout();
+            this.GetSharePanel.ResumeLayout(false);
+            this.GetSharePanel.PerformLayout();
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
         }
 
         #endregion
+
+        private System.Windows.Forms.Panel ShareWithPanel;
+        private System.Windows.Forms.Panel GetSharePanel;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lblShareWith;
+        private System.Windows.Forms.Label lblFileToShare;
+        private System.Windows.Forms.Button btnShare;
+        private System.Windows.Forms.Panel PasswordPanel;
+        private System.Windows.Forms.TextBox tbPassword;
+        private System.Windows.Forms.Label lblPassword;
+        private System.Windows.Forms.ComboBox cbBrowseFile;
+        private System.Windows.Forms.Label lblGetFile;
+        private System.Windows.Forms.Button btnGet;
+        private System.Windows.Forms.TextBox tbInputPassword;
+        private System.Windows.Forms.Label lblInputPassword;
     }
 }
