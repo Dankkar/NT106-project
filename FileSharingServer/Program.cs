@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Data.SQLite;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace FileSharingServer
 {
@@ -12,21 +13,65 @@ namespace FileSharingServer
     {
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
         private static string dbPath = Path.Combine(projectRoot, "test.db");
+        private static string SERVER_IP = "127.0.0.1";
+        private static int SERVER_PORT = 5000;
+        private static TcpListener server;
+        private static CancellationTokenSource cts;
         private static string connectionString = $"Data Source={dbPath};Version=3;";
 
         static async Task Main(string[] args)
         {
-            TcpListener server = new TcpListener(IPAddress.Any, 5000);
-            server.Start();
-            Console.WriteLine("Server đang lắng nghe trên cổng 5000...");
-
-            while (true)
+            cts = new CancellationTokenSource();
+            Task serverTask = StartServerAsync(cts.Token);
+            Console.WriteLine("Nhan Enter de dung server.");
+            Console.ReadLine();
+            cts.Cancel();
+            try
             {
-                TcpClient client = await server.AcceptTcpClientAsync();
-                _ = HandleClientAsync(client);
+                await serverTask;
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Server da dung.");
             }
         }
+        private static async Task StartServerAsync(CancellationToken token)
+        {
+            server = new TcpListener(IPAddress.Parse(SERVER_IP), SERVER_PORT);
+            server.Start();
+            Console.WriteLine("Server dang lang nghe tren cong 5000...");
 
+            try
+            {
+                while(!token.IsCancellationRequested)
+                {
+                    //Cho client ket noi
+                    TcpClient client = await server.AcceptTcpClientAsync();
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                    //Xu ly client ket noi
+                    _ = HandleClientAsync(client);
+                }
+            }
+            catch (Exception ex) 
+            {
+                if (token.IsCancellationRequested)
+                {
+                    Console.WriteLine("Server dừng vì yêu cầu hủy.");
+                }
+                else
+                {
+                    Console.WriteLine($"Lỗi server: {ex.Message}");
+                }
+            }
+            finally
+            {
+                server.Stop();
+                Console.WriteLine("Server da ngung.");
+            }
+        }
         static async Task CreateDatabase()
         {
             if (!File.Exists(dbPath))
@@ -82,6 +127,10 @@ namespace FileSharingServer
 
         static async Task<string> ProcessRequest(string request)
         {
+            if (request == null || !request.Contains("|"))
+            {
+                return "400\n"; // Bad Request: Dữ liệu không hợp lệ
+            }
             string[] parts = request.Split('|');
             if (parts.Length == 0)
             {
@@ -94,21 +143,25 @@ namespace FileSharingServer
             {
                 case "REGISTER":
                     if (parts.Length != 4) return "400\n";
-                    string username = parts[1];
-                    string email = parts[2];
-                    string password = parts[3];
-                    return await RegisterUser(username,email, password);
+                    string R_username = parts[1];
+                    string R_email = parts[2];
+                    string R_password = parts[3];
+                    return await RegisterUser(R_username,R_email, R_password);
                 case "LOGIN":
                     if (parts.Length != 3) return "400\n";
-                    string loginUsername = parts[1];
-                    string loginPassword = parts[2];
-                    return await LoginUser(loginUsername, loginPassword);
+                    string L_Username = parts[1];
+                    string L_Password = parts[2];
+                    return await LoginUser(L_Username, L_Password);
                 case "CHANGE_PASSWORD":
                     if (parts.Length != 4) return "400\n";
-                    string cpUsername = parts[1];
+                    string CP_Username = parts[1];
                     string oldPassword = parts[2];
                     string newPassword = parts[3];
-                    return await ChangePassword(cpUsername, oldPassword, newPassword);
+                    return await ChangePassword(CP_Username, oldPassword, newPassword);
+                case "FORGOT_PASSWORD":
+                    if (parts.Length != 2) return "400\n";
+                    string FP_email = parts[1];
+                    return await ForgotPassword(FP_email);
                 default:
                     return "400\n";
             }
@@ -219,6 +272,12 @@ namespace FileSharingServer
                 return "500\n"; //Internal Server Error
             }
         }
+        /*
+        static async Task<string> ForgotPassword(string email)
+        {
+            
+        }
+        */
     }
 }
 
