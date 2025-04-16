@@ -36,7 +36,7 @@ namespace FileSharingClient
             usernametxtBox.Text = username;
             usernametxtBox.ForeColor = Color.Gray;
             usernametxtBox.Enter += usernametxtBox_Enter;
-            usernametxtBox.Enter += usernametxtBox_Leave;
+            usernametxtBox.Leave += usernametxtBox_Leave;
 
             passtxtBox.Text = password;
             passtxtBox.ForeColor = Color.Gray;
@@ -146,57 +146,96 @@ namespace FileSharingClient
 
         private async void btnRegister_Click(object sender, EventArgs e)
         {
-            await Task.Run(() => HandleLogin());
+            await HandleRegister();
         }   
-        private async void HandleLogin()
+        private async Task HandleRegister()
         {
             try
             {
-                //Ket noi den server
-                client = new TcpClient(SERVER_IP, SERVER_PORT);
-                stream = client.GetStream();
-                StreamReader reader = new StreamReader(stream, Encoding.UTF8);
-                StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
-
-                //Lay thong tin tu textbox
-                string username = usernametxtBox.Text;
-                string password = passtxtBox.Text;
-                string conf_pass = confpasstxtBox.Text;
-
-                if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(conf_pass))
+                // Kết nối đến server
+                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    this.Invoke(new Action(() =>
-                    {
-                        MessageBox.Show("Vui lòng nhập đầy đủ thông tin", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }));
-                    return;
-                }
-                //Gui du lieu dang ky
-                if(conf_pass != password)
-                {
-                    this.Invoke(new Action(() =>
-                    {
-                        MessageBox.Show("Mật khẩu và xác nhận mật khẩu không trùng khớp!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }));
-                    return;
-                }
-                string message = $"REGISTER|{username}|{password}\n";
-                await writer.WriteLineAsync(message);
+                    // Lấy thông tin từ các TextBox
+                    string username = usernametxtBox.Text;
+                    string email = gmailtxtBox.Text;
+                    string password = passtxtBox.Text;
+                    string conf_pass = confpasstxtBox.Text;
 
-                //Nhan phan hoi tu server
-                string response = await reader.ReadLineAsync();
-                this.Invoke(new Action(() =>
-                {
-                    if (response == "SUCCESS")
+                    if (string.IsNullOrWhiteSpace(username) ||
+                        string.IsNullOrWhiteSpace(password) ||
+                        string.IsNullOrWhiteSpace(conf_pass) ||
+                        string.IsNullOrWhiteSpace(email))
                     {
-                        MessageBox.Show("Đăng ký thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    else if (response == "USER_HAS_EXISTED")
-                    {
-                        MessageBox.Show("Username đã tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        this.Invoke(new Action(() =>
+                        {
+                            MessageBox.Show("Vui lòng nhập đầy đủ thông tin", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
                         return;
                     }
-                }));
+                    if (conf_pass != password)
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            MessageBox.Show("Mật khẩu và xác nhận mật khẩu không trùng khớp!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+                        return;
+                    }
+                    if(!IsValidEmail(email))
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            MessageBox.Show("Vui lòng nhập đúng định dạng email!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+                        return;
+                    }
+
+                    // Gửi dữ liệu đăng ký theo định dạng: REGISTER|username|email|password
+                    string message = $"REGISTER|{username}|{email}|{password}\n";
+                    await writer.WriteLineAsync(message);
+
+                    // Nhận phản hồi từ server (status code dạng số)
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim(); // cắt bỏ khoảng trắng thừa, newline, ...
+                    int statusCode;
+                    if (int.TryParse(response, out statusCode))
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            switch (statusCode)
+                            {
+                                case 201:
+                                    MessageBox.Show("Đăng ký thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    this.Hide();
+                                    Main mainform = new Main();
+                                    mainform.Show();
+                                    this.Close();
+                                    break;
+                                case 409:
+                                    MessageBox.Show("Username đã tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    break;
+                                case 400:
+                                    MessageBox.Show("Yêu cầu không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    break;
+                                case 500:
+                                    MessageBox.Show("Lỗi từ server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    break;
+                                default:
+                                    MessageBox.Show("Phản hồi không xác định từ server: " + statusCode, "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                    break;
+                            }
+                        }));
+                    }
+                    else
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            MessageBox.Show("Phản hồi không hợp lệ từ server: " + response, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -204,12 +243,6 @@ namespace FileSharingClient
                 {
                     MessageBox.Show("Lỗi kết nối đến server: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }));
-            }
-            finally
-            {
-                //Dong ket noi
-                stream?.Close();
-                client?.Close();
             }
         }
 
@@ -224,6 +257,18 @@ namespace FileSharingClient
             {
                 passtxtBox.UseSystemPasswordChar = true;
                 confpasstxtBox.UseSystemPasswordChar = true;
+            }
+        }
+        bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
             }
         }
 

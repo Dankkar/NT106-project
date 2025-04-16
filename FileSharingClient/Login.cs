@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -88,65 +89,88 @@ namespace FileSharingClient
 
         private async void btnLogin_Click(object sender, EventArgs e)
         {
-            await Task.Run(() => HandleLogin());
+            await HandleLogin();
         }
 
-        private void HandleLogin()
+        private async Task HandleLogin()
         {
             try
             {
-                // Ket noi den server
-                client = new TcpClient(SERVER_IP, SERVER_PORT);
-                stream = client.GetStream();
-
-                // Lay thong tin tu textbox
-                string username = usernametxtBox.Text.Trim();
-                string password = passtxtBox.Text.Trim();
-
-                if(string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    MessageBox.Show("Vui lòng nhập đầy đủ thông tin", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                // Gui du lieu dang nhap
-                string message = $"LOGIN|{username}|{password}";
-                byte[] data = Encoding.UTF8.GetBytes(message);
-                stream.Write(data, 0, data.Length);
+                    // Lấy thông tin từ TextBox và cắt khoảng trắng
+                    string username = usernametxtBox.Text;
+                    string password = passtxtBox.Text;
 
-                // Nhan phan hoi tu server
-                byte[] buffer = new byte[1024];
-                int byteRead = stream.Read(buffer, 0, buffer.Length);
-                string response = Encoding.UTF8.GetString(buffer, 0, byteRead);
+                    if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            MessageBox.Show("Vui lòng nhập đầy đủ thông tin", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+                        return;
+                    }
 
-                if(response == "SUCCESS")
-                {
-                    Session.LoggedInUser = username;
-                    MessageBox.Show("Dang nhap thanh cong!", "Thông báo ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    this.Hide();
+                    // Gửi dữ liệu đăng nhập theo định dạng: LOGIN|username|password\n
+                    string message = $"LOGIN|{username}|{password}\n";
+                    await writer.WriteLineAsync(message);
 
-                    // Mo giao dien chinh
-                    Main mainform = new Main();
-                    mainform.Show();
-                    this.Close();
-                }
-                else if (response == "FAIL")
-                {
-                    MessageBox.Show("Sai tài khoản hoặc mật khẩu!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                else
-                {
-                    MessageBox.Show("Sai tai khoan hoac mat khau", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // Nhận phản hồi từ server  (status code dang so)
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    int statusCode;
+
+                    // Kiểm tra phản hồi có phải là status code dạng số hay 
+
+                    // Cập nhật giao diện theo status code nhận được
+                    if (int.TryParse(response, out statusCode))
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            switch (statusCode)
+                            {
+                                case 200:
+                                    Session.LoggedInUser = username;
+                                    MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    this.Hide();
+
+                                    // Mở giao diện chính
+                                    Main mainform = new Main();
+                                    mainform.Show();
+                                    break;
+                                case 401:
+                                    MessageBox.Show("Sai tài khoản hoặc mật khẩu!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    break;
+                                case 400:
+                                    MessageBox.Show("Yêu cầu không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    break;
+                                case 500:
+                                    MessageBox.Show("Lỗi từ server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    break;
+                                default:
+                                    MessageBox.Show("Phản hồi không xác định từ server: " + statusCode, "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                    break;
+                            }
+                        }));
+                    }
+                    else
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            MessageBox.Show("Phản hồi không hợp lệ từ server: " + response, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+                    }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                MessageBox.Show("Loi ket noi den server" + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                // Dong ket noi
-                stream?.Close();
-                client.Close();
+                this.Invoke(new Action(() =>
+                {
+                    MessageBox.Show("Lỗi kết nối đến server: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }));
             }
         }
 

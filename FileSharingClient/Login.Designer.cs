@@ -34,8 +34,10 @@
             this.label3 = new System.Windows.Forms.Label();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.forgotPassword = new System.Windows.Forms.LinkLabel();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -86,6 +88,8 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.forgotPassword);
+            this.panel1.Controls.Add(this.label4);
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.usernametxtBox);
@@ -98,6 +102,17 @@
             this.panel1.Size = new System.Drawing.Size(344, 421);
             this.panel1.TabIndex = 7;
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Segoe UI Semibold", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
+            this.label2.Location = new System.Drawing.Point(111, 53);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(118, 30);
+            this.label2.TabIndex = 8;
+            this.label2.Text = "Đăng nhập";
+            // 
             // label1
             // 
             this.label1.AutoSize = true;
@@ -109,16 +124,23 @@
             this.label1.TabIndex = 7;
             this.label1.Text = "File Sharing App";
             // 
-            // label2
+            // label4
             // 
-            this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Segoe UI Semibold", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
-            this.label2.Location = new System.Drawing.Point(111, 53);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(118, 30);
-            this.label2.TabIndex = 8;
-            this.label2.Text = "Đăng nhập";
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(60, 307);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(0, 13);
+            this.label4.TabIndex = 9;
+            // 
+            // forgotPassword
+            // 
+            this.forgotPassword.AutoSize = true;
+            this.forgotPassword.Location = new System.Drawing.Point(125, 307);
+            this.forgotPassword.Name = "forgotPassword";
+            this.forgotPassword.Size = new System.Drawing.Size(89, 13);
+            this.forgotPassword.TabIndex = 10;
+            this.forgotPassword.TabStop = true;
+            this.forgotPassword.Text = "Quên mật khẩu ?";
             // 
             // Login
             // 
@@ -145,5 +167,7 @@
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.LinkLabel forgotPassword;
+        private System.Windows.Forms.Label label4;
     }
 }
