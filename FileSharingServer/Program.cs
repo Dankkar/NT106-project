@@ -83,32 +83,38 @@ namespace FileSharingServer
         static async Task<string> ProcessRequest(string request)
         {
             string[] parts = request.Split('|');
-
-            if (parts.Length != 3)
+            if (parts.Length == 0)
             {
-                return "ERROR\n"; // Thêm "\n" để client đọc được phản hồi đầy đủ
+                return "400\n"; // Bad Request
             }
 
             string command = parts[0];
-            string username = parts[1];
-            string password = parts[2];
 
             switch (command)
             {
                 case "REGISTER":
-                    return await RegisterUser(username, password);
+                    if (parts.Length != 4) return "400\n";
+                    string username = parts[1];
+                    string email = parts[2];
+                    string password = parts[3];
+                    return await RegisterUser(username,email, password);
                 case "LOGIN":
-                    return await LoginUser(username, password);
+                    if (parts.Length != 3) return "400\n";
+                    string loginUsername = parts[1];
+                    string loginPassword = parts[2];
+                    return await LoginUser(loginUsername, loginPassword);
                 case "CHANGE_PASSWORD":
-                    if (parts.Length != 4) return "ERROR";
+                    if (parts.Length != 4) return "400\n";
+                    string cpUsername = parts[1];
+                    string oldPassword = parts[2];
                     string newPassword = parts[3];
-                    return await ChangePassword(username, password, newPassword);
+                    return await ChangePassword(cpUsername, oldPassword, newPassword);
                 default:
-                    return "ERROR";
+                    return "400\n";
             }
         }
 
-        static async Task<string> RegisterUser(string username, string password)
+        static async Task<string> RegisterUser(string username, string email, string password)
         {
             try
             {
@@ -125,25 +131,26 @@ namespace FileSharingServer
 
                         if (userExists > 0)
                         {
-                            return "USER_HAS_EXISTED\n"; // Thêm "\n" để client đọc được phản hồi đầy đủ
+                            return "409\n"; // Conflict: User da ton tai
                         }
                     }
 
                     // Thêm người dùng mới vào cơ sở dữ liệu
-                    string insertQuery = "INSERT INTO users (username, password_hash) VALUES (@username, @password_hash)";
+                    string insertQuery = "INSERT INTO users (username, email, password_hash) VALUES (@username, @email, @password_hash)";
                     using (SQLiteCommand insertCmd = new SQLiteCommand(insertQuery, conn))
                     {
                         insertCmd.Parameters.AddWithValue("@username", username);
+                        insertCmd.Parameters.AddWithValue("@email", email);
                         insertCmd.Parameters.AddWithValue("@password_hash", password);
                         await insertCmd.ExecuteNonQueryAsync();
                     }
-                    return "SUCCESS\n";
+                    return "201\n"; //Created: Dang ky thanh cong
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Lỗi đăng ký: {ex.Message}");
-                return "ERROR\n";
+                return "500\n"; //Internal Server Error
             }
         }
         static async Task<string> LoginUser(string username, string password)
@@ -161,16 +168,16 @@ namespace FileSharingServer
 
                         if (storedPassword != null && storedPassword == password)
                         {
-                            return "SUCCESS";
+                            return "200\n"; //OK: dang nhap thanh cong
                         }
-                        return "FAIL";
+                        return "401\n"; //Unauthorized: Dang nhap that bai
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Lỗi đăng nhập: {ex.Message}");
-                return "ERROR";
+                return "500\n"; //Internal server error
             }
         }
 
@@ -191,7 +198,7 @@ namespace FileSharingServer
 
                         if (storedPassword != oldPassword)
                         {
-                            return "WRONG_PASSWORD";
+                            return "401\n"; //Unauthorized: Mat khau cu khong chinh xac
                         }
                     }
 
@@ -203,13 +210,13 @@ namespace FileSharingServer
                         updateCmd.Parameters.AddWithValue("@newPassword", newPassword);
                         await updateCmd.ExecuteNonQueryAsync();
                     }
-                    return "SUCCESS";
+                    return "200\n"; //Doi mat khau thanh cong
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Lỗi đổi mật khẩu: {ex.Message}");
-                return "ERROR";
+                return "500\n"; //Internal Server Error
             }
         }
     }
