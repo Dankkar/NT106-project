@@ -2,10 +2,11 @@
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.Mail;
 using System.Text;
 using System.Data.SQLite;
 using System.Threading.Tasks;
-using System.Threading;
+using System.Collections.Generic;
 
 namespace FileSharingServer
 {
@@ -13,65 +14,24 @@ namespace FileSharingServer
     {
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
         private static string dbPath = Path.Combine(projectRoot, "test.db");
-        private static string SERVER_IP = "127.0.0.1";
-        private static int SERVER_PORT = 5000;
-        private static TcpListener server;
-        private static CancellationTokenSource cts;
         private static string connectionString = $"Data Source={dbPath};Version=3;";
+        private static Dictionary<string, (string OTP, DateTime Expiry)> otpStorage = new Dictionary<string, (string, DateTime)>();
+        private static Random random = new Random();
 
         static async Task Main(string[] args)
         {
-            cts = new CancellationTokenSource();
-            Task serverTask = StartServerAsync(cts.Token);
-            Console.WriteLine("Nhan Enter de dung server.");
-            Console.ReadLine();
-            cts.Cancel();
-            try
-            {
-                await serverTask;
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("Server da dung.");
-            }
-        }
-        private static async Task StartServerAsync(CancellationToken token)
-        {
-            server = new TcpListener(IPAddress.Parse(SERVER_IP), SERVER_PORT);
+            await CreateDatabase();
+            TcpListener server = new TcpListener(IPAddress.Any, 5000);
             server.Start();
-            Console.WriteLine("Server dang lang nghe tren cong 5000...");
+            Console.WriteLine("Server đang lắng nghe trên cổng 5000...");
 
-            try
+            while (true)
             {
-                while(!token.IsCancellationRequested)
-                {
-                    //Cho client ket noi
-                    TcpClient client = await server.AcceptTcpClientAsync();
-                    if (token.IsCancellationRequested)
-                    {
-                        break;
-                    }
-                    //Xu ly client ket noi
-                    _ = HandleClientAsync(client);
-                }
-            }
-            catch (Exception ex) 
-            {
-                if (token.IsCancellationRequested)
-                {
-                    Console.WriteLine("Server dừng vì yêu cầu hủy.");
-                }
-                else
-                {
-                    Console.WriteLine($"Lỗi server: {ex.Message}");
-                }
-            }
-            finally
-            {
-                server.Stop();
-                Console.WriteLine("Server da ngung.");
+                TcpClient client = await server.AcceptTcpClientAsync();
+                _ = HandleClientAsync(client);
             }
         }
+
         static async Task CreateDatabase()
         {
             if (!File.Exists(dbPath))
@@ -82,13 +42,14 @@ namespace FileSharingServer
             using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 await conn.OpenAsync();
-                string createTableQuery = "CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password_hash TEXT)";
+                string createTableQuery = "CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, email TEXT, password_hash TEXT)";
                 using (SQLiteCommand cmd = new SQLiteCommand(createTableQuery, conn))
                 {
                     await cmd.ExecuteNonQueryAsync();
                 }
             }
         }
+
         static async Task HandleClientAsync(TcpClient client)
         {
             Console.WriteLine($"Client {client.Client.RemoteEndPoint} đã kết nối.");
@@ -109,8 +70,6 @@ namespace FileSharingServer
                     Console.WriteLine($"Nhận từ Client: {request}");
 
                     string response = await ProcessRequest(request);
-                    
-                    // Thêm "\n" để client đọc được
                     await writer.WriteLineAsync(response);
                 }
             }
@@ -127,10 +86,6 @@ namespace FileSharingServer
 
         static async Task<string> ProcessRequest(string request)
         {
-            if (request == null || !request.Contains("|"))
-            {
-                return "400\n"; // Bad Request: Dữ liệu không hợp lệ
-            }
             string[] parts = request.Split('|');
             if (parts.Length == 0)
             {
@@ -143,25 +98,35 @@ namespace FileSharingServer
             {
                 case "REGISTER":
                     if (parts.Length != 4) return "400\n";
-                    string R_username = parts[1];
-                    string R_email = parts[2];
-                    string R_password = parts[3];
-                    return await RegisterUser(R_username,R_email, R_password);
+                    string username = parts[1];
+                    string email = parts[2];
+                    string password = parts[3];
+                    return await RegisterUser(username, email, password);
                 case "LOGIN":
                     if (parts.Length != 3) return "400\n";
-                    string L_Username = parts[1];
-                    string L_Password = parts[2];
-                    return await LoginUser(L_Username, L_Password);
+                    string loginUsername = parts[1];
+                    string loginPassword = parts[2];
+                    return await LoginUser(loginUsername, loginPassword);
                 case "CHANGE_PASSWORD":
                     if (parts.Length != 4) return "400\n";
-                    string CP_Username = parts[1];
+                    string cpUsername = parts[1];
                     string oldPassword = parts[2];
                     string newPassword = parts[3];
-                    return await ChangePassword(CP_Username, oldPassword, newPassword);
-                case "FORGOT_PASSWORD":
+                    return await ChangePassword(cpUsername, oldPassword, newPassword);
+                case "REQUEST_OTP":
                     if (parts.Length != 2) return "400\n";
-                    string FP_email = parts[1];
-                    return await ForgotPassword(FP_email);
+                    string otpEmail = parts[1];
+                    return await RequestOTP(otpEmail);
+                case "VERIFY_OTP":
+                    if (parts.Length != 3) return "400\n";
+                    string verifyEmail = parts[1];
+                    string otp = parts[2];
+                    return await VerifyOTP(verifyEmail, otp);
+                case "RESET_PASSWORD":
+                    if (parts.Length != 3) return "400\n";
+                    string resetEmail = parts[1];
+                    string newPasswordReset = parts[2];
+                    return await ResetPassword(resetEmail, newPasswordReset);
                 default:
                     return "400\n";
             }
@@ -184,7 +149,7 @@ namespace FileSharingServer
 
                         if (userExists > 0)
                         {
-                            return "409\n"; // Conflict: User da ton tai
+                            return "409\n"; // Conflict: User đã tồn tại
                         }
                     }
 
@@ -197,15 +162,16 @@ namespace FileSharingServer
                         insertCmd.Parameters.AddWithValue("@password_hash", password);
                         await insertCmd.ExecuteNonQueryAsync();
                     }
-                    return "201\n"; //Created: Dang ky thanh cong
+                    return "201\n"; // Created: Đăng ký thành công
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Lỗi đăng ký: {ex.Message}");
-                return "500\n"; //Internal Server Error
+                return "500\n"; // Internal Server Error
             }
         }
+
         static async Task<string> LoginUser(string username, string password)
         {
             try
@@ -221,16 +187,16 @@ namespace FileSharingServer
 
                         if (storedPassword != null && storedPassword == password)
                         {
-                            return "200\n"; //OK: dang nhap thanh cong
+                            return "200\n"; // OK: Đăng nhập thành công
                         }
-                        return "401\n"; //Unauthorized: Dang nhap that bai
+                        return "401\n"; // Unauthorized: Đăng nhập thất bại
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Lỗi đăng nhập: {ex.Message}");
-                return "500\n"; //Internal server error
+                return "500\n"; // Internal server error
             }
         }
 
@@ -251,7 +217,7 @@ namespace FileSharingServer
 
                         if (storedPassword != oldPassword)
                         {
-                            return "401\n"; //Unauthorized: Mat khau cu khong chinh xac
+                            return "401\n"; // Unauthorized: Mật khẩu cũ không chính xác
                         }
                     }
 
@@ -263,21 +229,150 @@ namespace FileSharingServer
                         updateCmd.Parameters.AddWithValue("@newPassword", newPassword);
                         await updateCmd.ExecuteNonQueryAsync();
                     }
-                    return "200\n"; //Doi mat khau thanh cong
+                    return "200\n"; // Đổi mật khẩu thành công
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Lỗi đổi mật khẩu: {ex.Message}");
-                return "500\n"; //Internal Server Error
+                return "500\n"; // Internal Server Error
             }
         }
-        /*
-        static async Task<string> ForgotPassword(string email)
+
+        static async Task<string> RequestOTP(string email)
         {
-            
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT username FROM users WHERE email = @email";
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@email", email);
+                        string username = await cmd.ExecuteScalarAsync() as string;
+
+                        if (username == null)
+                        {
+                            return "404\n"; // Email không tồn tại
+                        }
+
+                        // Tạo OTP 6 chữ số
+                        string otp = random.Next(100000, 999999).ToString();
+                        DateTime expiry = DateTime.Now.AddMinutes(5);
+                        otpStorage[email] = (otp, expiry);
+
+                        // Gửi OTP qua email
+                        bool emailSent = await SendOTPEmail(email, otp);
+                        if (!emailSent)
+                        {
+                            return "500\n"; // Lỗi gửi email
+                        }
+
+                        Console.WriteLine($"OTP cho {email}: {otp} (Hết hạn: {expiry})");
+                        return "200\n"; // OTP gửi thành công
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi yêu cầu OTP: {ex.Message}");
+                return "500\n"; // Internal Server Error
+            }
         }
-        */
+
+        static async Task<bool> SendOTPEmail(string toEmail, string otp)
+        {
+            try
+            {
+                using (MailMessage mail = new MailMessage())
+                {
+                    mail.From = new MailAddress("hieudinhle1204@gmail.com"); // Thay bằng email của bạn
+                    mail.To.Add(toEmail);
+                    mail.Subject = "Mã OTP để đặt lại mật khẩu";
+                    mail.Body = $"Mã OTP của bạn là: {otp}\nMã này có hiệu lực trong 5 phút.";
+                    mail.IsBodyHtml = false;
+
+                    using (SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587))
+                    {
+                        smtp.Credentials = new NetworkCredential("hieudinhle1204@gmail.com", "inyuoohlwcqcklib"); // Thay bằng email và App Password
+                        smtp.EnableSsl = true;
+                        await smtp.SendMailAsync(mail);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi gửi email: {ex.Message}");
+                return false;
+            }
+        }
+
+        static async Task<string> VerifyOTP(string email, string otp)
+        {
+            try
+            {
+                if (!otpStorage.ContainsKey(email))
+                {
+                    return "401\n"; // OTP không tồn tại
+                }
+
+                var (storedOTP, expiry) = otpStorage[email];
+                if (DateTime.Now > expiry)
+                {
+                    otpStorage.Remove(email);
+                    return "401\n"; // OTP hết hạn
+                }
+
+                if (storedOTP != otp)
+                {
+                    return "401\n"; // OTP không đúng
+                }
+
+                return "200\n"; // OTP hợp lệ
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi xác nhận OTP: {ex.Message}");
+                return "500\n"; // Internal Server Error
+            }
+        }
+
+        static async Task<string> ResetPassword(string email, string newPassword)
+        {
+            try
+            {
+                if (!otpStorage.ContainsKey(email))
+                {
+                    return "401\n"; // OTP chưa được xác nhận
+                }
+
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string updateQuery = "UPDATE users SET password_hash = @newPassword WHERE email = @email";
+                    using (SQLiteCommand updateCmd = new SQLiteCommand(updateQuery, conn))
+                    {
+                        updateCmd.Parameters.AddWithValue("@email", email);
+                        updateCmd.Parameters.AddWithValue("@newPassword", newPassword);
+                        int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
+
+                        if (rowsAffected == 0)
+                        {
+                            return "404\n"; // Email không tồn tại
+                        }
+                    }
+                }
+
+                otpStorage.Remove(email); // Xóa OTP sau khi đặt lại mật khẩu
+                return "200\n"; // Đặt lại mật khẩu thành công
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi đặt lại mật khẩu: {ex.Message}");
+                return "500\n"; // Internal Server Error
+            }
+        }
     }
 }
-

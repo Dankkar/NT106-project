@@ -18,6 +18,7 @@ namespace FileSharingClient
     public partial class Login : Form
     {
         private bool isRegisterOpen = false;
+        private bool isForgotPasswordOpen = false;
         private string username = "Tên đăng nhập";
         private string password = "Mật khẩu";
         private TcpClient client;
@@ -87,6 +88,21 @@ namespace FileSharingClient
             isRegisterOpen = false;
         }
 
+        private void linkForgotPassword_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            if (isForgotPasswordOpen)
+                return; // Nếu form ForgotPassword đã được mở, bỏ qua
+
+            isForgotPasswordOpen = true;
+            this.Hide();
+            using (ForgotPassword forgotPassword = new ForgotPassword())
+            {
+                forgotPassword.ShowDialog();
+            }
+            this.Show();
+            isForgotPasswordOpen = false;
+        }
+
         private async void btnLogin_Click(object sender, EventArgs e)
         {
             await HandleLogin();
@@ -118,12 +134,10 @@ namespace FileSharingClient
                     string message = $"LOGIN|{username}|{password}\n";
                     await writer.WriteLineAsync(message);
 
-                    // Nhận phản hồi từ server  (status code dang so)
+                    // Nhận phản hồi từ server (status code dạng số)
                     string response = await reader.ReadLineAsync();
                     response = response?.Trim();
                     int statusCode;
-
-                    // Kiểm tra phản hồi có phải là status code dạng số hay 
 
                     // Cập nhật giao diện theo status code nhận được
                     if (int.TryParse(response, out statusCode))
@@ -173,8 +187,8 @@ namespace FileSharingClient
                 }));
             }
         }
-
     }
+
     public static class Session
     {
         public static string LoggedInUser { get; set; } = "Anonymous";
