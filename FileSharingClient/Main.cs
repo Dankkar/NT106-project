@@ -130,6 +130,7 @@ namespace FileSharingClient
 
         private void Main_Load(object sender, EventArgs e)
         {
+            AddFilesToMyFileView();
             InitDashboardButtons();
             LoadView(myfileView);
         }
@@ -155,6 +156,7 @@ namespace FileSharingClient
 
         private void MyFile_Dashboard_Click(object sender, EventArgs e)
         {
+            AddFilesToMyFileView();
             LoadView(myfileView);
             HightlightSelectedDashboard(MyFile_Dashboard);
         }
@@ -176,6 +178,12 @@ namespace FileSharingClient
         {
             LoadView(uploadView);
             HightlightSelectedDashboard(Upload_Dashboard);
+        }
+        private void AddFilesToMyFileView()
+        {
+            myfileView.AddFileToView("File1.txt", "Aug 10, 2024", "me", "500 KB");
+            myfileView.AddFileToView("File2.pdf", "Jul 25, 2024", "me", "1.2 MB");
+            myfileView.AddFileToView("File3.pdf", "Jul 25, 2024", "hieu", "1.2 MB");
         }
     }
 }

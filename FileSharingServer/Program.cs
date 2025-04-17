@@ -158,10 +158,10 @@ namespace FileSharingServer
                     string oldPassword = parts[2];
                     string newPassword = parts[3];
                     return await ChangePassword(CP_Username, oldPassword, newPassword);
-                case "FORGOT_PASSWORD":
+                /*case "FORGOT_PASSWORD":
                     if (parts.Length != 2) return "400\n";
                     string FP_email = parts[1];
-                    return await ForgotPassword(FP_email);
+                    return await ForgotPassword(FP_email); */
                 default:
                     return "400\n";
             }

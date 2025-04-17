@@ -26,8 +26,6 @@ namespace FileSharingClient
         private string password = "Mật khẩu";
         private string conf_pass = "Xác nhận mật khẩu";
         private string gmail = "Gmail";
-        private TcpClient client;
-        private NetworkStream stream;
         private const string SERVER_IP = "127.0.0.1";
         private const int SERVER_PORT = 5000;
         public Register()

@@ -84,6 +84,12 @@
     <Compile Include="ChangePassword.Designer.cs">
       <DependentUpon>ChangePassword.cs</DependentUpon>
     </Compile>
+    <Compile Include="FileItemControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="FileItemControl.Designer.cs">
+      <DependentUpon>FileItemControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="FilePreview.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -139,6 +145,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="ChangePassword.resx">
       <DependentUpon>ChangePassword.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FileItemControl.resx">
+      <DependentUpon>FileItemControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FilePreview.resx">
       <DependentUpon>FilePreview.cs</DependentUpon>

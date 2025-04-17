@@ -28,120 +28,86 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.MyFile_dataGridView = new System.Windows.Forms.DataGridView();
-            this.FileName = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.FileSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.FileExtension = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.DateUpload = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Option = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contextMenuStrip2 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.tảiFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.chiaSẻFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.xóaFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            ((System.ComponentModel.ISupportInitialize)(this.MyFile_dataGridView)).BeginInit();
-            this.contextMenuStrip2.SuspendLayout();
+            this.MyFileLayoutPanel = new System.Windows.Forms.FlowLayoutPanel();
+            this.lblFileName = new System.Windows.Forms.Label();
+            this.lblOwner = new System.Windows.Forms.Label();
+            this.lblCreateAt = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
-            // MyFile_dataGridView
+            // MyFileLayoutPanel
             // 
-            this.MyFile_dataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.MyFile_dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.FileName,
-            this.FileSize,
-            this.FileExtension,
-            this.DateUpload,
-            this.Option});
-            this.MyFile_dataGridView.Location = new System.Drawing.Point(0, 0);
-            this.MyFile_dataGridView.Name = "MyFile_dataGridView";
-            this.MyFile_dataGridView.Size = new System.Drawing.Size(601, 392);
-            this.MyFile_dataGridView.TabIndex = 0;
+            this.MyFileLayoutPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
+            this.MyFileLayoutPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.MyFileLayoutPanel.Location = new System.Drawing.Point(0, 50);
+            this.MyFileLayoutPanel.MaximumSize = new System.Drawing.Size(601, 342);
+            this.MyFileLayoutPanel.Name = "MyFileLayoutPanel";
+            this.MyFileLayoutPanel.Size = new System.Drawing.Size(601, 342);
+            this.MyFileLayoutPanel.TabIndex = 1;
             // 
-            // FileName
+            // lblFileName
             // 
-            this.FileName.HeaderText = "Tên File";
-            this.FileName.Name = "FileName";
-            this.FileName.ReadOnly = true;
-            this.FileName.Width = 200;
+            this.lblFileName.AutoSize = true;
+            this.lblFileName.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblFileName.Location = new System.Drawing.Point(32, 12);
+            this.lblFileName.Name = "lblFileName";
+            this.lblFileName.Size = new System.Drawing.Size(53, 17);
+            this.lblFileName.TabIndex = 2;
+            this.lblFileName.Text = "Tên File";
             // 
-            // FileSize
+            // lblOwner
             // 
-            this.FileSize.HeaderText = "Kích thước File";
-            this.FileSize.Name = "FileSize";
-            this.FileSize.ReadOnly = true;
-            this.FileSize.Width = 75;
+            this.lblOwner.AutoSize = true;
+            this.lblOwner.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblOwner.Location = new System.Drawing.Point(181, 12);
+            this.lblOwner.Name = "lblOwner";
+            this.lblOwner.Size = new System.Drawing.Size(91, 17);
+            this.lblOwner.TabIndex = 3;
+            this.lblOwner.Text = "Người sở hữu";
             // 
-            // FileExtension
+            // lblCreateAt
             // 
-            this.FileExtension.HeaderText = "Đuôi mở rộng";
-            this.FileExtension.Name = "FileExtension";
-            this.FileExtension.ReadOnly = true;
-            this.FileExtension.Width = 75;
+            this.lblCreateAt.AutoSize = true;
+            this.lblCreateAt.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblCreateAt.Location = new System.Drawing.Point(306, 12);
+            this.lblCreateAt.Name = "lblCreateAt";
+            this.lblCreateAt.Size = new System.Drawing.Size(51, 17);
+            this.lblCreateAt.TabIndex = 4;
+            this.lblCreateAt.Text = "Tạo lúc";
             // 
-            // DateUpload
+            // label1
             // 
-            this.DateUpload.HeaderText = "Ngày tải lên";
-            this.DateUpload.Name = "DateUpload";
-            this.DateUpload.ReadOnly = true;
-            // 
-            // Option
-            // 
-            this.Option.HeaderText = "Tùy Chọn";
-            this.Option.Name = "Option";
-            this.Option.Width = 50;
-            // 
-            // contextMenuStrip2
-            // 
-            this.contextMenuStrip2.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tảiFileToolStripMenuItem,
-            this.chiaSẻFileToolStripMenuItem,
-            this.xóaFileToolStripMenuItem});
-            this.contextMenuStrip2.Name = "contextMenuStrip2";
-            this.contextMenuStrip2.Size = new System.Drawing.Size(142, 70);
-            // 
-            // tảiFileToolStripMenuItem
-            // 
-            this.tảiFileToolStripMenuItem.Name = "tảiFileToolStripMenuItem";
-            this.tảiFileToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
-            this.tảiFileToolStripMenuItem.Text = "Tải File";
-            // 
-            // chiaSẻFileToolStripMenuItem
-            // 
-            this.chiaSẻFileToolStripMenuItem.Name = "chiaSẻFileToolStripMenuItem";
-            this.chiaSẻFileToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
-            this.chiaSẻFileToolStripMenuItem.Text = "Chia sẻ File";
-            // 
-            // xóaFileToolStripMenuItem
-            // 
-            this.xóaFileToolStripMenuItem.Name = "xóaFileToolStripMenuItem";
-            this.xóaFileToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
-            this.xóaFileToolStripMenuItem.Text = "Xóa File";
+            this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.Location = new System.Drawing.Point(447, 12);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(72, 17);
+            this.label1.TabIndex = 5;
+            this.label1.Text = "Kích thước";
             // 
             // MyFileView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.MyFile_dataGridView);
+            this.AutoScroll = true;
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.lblCreateAt);
+            this.Controls.Add(this.lblOwner);
+            this.Controls.Add(this.lblFileName);
+            this.Controls.Add(this.MyFileLayoutPanel);
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "MyFileView";
             this.Size = new System.Drawing.Size(601, 392);
-            ((System.ComponentModel.ISupportInitialize)(this.MyFile_dataGridView)).EndInit();
-            this.contextMenuStrip2.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
         #endregion
-
-        private System.Windows.Forms.DataGridView MyFile_dataGridView;
-        private System.Windows.Forms.DataGridViewTextBoxColumn FileName;
-        private System.Windows.Forms.DataGridViewTextBoxColumn FileSize;
-        private System.Windows.Forms.DataGridViewTextBoxColumn FileExtension;
-        private System.Windows.Forms.DataGridViewTextBoxColumn DateUpload;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Option;
-        private System.Windows.Forms.ContextMenuStrip contextMenuStrip2;
-        private System.Windows.Forms.ToolStripMenuItem tảiFileToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem chiaSẻFileToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem xóaFileToolStripMenuItem;
+        private System.Windows.Forms.FlowLayoutPanel MyFileLayoutPanel;
+        private System.Windows.Forms.Label lblFileName;
+        private System.Windows.Forms.Label lblOwner;
+        private System.Windows.Forms.Label lblCreateAt;
+        private System.Windows.Forms.Label label1;
     }
 }
