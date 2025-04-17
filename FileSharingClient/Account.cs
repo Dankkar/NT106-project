@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net.Sockets;
+using System.IO;
 
 namespace FileSharingClient
 {
@@ -20,16 +21,13 @@ namespace FileSharingClient
 
         private void lblUsername_Click(object sender, EventArgs e)
         {
-
         }
+
         public void SetAccountInfo(string username, string storageUsed)
         {
             lblUsername.Text = $"Tên đăng nhập: {username}";
             lblStorage.Text = $"Dung lượng đã sử dụng: {storageUsed}";
         }
-
-
-
 
         private async void btnChangePassword_Click(object sender, EventArgs e)
         {
@@ -51,21 +49,24 @@ namespace FileSharingClient
 
             // Gửi yêu cầu đổi mật khẩu đến server
             string response = await ChangePassword(Session.LoggedInUser, oldPassword, newPassword);
-            switch (response)
+            this.Invoke(new Action(() =>
             {
-                case "SUCCESS":
-                    MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    break;
-                case "WRONG_PASSWORD":
-                    MessageBox.Show("Mật khẩu cũ không đúng!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
-                case "ERROR":
-                    MessageBox.Show("Lỗi khi đổi mật khẩu!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
-                default:
-                    MessageBox.Show("Phản hồi không xác định từ server!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
-            }
+                switch (response)
+                {
+                    case "200":
+                        MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        break;
+                    case "401":
+                        MessageBox.Show("Mật khẩu cũ không đúng!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case "500":
+                        MessageBox.Show("Lỗi server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    default:
+                        MessageBox.Show($"Phản hồi không xác định từ server: {response}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                }
+            }));
         }
 
         private async Task<string> ChangePassword(string username, string oldPassword, string newPassword)
@@ -74,25 +75,27 @@ namespace FileSharingClient
             {
                 using (TcpClient client = new TcpClient("127.0.0.1", 5000))
                 using (NetworkStream stream = client.GetStream())
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 {
                     // Gửi yêu cầu đổi mật khẩu
-                    string message = $"CHANGE_PASSWORD|{username}|{oldPassword}|{newPassword}";
-                    byte[] data = Encoding.UTF8.GetBytes(message + "\n");
-                    await stream.WriteAsync(data, 0, data.Length);
+                    string message = $"CHANGE_PASSWORD|{username}|{oldPassword}|{newPassword}\n";
+                    await writer.WriteLineAsync(message);
 
                     // Nhận phản hồi từ server
-                    byte[] buffer = new byte[1024];
-                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    return Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+                    string response = await reader.ReadLineAsync();
+                    return response?.Trim() ?? "500";
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi kết nối server: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return "ERROR";
+                this.Invoke(new Action(() =>
+                {
+                    MessageBox.Show($"Lỗi kết nối server: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }));
+                return "500";
             }
         }
-
 
         // Class để hiển thị hộp thoại nhập liệu
         public static class Prompt
