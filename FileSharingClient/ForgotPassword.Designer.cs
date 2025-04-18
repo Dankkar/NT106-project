@@ -65,6 +65,7 @@
             this.btnSendOTP.TabIndex = 2;
             this.btnSendOTP.Text = "Gửi OTP";
             this.btnSendOTP.UseVisualStyleBackColor = true;
+            this.btnSendOTP.Click += new System.EventHandler(this.btnSendOTP_Click); // Dòng mới
             // 
             // lblOTP
             // 
@@ -93,6 +94,7 @@
             this.btnVerifyOTP.Text = "Xác nhận OTP";
             this.btnVerifyOTP.UseVisualStyleBackColor = true;
             this.btnVerifyOTP.Visible = false;
+            this.btnVerifyOTP.Click += new System.EventHandler(this.btnVerifyOTP_Click); // Dòng mới
             // 
             // lblNewPassword
             // 
@@ -141,6 +143,7 @@
             this.btnResetPassword.Text = "Đặt lại mật khẩu";
             this.btnResetPassword.UseVisualStyleBackColor = true;
             this.btnResetPassword.Visible = false;
+            this.btnResetPassword.Click += new System.EventHandler(this.btnResetPassword_Click); // Dòng mới
             // 
             // ForgotPassword
             // 
@@ -163,7 +166,6 @@
             this.Text = "Quên mật khẩu";
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion

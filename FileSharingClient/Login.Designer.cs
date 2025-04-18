@@ -118,6 +118,8 @@
             this.linkForgotPassword.TabIndex = 10;
             this.linkForgotPassword.TabStop = true;
             this.linkForgotPassword.Text = "Quên mật khẩu ?";
+            this.linkForgotPassword.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkForgotPassword_LinkClicked);
+            this.Controls.Add(this.linkForgotPassword);
             // 
             // label4
             // 
