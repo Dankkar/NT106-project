@@ -12,29 +12,19 @@ namespace FileSharingClient
 {
     public partial class MyFileView: UserControl
     {
-        private ContextMenuStrip contextMenuStripOptions;
         public MyFileView()
         {
             InitializeComponent();
-            MyFile_dataGridView.CellMouseClick += MyFile_dataGridView_CellMouseClick;
-            contextMenuStripOptions = new ContextMenuStrip();
-            contextMenuStripOptions.Items.Add("Chia sẻ File");
-            contextMenuStripOptions.Items.Add("Xóa file");
-            contextMenuStripOptions.Items.Add("Tải File về");
+            MyFileLayoutPanel.FlowDirection = FlowDirection.LeftToRight;
+            MyFileLayoutPanel.AutoScroll = true;
+            
+
         }
 
-        private void MyFile_dataGridView_CellMouseClick (object sender, DataGridViewCellMouseEventArgs e)
+        public void AddFileToView(string fileName, string createAt, string owner, string filesize)
         {
-            if (e.Button == MouseButtons.Left && e.RowIndex >= 0 && e.ColumnIndex == 4)
-            {
-
-                //(Tùy chọn) Chọn dòng hiện tại
-                MyFile_dataGridView.ClearSelection();
-                MyFile_dataGridView.Rows[e.RowIndex].Selected = true;
-
-                //Hiển thị ContextMenuStrip tại vị trí con trỏ chuột
-                contextMenuStrip2.Show(Cursor.Position);
-            }
+            var fileItem = new FileItemControl(fileName, createAt, owner, filesize);
+            MyFileLayoutPanel.Controls.Add(fileItem);
         }
 
         

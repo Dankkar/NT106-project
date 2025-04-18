@@ -21,8 +21,6 @@ namespace FileSharingClient
         private bool isForgotPasswordOpen = false;
         private string username = "Tên đăng nhập";
         private string password = "Mật khẩu";
-        private TcpClient client;
-        private NetworkStream stream;
         private const string SERVER_IP = "127.0.0.1";
         private const int SERVER_PORT = 5000;
         public Login()
