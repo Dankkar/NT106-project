@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.SQLite;
 using System.IO;
+using System.Data.Common;
 
 namespace FileSharingClient
 {
@@ -16,15 +17,59 @@ namespace FileSharingClient
     {
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
         private static string dbPath = Path.Combine(projectRoot, "test.db");
-        private static string connectionString = $"Data Source={dbPath};Version=3;";
+        private static string connectionString = $"Data Source={dbPath};Version=3;Pooling=False";
+        private bool isBusy = false;
 
         public ShareView()
         {
             InitializeComponent();
-            LoadUploadedFiles(4);
+            LoadUserFiles();
         }
 
-        private void LoadUploadedFiles(int userID)
+
+        private async Task<int> GetUserIdFromSessionAsync()
+        {
+            int userId = -1;
+
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT user_id FROM users WHERE username = @username";
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@username", Session.LoggedInUser);
+                        object result = await cmd.ExecuteScalarAsync();
+                        if (result != null)
+                        {
+                            userId = Convert.ToInt32(result);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            return userId;
+        }
+
+        private async void LoadUserFiles()
+        {
+            int userId = await GetUserIdFromSessionAsync();
+            if (userId != -1)
+            {
+                await LoadUploadedFilesAsync(userId);  // Load files for the logged-in user
+            }
+            else
+            {
+                MessageBox.Show("User information not found", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task LoadUploadedFilesAsync(int userID)
         {
             try
             {
@@ -32,15 +77,15 @@ namespace FileSharingClient
 
                 using (SQLiteConnection conn = new SQLiteConnection(connectionString))
                 {
-                    conn.Open();
-                    string query = "SELECT file_name FROM files WHERE owner_id = @owner_id AND is_shared = 0";
+                    await conn.OpenAsync();
+                    string query = "SELECT file_name FROM files WHERE owner_id = @owner_id";
                     using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@owner_id", userID);
 
-                        using(SQLiteDataReader reader = cmd.ExecuteReader())
+                        using(DbDataReader reader = await cmd.ExecuteReaderAsync())
                         {
-                            while (reader.Read())
+                            while (await reader.ReadAsync())
                             {
                                 string fileName = reader["file_name"].ToString();
                                 cbBrowseFile.Items.Add(fileName);
@@ -61,36 +106,54 @@ namespace FileSharingClient
             PasswordPanel.Visible = false;
         }
 
-        private void btnShare_Click(object sender, EventArgs e)
+        private async void btnShare_Click(object sender, EventArgs e)
         {
+            if (isBusy) return;
+            isBusy = true;
+
             PasswordPanel.Visible = true;
 
-            string selectedFile = cbBrowseFile.SelectedItem.ToString();
+            string selectedFile = cbBrowseFile.SelectedItem?.ToString();
             string sharePass = tbPassword.Text;
 
-            if (UpdateFileShareStatus(selectedFile, sharePass))
+            if (string.IsNullOrEmpty(selectedFile))
             {
-                MessageBox.Show("File đã được chia sẻ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Vui lòng chọn file trước khi chia sẻ.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                isBusy = false;
+                return;
             }
-            else
+
+            try
             {
-                MessageBox.Show("Lỗi khi chia sẻ file!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                bool result = await UpdateFileShareStatusAsync(selectedFile, sharePass);
+                if (result)
+                {
+                    MessageBox.Show("File đã được chia sẻ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Lỗi khi chia sẻ file!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            finally
+            {
+                isBusy = false;
             }
         }
 
-        private bool UpdateFileShareStatus(string fileName, string sharePass)
+        private async Task<bool> UpdateFileShareStatusAsync(string fileName, string sharePass)
         {
             try
             {
                 using (SQLiteConnection conn = new SQLiteConnection(connectionString))
                 {
-                    conn.Open();
+                    await conn.OpenAsync();
                     string updateQuery = "UPDATE files SET share_pass = @sharePass, is_shared = 1 WHERE file_name = @file_name";
                     using (SQLiteCommand cmd = new SQLiteCommand(updateQuery, conn))
                     {
                         cmd.Parameters.AddWithValue("@file_name", fileName);
                         cmd.Parameters.AddWithValue("@sharePass", sharePass);
-                        int rowAffected = cmd.ExecuteNonQuery();
+                        int rowAffected = await cmd.ExecuteNonQueryAsync();
 
                         return rowAffected > 0;
                     }
@@ -104,39 +167,39 @@ namespace FileSharingClient
             }
         }
 
-        private void cbBrowseFile_SelectedIndexChanged(object sender, EventArgs e)
+        private async void cbBrowseFile_SelectedIndexChanged(object sender, EventArgs e)
         {
             string selectedFile = cbBrowseFile.SelectedItem.ToString();
 
-            string sharePass = GetSharePass(selectedFile);
+            string sharePass = await GetSharePass(selectedFile);
             tbPassword.Text = sharePass;
         }
 
-        private string GetSharePass(string fileName)
+        private async Task<string> GetSharePass(string fileName)
         {
             string sharePass = string.Empty;
 
             try
             {
-                using(SQLiteConnection conn = new SQLiteConnection(connectionString))
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
                 {
-                    conn.Open();
+                    await conn.OpenAsync();
                     string query = "SELECT share_pass FROM files WHERE file_name = @file_name";
                     using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@file_name", fileName);
+                        object result = await cmd.ExecuteScalarAsync();
 
-                        object result = cmd.ExecuteScalar();
-                        if(result != null)
+                        if (result != null)
                         {
                             sharePass = result.ToString();
                         }
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                MessageBox.Show($"Loi lay share_pass: {ex.Message}", "Loi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi lấy share_pass: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             return sharePass;
