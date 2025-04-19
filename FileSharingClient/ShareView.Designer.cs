@@ -56,7 +56,7 @@
             this.ShareWithPanel.Controls.Add(this.lblFileToShare);
             this.ShareWithPanel.Controls.Add(this.lblShareWith);
             this.ShareWithPanel.Location = new System.Drawing.Point(6, 0);
-            this.ShareWithPanel.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.ShareWithPanel.Margin = new System.Windows.Forms.Padding(6);
             this.ShareWithPanel.Name = "ShareWithPanel";
             this.ShareWithPanel.Size = new System.Drawing.Size(548, 716);
             this.ShareWithPanel.TabIndex = 0;
@@ -65,7 +65,7 @@
             // 
             this.btnShare.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.btnShare.Location = new System.Drawing.Point(169, 338);
-            this.btnShare.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.btnShare.Margin = new System.Windows.Forms.Padding(6);
             this.btnShare.Name = "btnShare";
             this.btnShare.Size = new System.Drawing.Size(191, 89);
             this.btnShare.TabIndex = 4;
@@ -78,7 +78,7 @@
             this.PasswordPanel.Controls.Add(this.tbPassword);
             this.PasswordPanel.Controls.Add(this.lblPassword);
             this.PasswordPanel.Location = new System.Drawing.Point(40, 462);
-            this.PasswordPanel.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.PasswordPanel.Margin = new System.Windows.Forms.Padding(6);
             this.PasswordPanel.Name = "PasswordPanel";
             this.PasswordPanel.Size = new System.Drawing.Size(447, 214);
             this.PasswordPanel.TabIndex = 3;
@@ -86,7 +86,7 @@
             // tbPassword
             // 
             this.tbPassword.Location = new System.Drawing.Point(226, 52);
-            this.tbPassword.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.tbPassword.Margin = new System.Windows.Forms.Padding(6);
             this.tbPassword.Name = "tbPassword";
             this.tbPassword.ReadOnly = true;
             this.tbPassword.Size = new System.Drawing.Size(180, 29);
@@ -107,7 +107,7 @@
             // 
             this.cbBrowseFile.FormattingEnabled = true;
             this.cbBrowseFile.Location = new System.Drawing.Point(266, 159);
-            this.cbBrowseFile.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.cbBrowseFile.Margin = new System.Windows.Forms.Padding(6);
             this.cbBrowseFile.Name = "cbBrowseFile";
             this.cbBrowseFile.Size = new System.Drawing.Size(218, 32);
             this.cbBrowseFile.TabIndex = 2;
@@ -143,7 +143,7 @@
             this.GetSharePanel.Controls.Add(this.lblInputPassword);
             this.GetSharePanel.Controls.Add(this.lblGetFile);
             this.GetSharePanel.Location = new System.Drawing.Point(566, 0);
-            this.GetSharePanel.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.GetSharePanel.Margin = new System.Windows.Forms.Padding(6);
             this.GetSharePanel.Name = "GetSharePanel";
             this.GetSharePanel.Size = new System.Drawing.Size(524, 716);
             this.GetSharePanel.TabIndex = 1;
@@ -152,17 +152,18 @@
             // 
             this.btnGet.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.btnGet.Location = new System.Drawing.Point(167, 338);
-            this.btnGet.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.btnGet.Margin = new System.Windows.Forms.Padding(6);
             this.btnGet.Name = "btnGet";
             this.btnGet.Size = new System.Drawing.Size(191, 89);
             this.btnGet.TabIndex = 5;
             this.btnGet.Text = "Get";
             this.btnGet.UseVisualStyleBackColor = true;
+            this.btnGet.Click += new System.EventHandler(this.btnGet_Click);
             // 
             // tbInputPassword
             // 
             this.tbInputPassword.Location = new System.Drawing.Point(280, 155);
-            this.tbInputPassword.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.tbInputPassword.Margin = new System.Windows.Forms.Padding(6);
             this.tbInputPassword.Name = "tbInputPassword";
             this.tbInputPassword.Size = new System.Drawing.Size(180, 29);
             this.tbInputPassword.TabIndex = 2;
@@ -205,7 +206,7 @@
             this.Controls.Add(this.label1);
             this.Controls.Add(this.GetSharePanel);
             this.Controls.Add(this.ShareWithPanel);
-            this.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.Margin = new System.Windows.Forms.Padding(6);
             this.Name = "ShareView";
             this.Size = new System.Drawing.Size(1102, 724);
             this.Load += new System.EventHandler(this.ShareView_Load);

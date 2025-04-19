@@ -204,5 +204,10 @@ namespace FileSharingClient
 
             return sharePass;
         }
+
+        private void btnGet_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
