@@ -34,33 +34,36 @@
             this.label3 = new System.Windows.Forms.Label();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.linkForgotPassword = new System.Windows.Forms.LinkLabel();
+            this.label4 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.label4 = new System.Windows.Forms.Label();
-            this.forgotPassword = new System.Windows.Forms.LinkLabel();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // usernametxtBox
             // 
-            this.usernametxtBox.Location = new System.Drawing.Point(38, 108);
+            this.usernametxtBox.Location = new System.Drawing.Point(57, 166);
+            this.usernametxtBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.usernametxtBox.Name = "usernametxtBox";
-            this.usernametxtBox.Size = new System.Drawing.Size(257, 20);
+            this.usernametxtBox.Size = new System.Drawing.Size(384, 26);
             this.usernametxtBox.TabIndex = 0;
             // 
             // passtxtBox
             // 
-            this.passtxtBox.Location = new System.Drawing.Point(38, 157);
+            this.passtxtBox.Location = new System.Drawing.Point(57, 242);
+            this.passtxtBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.passtxtBox.Name = "passtxtBox";
-            this.passtxtBox.Size = new System.Drawing.Size(257, 20);
+            this.passtxtBox.Size = new System.Drawing.Size(384, 26);
             this.passtxtBox.TabIndex = 3;
             // 
             // btnLogin
             // 
             this.btnLogin.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnLogin.Location = new System.Drawing.Point(107, 225);
+            this.btnLogin.Location = new System.Drawing.Point(160, 346);
+            this.btnLogin.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnLogin.Name = "btnLogin";
-            this.btnLogin.Size = new System.Drawing.Size(122, 40);
+            this.btnLogin.Size = new System.Drawing.Size(183, 62);
             this.btnLogin.TabIndex = 4;
             this.btnLogin.Text = "Đăng nhập";
             this.btnLogin.UseVisualStyleBackColor = true;
@@ -69,18 +72,20 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(60, 279);
+            this.label3.Location = new System.Drawing.Point(90, 429);
+            this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(124, 13);
+            this.label3.Size = new System.Drawing.Size(180, 20);
             this.label3.TabIndex = 5;
             this.label3.Text = "Bạn chưa có tài khoản ?";
             // 
             // linkLabel1
             // 
             this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(190, 279);
+            this.linkLabel1.Location = new System.Drawing.Point(285, 429);
+            this.linkLabel1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.Size = new System.Drawing.Size(73, 13);
+            this.linkLabel1.Size = new System.Drawing.Size(105, 20);
             this.linkLabel1.TabIndex = 6;
             this.linkLabel1.TabStop = true;
             this.linkLabel1.Text = "Đăng ký ngay";
@@ -88,7 +93,7 @@
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.forgotPassword);
+            this.panel1.Controls.Add(this.linkForgotPassword);
             this.panel1.Controls.Add(this.label4);
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.label1);
@@ -97,19 +102,43 @@
             this.panel1.Controls.Add(this.passtxtBox);
             this.panel1.Controls.Add(this.label3);
             this.panel1.Controls.Add(this.btnLogin);
-            this.panel1.Location = new System.Drawing.Point(12, 12);
+            this.panel1.Location = new System.Drawing.Point(18, 18);
+            this.panel1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(344, 421);
+            this.panel1.Size = new System.Drawing.Size(516, 648);
             this.panel1.TabIndex = 7;
+            // 
+            // linkForgotPassword
+            // 
+            this.linkForgotPassword.AutoSize = true;
+            this.linkForgotPassword.Location = new System.Drawing.Point(188, 472);
+            this.linkForgotPassword.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.linkForgotPassword.Name = "linkForgotPassword";
+            this.linkForgotPassword.Size = new System.Drawing.Size(131, 20);
+            this.linkForgotPassword.TabIndex = 10;
+            this.linkForgotPassword.TabStop = true;
+            this.linkForgotPassword.Text = "Quên mật khẩu ?";
+            this.linkForgotPassword.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkForgotPassword_LinkClicked);
+            this.Controls.Add(this.linkForgotPassword);
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(90, 472);
+            this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(0, 20);
+            this.label4.TabIndex = 9;
             // 
             // label2
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Segoe UI Semibold", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label2.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
-            this.label2.Location = new System.Drawing.Point(111, 53);
+            this.label2.Location = new System.Drawing.Point(166, 82);
+            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(118, 30);
+            this.label2.Size = new System.Drawing.Size(181, 45);
             this.label2.TabIndex = 8;
             this.label2.Text = "Đăng nhập";
             // 
@@ -118,37 +147,21 @@
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Segoe UI Semibold", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.ForeColor = System.Drawing.Color.Maroon;
-            this.label1.Location = new System.Drawing.Point(84, 13);
+            this.label1.Location = new System.Drawing.Point(126, 20);
+            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(169, 30);
+            this.label1.Size = new System.Drawing.Size(257, 45);
             this.label1.TabIndex = 7;
             this.label1.Text = "File Sharing App";
             // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(60, 307);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(0, 13);
-            this.label4.TabIndex = 9;
-            // 
-            // forgotPassword
-            // 
-            this.forgotPassword.AutoSize = true;
-            this.forgotPassword.Location = new System.Drawing.Point(125, 307);
-            this.forgotPassword.Name = "forgotPassword";
-            this.forgotPassword.Size = new System.Drawing.Size(89, 13);
-            this.forgotPassword.TabIndex = 10;
-            this.forgotPassword.TabStop = true;
-            this.forgotPassword.Text = "Quên mật khẩu ?";
-            // 
             // Login
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.AntiqueWhite;
-            this.ClientSize = new System.Drawing.Size(370, 445);
+            this.ClientSize = new System.Drawing.Size(555, 685);
             this.Controls.Add(this.panel1);
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "Login";
             this.Text = "Login";
             this.panel1.ResumeLayout(false);
@@ -167,7 +180,7 @@
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.LinkLabel forgotPassword;
+        private System.Windows.Forms.LinkLabel linkForgotPassword;
         private System.Windows.Forms.Label label4;
     }
 }
