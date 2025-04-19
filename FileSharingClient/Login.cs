@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Data.SQLite;
 
 namespace FileSharingClient
 {
@@ -23,6 +24,9 @@ namespace FileSharingClient
         private string password = "Mật khẩu";
         private const string SERVER_IP = "127.0.0.1";
         private const int SERVER_PORT = 5000;
+        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+        private static string dbPath = Path.Combine(projectRoot, "test.db");
+        private static string connectionString = $"Data Source={dbPath};Version=3;";
         public Login()
         {
             InitializeComponent();
@@ -35,6 +39,20 @@ namespace FileSharingClient
             passtxtBox.ForeColor = Color.Gray;
             passtxtBox.Enter += passtxtBox_Enter;
             passtxtBox.Leave += passtxtBox_Leave;
+            SetWALModeAsync();
+        }
+
+        private async Task SetWALModeAsync()
+        {
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+            {
+                await conn.OpenAsync();
+                string query = "PRAGMA journal_mode = WAL;";
+                using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+                {
+                    await cmd.ExecuteNonQueryAsync();  // Apply WAL mode to improve concurrency
+                }
+            }
         }
         private void usernametxtBox_Enter(object sender, EventArgs e)
         {
@@ -106,6 +124,7 @@ namespace FileSharingClient
             await HandleLogin();
         }
 
+
         private async Task HandleLogin()
         {
             try
@@ -140,7 +159,7 @@ namespace FileSharingClient
                     // Cập nhật giao diện theo status code nhận được
                     if (int.TryParse(response, out statusCode))
                     {
-                        this.Invoke(new Action(() =>
+                        this.Invoke(new Action(async () =>
                         {
                             switch (statusCode)
                             {
@@ -148,7 +167,6 @@ namespace FileSharingClient
                                     Session.LoggedInUser = username;
                                     MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                     this.Hide();
-
                                     // Mở giao diện chính
                                     Main mainform = new Main();
                                     mainform.Show();

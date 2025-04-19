@@ -206,9 +206,7 @@ namespace FileSharingClient
                             {
                                 case 201:
                                     MessageBox.Show("Đăng ký thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                    this.Hide();
-                                    Main mainform = new Main();
-                                    mainform.Show();
+                                    
                                     this.Close();
                                     break;
                                 case 409:
