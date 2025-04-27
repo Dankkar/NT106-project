@@ -25,6 +25,13 @@ namespace FileSharingServer
             server.Start();
             Console.WriteLine("Server đang lắng nghe trên cổng 5000...");
 
+            string uploadsPath = Path.Combine(projectRoot, "uploads");
+            if (!Directory.Exists(uploadsPath))
+            {
+                Directory.CreateDirectory(uploadsPath);
+                Console.WriteLine("Đã tạo thư mục uploads.");
+            }
+
             while (true)
             {
                 TcpClient client = await server.AcceptTcpClientAsync();
