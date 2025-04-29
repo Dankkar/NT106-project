@@ -88,10 +88,19 @@ namespace FileSharingClient
                             }
                         }
                     }
-                }
-                if (cbBrowseFile.Items.Count > 0)
-                {
-                    cbBrowseFile.SelectedIndex = 0;
+                    string querySharedFiles = "SELECT f.file_name FROM files_share fs JOIN files f ON fs.file_id = f.file_id WHERE fs.user_id = @user_id";
+                    using (SQLiteCommand cmd = new SQLiteCommand(querySharedFiles, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@user_id", currentUserId);
+                        using(DbDataReader reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while(await reader.ReadAsync())
+                            {
+                                string shareFileName = reader["file_name"].ToString();
+                                cbBrowseFile.Items.Add(shareFileName);
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -115,11 +124,22 @@ namespace FileSharingClient
                 using (var conn = new SQLiteConnection(connectionString))
                 {
                     await conn.OpenAsync();
-                    string query = "SELECT file_path, file_type FROM files WHERE file_name = @fileName AND owner_id = @ownerId";
+                    string query = @"
+                        SELECT f.file_path, f.file_type
+                        FROM files f
+                        WHERE f.file_name = @fileName
+                        AND (
+                            f.owner_id = @userId
+                            OR f.file_id IN (
+                                SELECT fs.file_id FROM files_share fs WHERE fs.user_id = @userId
+                            )
+                        )
+                        LIMIT 1
+                    ";
                     using (var cmd = new SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@fileName", filename);
-                        cmd.Parameters.AddWithValue("@ownerId", currentUserId);
+                        cmd.Parameters.AddWithValue("@userId", currentUserId);
 
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
