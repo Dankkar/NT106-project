@@ -78,8 +78,10 @@ namespace FileSharingClient
                 using (SQLiteConnection conn = new SQLiteConnection(connectionString))
                 {
                     await conn.OpenAsync();
-                    string query = "SELECT file_name FROM files WHERE owner_id = @owner_id";
-                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+
+                    // Lay cac file cua nguoi dung tu bang files
+                    string queryUserFiles = "SELECT file_name FROM files WHERE owner_id = @owner_id";
+                    using (SQLiteCommand cmd = new SQLiteCommand(queryUserFiles, conn))
                     {
                         cmd.Parameters.AddWithValue("@owner_id", userID);
 
@@ -92,6 +94,21 @@ namespace FileSharingClient
                             }
                         }
                     }
+
+                    string querySharedFiles = "SELECT f.file_name FROM files_share fs JOIN files f ON fs.file_id = f.file_id WHERE fs.user_id = @user_id";
+                    using (SQLiteCommand cmd = new SQLiteCommand(querySharedFiles, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@user_id", userID);
+                        using (DbDataReader reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                string sharedFileName = reader["file_name"].ToString();
+                                cbBrowseFile.Items.Add(sharedFileName);
+                            }
+                        }
+                    }
+
                 }
             }
             catch(Exception ex)
@@ -122,6 +139,8 @@ namespace FileSharingClient
                 isBusy = false;
                 return;
             }
+
+
 
             try
             {
@@ -205,9 +224,111 @@ namespace FileSharingClient
             return sharePass;
         }
 
-        private void btnGet_Click(object sender, EventArgs e)
+        private async void btnGet_Click(object sender, EventArgs e)
         {
+            string sharePass = tbInputPassword.Text;
 
+            // Kiem tra neu mat khau trong
+            if (string.IsNullOrEmpty(sharePass))
+            {
+                MessageBox.Show("Vui long nhap mat khau chia se", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            // Lay thong tin file_id va owner_id tu share_pass
+            (int fileId, int ownerId) = await GetFileInfoFromSharePassAsync(sharePass);
+
+            if(fileId == -1)
+            {
+                MessageBox.Show("Mat khau chia se khong hop le", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Lay user_id cua nguoi dung hien tai
+            int userId = await GetUserIdFromSessionAsync();
+
+            // Kiem tra neu client da la owner cua file, khong them ban ghi vao db
+            if(userId == ownerId)
+            {
+                MessageBox.Show("Ban la chu so huu cua file nay. Khong can chia se lai.");
+                return;
+            }
+
+
+            // Them ban ghi vao "files_share" de chia se file voi nguoi dung
+            bool result = await AddFileShareEntryAsync(fileId, userId, sharePass);
+            if (result)
+            {
+                MessageBox.Show("Ban da co quyen truy cap vao file nay", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadUserFiles();
+            }
+            else
+            {
+                MessageBox.Show("Loi khi chia se file 1", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // Truy van thong tin file_od va owner_id tu mat khau chia se
+        private async Task<(int, int)> GetFileInfoFromSharePassAsync(string sharePass)
+        {
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT file_id, owner_id, share_pass FROM files WHERE share_pass = @share_pass";
+                    using(SQLiteCommand cmd = new SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@share_pass", sharePass);
+                        using(DbDataReader reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if(await reader.ReadAsync())
+                            {
+                                int fileId = Convert.ToInt32(reader["file_id"]);
+                                int ownerId = Convert.ToInt32(reader["owner_id"]);
+                                string dbSharePass = reader["share_pass"].ToString();
+
+                                // Neu mat khau chia trong db trung voi mat khau nguoi dung nhap, tra ve file_id va owner_id
+                                if(dbSharePass == sharePass)
+                                {
+                                    return (fileId, ownerId);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show($"Loi khi lay thong tin file: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return (-1, -1); // Tra ve (-1, -1_) neu khong tim thay hoac mat khau khong khop
+        }
+
+        // Them ban ghi vao "files_share" de chia se file voi nguoi dung
+        private async Task<bool> AddFileShareEntryAsync(int fileId, int userId, string sharePass)
+        {
+            try
+            {
+                using(SQLiteConnection conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "INSERT INTO files_share (file_id, user_id, share_pass) VALUES (@file_id, @user_id, @share_pass)";
+                    using(SQLiteCommand cmd = new SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@file_id", fileId);
+                        cmd.Parameters.AddWithValue("@user_id", userId);
+                        cmd.Parameters.AddWithValue("@share_pass", sharePass);
+
+                        await cmd.ExecuteNonQueryAsync(); // Them thogn tin chia se vao co so du lieu
+                    }
+                }
+                return true;
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show($"Loi khi chia se file 2 {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
         }
     }
 }
