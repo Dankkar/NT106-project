@@ -67,10 +67,10 @@ namespace FileSharingClient
                         {
                             byte[] fileBytes = File.ReadAllBytes(filePath);
                             string fileName = Path.GetFileName(filePath);
-                            string owner = Session.LoggedInUser;
+                            int ownerId = Session.LoggedInUserId;
                             string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-                            string command = $"UPLOAD|{fileName}|{fileBytes.Length}|{owner}|{uploadAt}\n";
+                            string command = $"UPLOAD|{fileName}|{fileBytes.Length}|{ownerId}|{uploadAt}\n";
                             byte[] commandBytes = Encoding.UTF8.GetBytes(command);
 
                             await stream.WriteAsync(commandBytes, 0, commandBytes.Length);

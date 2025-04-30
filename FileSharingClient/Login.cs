@@ -165,6 +165,7 @@ namespace FileSharingClient
                             {
                                 case 200:
                                     Session.LoggedInUser = username;
+                                    Session.LoggedInUserId = await GetUserIdFromLocalAsync(username);
                                     MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                     this.Hide();
                                     // Mở giao diện chính
@@ -203,10 +204,32 @@ namespace FileSharingClient
                 }));
             }
         }
+        private async Task<int> GetUserIdFromLocalAsync(string username)
+        {
+            try
+            {
+                using (var conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT user_id FROM users WHERE username = @username";
+                    using (var cmd = new SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@username", username);
+                        object result = await cmd.ExecuteScalarAsync();
+                        return result != null ? Convert.ToInt32(result) : -1;
+                    }
+                }
+            }
+            catch
+            {
+                return -1;
+            }
+        }
     }
 
     public static class Session
     {
         public static string LoggedInUser { get; set; } = "Anonymous";
+        public static int LoggedInUserId { get; set; } = -1;
     }
 }

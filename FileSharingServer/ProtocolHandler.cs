@@ -101,9 +101,9 @@ namespace FileSharingServer
                     string resetEmail = parts[1];
                     string newPasswordReset = parts[2];
                     return await OTPService.ResetPassword(resetEmail, newPasswordReset);
-                /*case "UPLOAD":
+                case "UPLOAD":
                     if (parts.Length != 5) return "400\n";
-                    return await ReceiveFile(parts[1], int.Parse(parts[2]), parts[3], parts[4], stream);*/
+                    return await FileService.ReceiveFile(parts[1], int.Parse(parts[2]), parts[3], parts[4], stream);
                 default:
                     return "400\n";
             }
