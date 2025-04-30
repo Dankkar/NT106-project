@@ -12,6 +12,7 @@ namespace FileSharingServer
 {
     internal class Program
     {
+        /*
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
         private static string dbPath = Path.Combine(projectRoot, "test.db");
         private static string connectionString = $"Data Source={dbPath};Version=3;";
@@ -449,6 +450,16 @@ namespace FileSharingServer
                 var hash = sha256.ComputeHash(stream);
                 return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
             }
+        }
+        */
+        static async Task Main()
+        {
+            // Tao thu muc Uploads
+            var root = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+            Directory.CreateDirectory(Path.Combine(root, "uploads"));
+
+            // Start server
+            await new ProtocolHandler().StartAsync();
         }
     }
  }
