@@ -12,6 +12,7 @@ namespace FileSharingServer
 {
     internal class Program
     {
+        /*
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
         private static string dbPath = Path.Combine(projectRoot, "test.db");
         private static string connectionString = $"Data Source={dbPath};Version=3;";
@@ -76,7 +77,7 @@ namespace FileSharingServer
 
                     Console.WriteLine($"Nhận từ Client: {request}");
 
-                    string response = await ProcessRequest(request);
+                    string response = await ProcessRequest(request, stream);
                     await writer.WriteLineAsync(response);
                 }
             }
@@ -91,7 +92,7 @@ namespace FileSharingServer
             }
         }
 
-        static async Task<string> ProcessRequest(string request)
+        static async Task<string> ProcessRequest(string request, NetworkStream stream)
         {
             string[] parts = request.Split('|');
             if (parts.Length == 0)
@@ -134,6 +135,9 @@ namespace FileSharingServer
                     string resetEmail = parts[1];
                     string newPasswordReset = parts[2];
                     return await ResetPassword(resetEmail, newPasswordReset);
+                case "UPLOAD":
+                    if (parts.Length != 5) return "400\n";
+                    return await ReceiveFile(parts[1], int.Parse(parts[2]), parts[3], parts[4], stream);
                 default:
                     return "400\n";
             }
@@ -381,5 +385,81 @@ namespace FileSharingServer
                 return "500\n"; // Internal Server Error
             }
         }
+
+        static async Task<string> ReceiveFile(string fileName, int fileSize, string ownerId, string uploadTime, NetworkStream stream)
+        {
+            try
+            {
+                string uploadDir = Path.Combine(projectRoot, "uploads");
+                if (!Directory.Exists(uploadDir))
+                    Directory.CreateDirectory(uploadDir);
+
+                string filePath = Path.Combine(uploadDir, fileName);
+                byte[] buffer = new byte[4096];
+                int totalRead = 0;
+
+                using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                {
+                    while(totalRead < fileSize)
+                    {
+                        int bytesRead = await stream.ReadAsync(buffer, 0, Math.Min(buffer.Length, fileSize - totalRead));
+                        if (bytesRead == 0) break;
+                        await fs.WriteAsync(buffer, 0, bytesRead);
+                        totalRead += bytesRead;
+                    }
+                }
+                Console.WriteLine($"Da nhan: {totalRead}/{fileSize} bytes");
+                string fileHash = CalculateSHA256(filePath);
+
+                if(totalRead == fileSize)
+                {
+                    using(SQLiteConnection conn = new SQLiteConnection(connectionString))
+                    {
+                        await conn.OpenAsync();
+                        string insertQuery = "INSERT INTO files (file_name, upload_at, owner_id, file_size, file_type, file_path, file_hash) VALUES (@fileName, @uploadTime, @ownerId, @fileSize, @fileType, @filePath, @fileHash)";
+                        using (SQLiteCommand cmd = new SQLiteCommand(insertQuery, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@fileName", fileName);
+                            cmd.Parameters.AddWithValue("@uploadTime", uploadTime);
+                            cmd.Parameters.AddWithValue("@ownerId", ownerId);
+                            cmd.Parameters.AddWithValue("@fileSize", fileSize);
+                            cmd.Parameters.AddWithValue("@fileType", Path.GetExtension(fileName).TrimStart('.').ToLower());
+                            cmd.Parameters.AddWithValue("@filePath", Path.Combine("uploads", fileName));
+                            cmd.Parameters.AddWithValue("@fileHash", fileHash);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                    return "200\n";
+                }
+                else
+                {
+                    return "400\n";
+                }
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Loi luu file {ex.Message}");
+                return "500\n";
+            }
+        }
+        static string CalculateSHA256(string filePath)
+        {
+            using(var sha256 = System.Security.Cryptography.SHA256.Create())
+            using(var stream = File.OpenRead(filePath))
+            {
+                var hash = sha256.ComputeHash(stream);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
+        */
+        static async Task Main()
+        {
+            // Tao thu muc Uploads
+            var root = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+            Directory.CreateDirectory(Path.Combine(root, "uploads"));
+
+            // Start server
+            await new ProtocolHandler().StartAsync();
+        }
     }
-}
+ }

@@ -27,6 +27,9 @@ namespace FileSharingClient
             MyFileLayoutPanel.Controls.Add(fileItem);
         }
 
-        
+        private void MyFileLayoutPanel_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
     }
 }
