@@ -93,15 +93,27 @@ namespace FileSharingClient
                             using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                             {
                                 string response = await reader.ReadLineAsync();
-                                MessageBox.Show($"Server tra ve: {response}");
+                                Console.WriteLine($"Server tra ve: {response}");
+
+                                // Kiem tra phan hoi va thong bao (neu can)
+                                if (response.Trim() == "413")
+                                {
+                                    MessageBox.Show($"File {fileName} qua lon. Vui long thu lai voi file nho hon,");
+                                }
+                                else
+                                {
+                                    MessageBox.Show($"Tai len thanh cong {fileName}");
+                                }
                             }
                         }
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    MessageBox.Show($"Lỗi upload file {filePath}: {ex.Message}");
+                    // Thêm thông báo chi tiết hơn về lỗi
+                    MessageBox.Show($"Lỗi upload file {filePath}: {ex.Message}\nStack Trace: {ex.StackTrace}");
                 }
+
             }
             pendingFiles.Clear();
         }
