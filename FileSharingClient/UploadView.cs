@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.IO;
 using System.Data.SQLite;
 using System.Net.Sockets;
+using System.IO.Compression;
 
 namespace FileSharingClient
 {
@@ -57,6 +58,14 @@ namespace FileSharingClient
         private async void btnUpload_Click(object sender, EventArgs e)
         {
             var filesToUpload = new List<string>(pendingFiles);
+
+            // Neu co nhieu file -> nen lai
+            if(filesToUpload.Count > 1)
+            {
+                string zipFilePath = CompressFiles(filesToUpload);
+                filesToUpload = new List<string> { zipFilePath };
+            }
+
             foreach(var filePath in filesToUpload)
             {
                 try
@@ -119,6 +128,19 @@ namespace FileSharingClient
 
             AddFileToView(fileName, uploadAt, owner, fileSize);
             pendingFiles.Add(filePath);
+        }
+
+        private string CompressFiles(List<string> filesToCompress)
+        {
+            string zipFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".zip");
+            using (var zip = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
+            {
+                foreach (var file in filesToCompress)
+                {
+                    zip.CreateEntryFromFile(file, Path.GetFileName(file));
+                }
+            }
+            return zipFilePath;
         }
     }
 }
