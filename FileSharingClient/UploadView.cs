@@ -100,9 +100,12 @@ namespace FileSharingClient
                                 {
                                     MessageBox.Show($"File {fileName} qua lon. Vui long thu lai voi file nho hon,");
                                 }
+                                else if(response.Trim() == "200"){
+                                    MessageBox.Show($"Tai len thanh cong {fileName}");
+                                }
                                 else
                                 {
-                                    MessageBox.Show($"Tai len thanh cong {fileName}");
+                                    MessageBox.Show($"Loi: {response.Trim()}");
                                 }
                             }
                         }
