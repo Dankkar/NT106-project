@@ -9,10 +9,17 @@ using System.Threading.Tasks;
 
 namespace FileSharingServer
 {
+
     public static class FileService
     {
+        const int MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+
         public static async Task<string> ReceiveFile(string fileName, int fileSize, string ownerId, string uploadTime, NetworkStream stream)
         {
+            if(fileSize > MAX_UPLOAD_SIZE)
+            {
+                return "413\n"; // Payload too large
+            }
             try
             {
                 string uploadDir = Path.Combine(DatabaseHelper.projectRoot, "uploads");
@@ -33,7 +40,6 @@ namespace FileSharingServer
                         totalRead += bytesRead;
                     }
                 }
-                Console.WriteLine($"Da nhan: {totalRead}/{fileSize} bytes");
                 string fileHash = CalculateSHA256(filePath);
 
                 if (totalRead == fileSize)
@@ -54,17 +60,17 @@ namespace FileSharingServer
                             await cmd.ExecuteNonQueryAsync();
                         }
                     }
-                    return "200\n";
+                    return "200\n"; // Success
                 }
                 else
                 {
-                    return "400\n";
+                    return "400\n"; // Bad Request
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Loi luu file {ex.Message}");
-                return "500\n";
+                return "500\n"; // Internal Server Error
             }
         }
         private static string CalculateSHA256(string filePath)
