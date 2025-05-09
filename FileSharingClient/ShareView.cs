@@ -121,6 +121,7 @@ namespace FileSharingClient
         private void ShareView_Load(object sender, EventArgs e)
         {
             PasswordPanel.Visible = false;
+            LoadUserFiles();
         }
 
         private async void btnShare_Click(object sender, EventArgs e)
