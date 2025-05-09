@@ -16,9 +16,6 @@ namespace FileSharingClient
 {
     public partial class UploadView: UserControl
     {
-        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-        private static string dbPath = Path.Combine(projectRoot, "test.db");
-        private static string connectionString = $"Data Source={dbPath};Version=3;Pooling=True";
         private List<string> pendingFiles = new List<string>();
         public UploadView()
         {
@@ -98,10 +95,10 @@ namespace FileSharingClient
                                 // Kiem tra phan hoi va thong bao (neu can)
                                 if (response.Trim() == "413")
                                 {
-                                    MessageBox.Show($"File {fileName} qua lon. Vui long thu lai voi file nho hon,");
+                                    MessageBox.Show($"File qua lon. Vui long thu lai voi file nho hon,");
                                 }
                                 else if(response.Trim() == "200"){
-                                    MessageBox.Show($"Tai len thanh cong {fileName}");
+                                    MessageBox.Show($"Tai len thanh cong");
                                 }
                                 else
                                 {

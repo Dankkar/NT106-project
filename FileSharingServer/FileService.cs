@@ -61,6 +61,17 @@ namespace FileSharingServer
                         // Luu thong tin vao DB voi duong dan la 'uploads/[ten file trong zip]'
                         string filePathInDb = Path.Combine("uploads", extractedFileName);
 
+                        // Di chuyen cac file da giai nen vao folder uploads (khong luu muc con)
+                        string destFilePath = Path.Combine(uploadDir, extractedFileName);
+                        try
+                        {
+                            File.Move(extractedFile, destFilePath); // Di chuyen file giai nen vao thu muc uploads
+                        }
+                        catch(Exception ex)
+                        {
+                            Console.WriteLine($"Loi khi di chuyen file {extractedFileName} : {ex.Message}");
+                        }
+
                         using (SQLiteConnection conn = new SQLiteConnection(DatabaseHelper.connectionString))
                         {
                             await conn.OpenAsync();
@@ -80,6 +91,14 @@ namespace FileSharingServer
                     }
                     // Sau khi giai nen va luu thong tin cac file, xoa file zip goc
                     File.Delete(filePath); // Xoa file zip goc de khong luu lai trong thu muc uploads
+                    try
+                    {
+                        Directory.Delete(extractDir, true); // Xoa thu muc tam chua cac file giai nen
+                    }
+                    catch(Exception ex)
+                    {
+                        Console.WriteLine($"Loi khi xoa thu muc {extractDir} : {ex.Message}");
+                    }
                 }
 
                 else
