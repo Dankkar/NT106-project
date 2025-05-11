@@ -10,14 +10,12 @@ using System.Windows.Forms;
 using System.IO;
 using System.Data.SQLite;
 using System.Net.Sockets;
+using System.IO.Compression;
 
 namespace FileSharingClient
 {
     public partial class UploadView: UserControl
     {
-        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-        private static string dbPath = Path.Combine(projectRoot, "test.db");
-        private static string connectionString = $"Data Source={dbPath};Version=3;Pooling=True";
         private List<string> pendingFiles = new List<string>();
         public UploadView()
         {
@@ -57,6 +55,14 @@ namespace FileSharingClient
         private async void btnUpload_Click(object sender, EventArgs e)
         {
             var filesToUpload = new List<string>(pendingFiles);
+
+            // Neu co nhieu file -> nen lai
+            if(filesToUpload.Count > 1)
+            {
+                string zipFilePath = CompressFiles(filesToUpload);
+                filesToUpload = new List<string> { zipFilePath };
+            }
+
             foreach(var filePath in filesToUpload)
             {
                 try
@@ -89,11 +95,14 @@ namespace FileSharingClient
                                 // Kiem tra phan hoi va thong bao (neu can)
                                 if (response.Trim() == "413")
                                 {
-                                    MessageBox.Show($"File {fileName} qua lon. Vui long thu lai voi file nho hon,");
+                                    MessageBox.Show($"File qua lon. Vui long thu lai voi file nho hon,");
+                                }
+                                else if(response.Trim() == "200"){
+                                    MessageBox.Show($"Tai len thanh cong");
                                 }
                                 else
                                 {
-                                    MessageBox.Show($"Tai len thanh cong {fileName}");
+                                    MessageBox.Show($"Loi: {response.Trim()}");
                                 }
                             }
                         }
@@ -131,6 +140,19 @@ namespace FileSharingClient
 
             AddFileToView(fileName, uploadAt, owner, fileSize);
             pendingFiles.Add(filePath);
+        }
+
+        private string CompressFiles(List<string> filesToCompress)
+        {
+            string zipFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".zip");
+            using (var zip = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
+            {
+                foreach (var file in filesToCompress)
+                {
+                    zip.CreateEntryFromFile(file, Path.GetFileName(file));
+                }
+            }
+            return zipFilePath;
         }
     }
 }
