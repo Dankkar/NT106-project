@@ -181,9 +181,9 @@ namespace FileSharingClient
         }
         private void AddFilesToMyFileView()
         {
-            myfileView.AddFileToView("File1.txt", "Aug 10, 2024", "me", "500 KB");
-            myfileView.AddFileToView("File2.pdf", "Jul 25, 2024", "me", "1.2 MB"); 
-            myfileView.AddFileToView("File3.pdf", "Jul 25, 2024", "hieu", "1.2 MB");
+            //myfileView.AddFileToView("File1.txt", "Aug 10, 2024", "me", "500 KB");
+            //myfileView.AddFileToView("File2.pdf", "Jul 25, 2024", "me", "1.2 MB"); 
+            //myfileView.AddFileToView("File3.pdf", "Jul 25, 2024", "hieu", "1.2 MB");
         }
     }
 }

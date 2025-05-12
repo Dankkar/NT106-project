@@ -35,18 +35,16 @@
             this.Upload_Dashboard = new FontAwesome.Sharp.IconButton();
             this.Share_Dashboard = new FontAwesome.Sharp.IconButton();
             this.MyFile_Dashboard = new FontAwesome.Sharp.IconButton();
-            this.NavBarPanel = new System.Windows.Forms.Panel();
             this.MainContentPanel = new System.Windows.Forms.Panel();
             this.PanelDashboard.SuspendLayout();
-            this.NavBarPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // Account
             // 
-            this.Account.Location = new System.Drawing.Point(666, 27);
+            this.Account.Location = new System.Drawing.Point(24, 917);
             this.Account.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.Account.Name = "Account";
-            this.Account.Size = new System.Drawing.Size(74, 23);
+            this.Account.Size = new System.Drawing.Size(144, 46);
             this.Account.TabIndex = 12;
             this.Account.Text = "Account";
             this.Account.UseVisualStyleBackColor = true;
@@ -55,15 +53,17 @@
             // PanelDashboard
             // 
             this.PanelDashboard.BackColor = System.Drawing.Color.RosyBrown;
+            this.PanelDashboard.Controls.Add(this.Account);
             this.PanelDashboard.Controls.Add(this.FilePreview_Dashboard);
             this.PanelDashboard.Controls.Add(this.TrashBin_Dashboard);
             this.PanelDashboard.Controls.Add(this.Upload_Dashboard);
             this.PanelDashboard.Controls.Add(this.Share_Dashboard);
             this.PanelDashboard.Controls.Add(this.MyFile_Dashboard);
-            this.PanelDashboard.Location = new System.Drawing.Point(0, 88);
+            this.PanelDashboard.Dock = System.Windows.Forms.DockStyle.Left;
+            this.PanelDashboard.Location = new System.Drawing.Point(0, 0);
             this.PanelDashboard.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.PanelDashboard.Name = "PanelDashboard";
-            this.PanelDashboard.Size = new System.Drawing.Size(200, 392);
+            this.PanelDashboard.Size = new System.Drawing.Size(200, 985);
             this.PanelDashboard.TabIndex = 15;
             // 
             // FilePreview_Dashboard
@@ -169,21 +169,12 @@
             this.MyFile_Dashboard.UseVisualStyleBackColor = false;
             this.MyFile_Dashboard.Click += new System.EventHandler(this.MyFile_Dashboard_Click);
             // 
-            // NavBarPanel
-            // 
-            this.NavBarPanel.Controls.Add(this.Account);
-            this.NavBarPanel.Location = new System.Drawing.Point(2, 0);
-            this.NavBarPanel.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.NavBarPanel.Name = "NavBarPanel";
-            this.NavBarPanel.Size = new System.Drawing.Size(805, 82);
-            this.NavBarPanel.TabIndex = 16;
-            // 
             // MainContentPanel
             // 
-            this.MainContentPanel.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            this.MainContentPanel.Location = new System.Drawing.Point(206, 88);
+            this.MainContentPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.MainContentPanel.Location = new System.Drawing.Point(200, 0);
             this.MainContentPanel.Name = "MainContentPanel";
-            this.MainContentPanel.Size = new System.Drawing.Size(601, 392);
+            this.MainContentPanel.Size = new System.Drawing.Size(1704, 985);
             this.MainContentPanel.TabIndex = 17;
             // 
             // Main
@@ -191,9 +182,8 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.AntiqueWhite;
-            this.ClientSize = new System.Drawing.Size(809, 486);
+            this.ClientSize = new System.Drawing.Size(1904, 985);
             this.Controls.Add(this.MainContentPanel);
-            this.Controls.Add(this.NavBarPanel);
             this.Controls.Add(this.PanelDashboard);
             this.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.Name = "Main";
@@ -201,7 +191,6 @@
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Main_Load);
             this.PanelDashboard.ResumeLayout(false);
-            this.NavBarPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -210,7 +199,6 @@
         private System.Windows.Forms.Button Account;
         private System.Windows.Forms.Panel PanelDashboard;
         private FontAwesome.Sharp.IconButton MyFile_Dashboard;
-        private System.Windows.Forms.Panel NavBarPanel;
         private FontAwesome.Sharp.IconButton Upload_Dashboard;
         private FontAwesome.Sharp.IconButton Share_Dashboard;
         private FontAwesome.Sharp.IconButton FilePreview_Dashboard;

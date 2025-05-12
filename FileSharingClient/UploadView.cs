@@ -17,11 +17,15 @@ namespace FileSharingClient
     public partial class UploadView: UserControl
     {
         private List<string> pendingFiles = new List<string>();
+        private long totalSizeBytes = 0;
+        private const int BUFFER_SIZE = 8192; // Match server buffer size
+
         public UploadView()
         {
             InitializeComponent();
             UploadFilePanel.FlowDirection = FlowDirection.LeftToRight;
             UploadFilePanel.AutoScroll = true;
+            AddHeaderRow();
         }
 
 
@@ -33,10 +37,12 @@ namespace FileSharingClient
             return $"{bytes} B";
         }
 
-        public void AddFileToView(string fileName, string createAt, string owner, string filesize)
+        public void AddFileToView(string fileName, string createAt, string owner, string filesize, string filePath)
         {
-            var fileItem = new FileItemControl(fileName, createAt, owner, filesize);
+            var fileItem = new FileItemControl(fileName, createAt, owner, filesize, filePath);
+            fileItem.FileDeleted += OnFileDeleted;
             UploadFilePanel.Controls.Add(fileItem);
+
         }
 
         private void DragPanel_DragDrop(object sender, DragEventArgs e)
@@ -71,39 +77,38 @@ namespace FileSharingClient
                     {
                         using (NetworkStream stream = client.GetStream())
                         {
-                            byte[] fileBytes = File.ReadAllBytes(filePath);
+                            long filesize = new FileInfo(filePath).Length;
                             string fileName = Path.GetFileName(filePath);
                             int ownerId = Session.LoggedInUserId;
                             string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                            string command = $"UPLOAD|{fileName}|{fileBytes.Length}|{ownerId}|{uploadAt}\n";
+                            string command = $"UPLOAD|{fileName}|{filesize}|{ownerId}|{uploadAt}\n";
                             byte[] commandBytes = Encoding.UTF8.GetBytes(command);
-
                             await stream.WriteAsync(commandBytes, 0, commandBytes.Length);
                             await stream.FlushAsync();
                             Console.WriteLine($"Đã gửi lệnh: {command.Trim()}");
 
-                            await stream.WriteAsync(fileBytes, 0, fileBytes.Length);
+                            //Gui file theo tung phan
+                            byte[] buffer = new byte[BUFFER_SIZE];
+                            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                            {
+                                int bytesRead;
+                                while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                                {
+                                    await stream.WriteAsync(buffer, 0, bytesRead);
+                                }
+                            }
                             await stream.FlushAsync();
-                            Console.WriteLine($"Đã gửi file {fileName} ({fileBytes.Length} bytes)");
-
                             using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                             {
                                 string response = await reader.ReadLineAsync();
-                                Console.WriteLine($"Server tra ve: {response}");
+                                Console.WriteLine($"Server trả về: {response}");
 
-                                // Kiem tra phan hoi va thong bao (neu can)
                                 if (response.Trim() == "413")
-                                {
-                                    MessageBox.Show($"File qua lon. Vui long thu lai voi file nho hon,");
-                                }
-                                else if(response.Trim() == "200"){
-                                    MessageBox.Show($"Tai len thanh cong");
-                                }
+                                    MessageBox.Show("File quá lớn. Vui lòng thử lại với file nhỏ hơn.");
+                                else if (response.Trim() == "200")
+                                    MessageBox.Show("Tải lên thành công");
                                 else
-                                {
-                                    MessageBox.Show($"Loi: {response.Trim()}");
-                                }
+                                    MessageBox.Show($"Lỗi: {response.Trim()}");
                             }
                         }
                     }
@@ -116,6 +121,13 @@ namespace FileSharingClient
 
             }
             pendingFiles.Clear();
+            totalSizeBytes = 0;
+            for (int i = UploadFilePanel.Controls.Count - 1; i >= 1; i--)
+            {
+                var control = UploadFilePanel.Controls[i];
+                control.Dispose();
+            }
+            UpdateFileSizeLabel();
         }
 
         private void btnBrowse_Click(object sender, EventArgs e)
@@ -131,15 +143,41 @@ namespace FileSharingClient
 
         private void ProcessLocalFile(string filePath)
         {
+            const long MAX_TOTAL_SIZE = 10 * 1024 * 1024;
             if (!File.Exists(filePath)) return;
 
             string fileName = Path.GetFileName(filePath);
             string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string owner = Session.LoggedInUser;
-            string fileSize = FormatFileSize(new FileInfo(filePath).Length);
+            FileInfo fi = new FileInfo(filePath);
+            long fileSizeBytes = fi.Length;
+            
+            if(totalSizeBytes + fileSizeBytes > MAX_TOTAL_SIZE)
+            {
+                MessageBox.Show($"Không thể thêm '{fileName}' vì tổng dung lượng vượt quá 10MB.");
+                return;
+            }
+            totalSizeBytes += fileSizeBytes;
 
-            AddFileToView(fileName, uploadAt, owner, fileSize);
+            string fileSize = FormatFileSize(fileSizeBytes);
+            AddFileToView(fileName, uploadAt, owner, fileSize, filePath);
             pendingFiles.Add(filePath);
+            UpdateFileSizeLabel();
+        }
+        private void UpdateFileSizeLabel()
+        {
+            TotalSizelbl.Text = $"Tổng kích thước: {FormatFileSize(totalSizeBytes)}";
+        }
+        private void OnFileDeleted(string filePath)
+        {
+            if(pendingFiles.Contains(filePath))
+            {
+                FileInfo fi = new FileInfo(filePath);
+                totalSizeBytes -= fi.Length;
+
+                pendingFiles.Remove(filePath);
+                UpdateFileSizeLabel();
+            }
         }
 
         private string CompressFiles(List<string> filesToCompress)
@@ -153,6 +191,77 @@ namespace FileSharingClient
                 }
             }
             return zipFilePath;
+        }
+        private void AddHeaderRow()
+        {
+            Panel headerPanel = new Panel();
+            headerPanel.Height = 30;
+            headerPanel.Dock = DockStyle.Top;
+            headerPanel.Width = UploadFilePanel.Width;
+            headerPanel.BackColor = Color.LightGray;
+
+            Font headerFont = new Font("Segoe UI", 9.75F, FontStyle.Bold);
+
+            Label lblFileName = new Label()
+            {
+                Text = "Tên file",
+                Location = new Point(39, 5),
+                Width = 180,
+                Font = headerFont
+            };
+
+            Label lblOwner = new Label()
+            {
+                Text = "Chủ sở hữu",
+                Location = new Point(248, 5),
+                Width = 140,
+                Font = headerFont
+            };
+
+            Label lblCreateAt = new Label()
+            {
+                Text = "Ngày upload",
+                Location = new Point(420, 5),
+                Width = 120,
+                Font = headerFont
+            };
+
+            Label lblFileSize = new Label()
+            {
+                Text = "Dung lượng",
+                Location = new Point(565, 5),
+                Width = 130,
+                Font = headerFont
+            };
+
+            Label lblFilePath = new Label()
+            {
+                Text = "Đường dẫn",
+                Location = new Point(733, 5),
+                Width = 400,
+                Font = headerFont,
+                AutoEllipsis = true
+            };
+
+            Label lblOption = new Label()
+            {
+                Text = "Tuỳ chọn",
+                Location = new Point(1253, 5), // Khớp với btnMore
+                Width = 80,
+                Font = headerFont
+            };
+
+            // Thêm các label vào header panel
+            headerPanel.Controls.Add(lblFileName);
+            headerPanel.Controls.Add(lblOwner);
+            headerPanel.Controls.Add(lblCreateAt);
+            headerPanel.Controls.Add(lblFileSize);
+            headerPanel.Controls.Add(lblFilePath);
+            headerPanel.Controls.Add(lblOption);
+
+            // Thêm headerPanel vào đầu danh sách
+            UploadFilePanel.Controls.Add(headerPanel);
+            UploadFilePanel.Controls.SetChildIndex(headerPanel, 0); // Đảm bảo nó nằm trên đầu
         }
     }
 }

@@ -14,6 +14,7 @@ namespace FileSharingServer
     public static class FileService
     {
         const int MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+        const int BUFFER_SIZE = 8192; // Match client buffer size
 
         public static async Task<string> ReceiveFile(string fileName, int fileSize, string ownerId, string uploadTime, NetworkStream stream)
         {
@@ -28,7 +29,7 @@ namespace FileSharingServer
                     Directory.CreateDirectory(uploadDir);
 
                 string filePath = Path.Combine(uploadDir, fileName);
-                byte[] buffer = new byte[4096];
+                byte[] buffer = new byte[BUFFER_SIZE];
                 int totalRead = 0;
 
 
