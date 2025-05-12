@@ -91,17 +91,11 @@ namespace FileSharingClient
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            if (isRegisterOpen)
-                return; // Nếu form Register đã được mở, bỏ qua
+            this.Tag = "register";
+            this.Close();
 
-            isRegisterOpen = true;
-            this.Hide();
-            using (Register register = new Register())
-            {
-                register.ShowDialog();
-            }
-            this.Show();
-            isRegisterOpen = false;
+
+
         }
 
         private void linkForgotPassword_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

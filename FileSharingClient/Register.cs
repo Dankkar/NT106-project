@@ -122,24 +122,10 @@ namespace FileSharingClient
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            if (isLoginOpen)
-                return;
 
-            isLoginOpen = true;
-
-            // Vô hiệu hóa LinkLabel để tránh click liên tục
-            linkLabel1.Enabled = false;
-
-            this.Hide();
-            using (Login login = new Login())
-            {
-                login.ShowDialog();
-            }
-            this.Show();
-
-            // Kích hoạt lại LinkLabel và reset cờ
-            linkLabel1.Enabled = true;
-            isLoginOpen = false;
+            this.Tag = "login";
+            this.Close();
+          
         }
 
         private async void btnRegister_Click(object sender, EventArgs e)

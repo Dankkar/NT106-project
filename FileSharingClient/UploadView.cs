@@ -16,7 +16,9 @@ namespace FileSharingClient
 {
     public partial class UploadView: UserControl
     {
+        const long MAX_UPLOAD_SIZE = 1 * 1024 * 1024;
         private List<string> pendingFiles = new List<string>();
+        public Panel UploadeFilePanel => uploadFilePanel;
         public UploadView()
         {
             InitializeComponent();
@@ -55,13 +57,15 @@ namespace FileSharingClient
         private async void btnUpload_Click(object sender, EventArgs e)
         {
             var filesToUpload = new List<string>(pendingFiles);
+            long totalSize = 0;
 
-            // Neu co nhieu file -> nen lai
-            if(filesToUpload.Count > 1)
+            // Kiem tra tong dung luong cua cac file
+            foreach (var filePath in filesToUpload)
             {
-                string zipFilePath = CompressFiles(filesToUpload);
-                filesToUpload = new List<string> { zipFilePath };
+                totalSize += new FileInfo(filePath).Length;
             }
+
+            
 
             foreach(var filePath in filesToUpload)
             {
@@ -140,19 +144,6 @@ namespace FileSharingClient
 
             AddFileToView(fileName, uploadAt, owner, fileSize);
             pendingFiles.Add(filePath);
-        }
-
-        private string CompressFiles(List<string> filesToCompress)
-        {
-            string zipFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".zip");
-            using (var zip = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
-            {
-                foreach (var file in filesToCompress)
-                {
-                    zip.CreateEntryFromFile(file, Path.GetFileName(file));
-                }
-            }
-            return zipFilePath;
         }
     }
 }
