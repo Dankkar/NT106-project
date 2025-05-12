@@ -23,9 +23,7 @@ namespace FileSharingClient
         public ShareView()
         {
             InitializeComponent();
-            LoadUserFiles();
         }
-
 
         private async Task<int> GetUserIdFromSessionAsync()
         {
@@ -55,8 +53,12 @@ namespace FileSharingClient
 
             return userId;
         }
+        public async Task Reload()
+        {
+            await LoadUserFilesAsync();
+        }
 
-        private async void LoadUserFiles()
+        public async Task LoadUserFilesAsync()
         {
             int userId = await GetUserIdFromSessionAsync();
             if (userId != -1)
@@ -68,7 +70,7 @@ namespace FileSharingClient
                 MessageBox.Show("User information not found", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
+        
         private async Task LoadUploadedFilesAsync(int userID)
         {
             try
@@ -118,10 +120,11 @@ namespace FileSharingClient
         }
 
 
-        private void ShareView_Load(object sender, EventArgs e)
+
+        private async void ShareView_Load(object sender, EventArgs e)
         {
             PasswordPanel.Visible = false;
-            LoadUserFiles();
+            await LoadUserFilesAsync();
         }
 
         private async void btnShare_Click(object sender, EventArgs e)
@@ -260,7 +263,7 @@ namespace FileSharingClient
             if (result)
             {
                 MessageBox.Show("Ban da co quyen truy cap vao file nay", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                LoadUserFiles();
+                await LoadUserFilesAsync();
             }
             else
             {

@@ -21,8 +21,6 @@ namespace FileSharingClient
         public Main()
         {
             InitializeComponent();
-
-
         }
 
         private async void btnSendFile_Click(object sender, EventArgs e)
@@ -132,7 +130,13 @@ namespace FileSharingClient
         {
             AddFilesToMyFileView();
             InitDashboardButtons();
+            uploadView.FileUploaded += async () =>
+            {
+                await shareView.Reload();
+                await filepreviewView.Reload();
+            };
             LoadView(myfileView);
+            
         }
 
         private void InitDashboardButtons()

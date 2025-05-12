@@ -25,10 +25,15 @@ namespace FileSharingServer
             try
             {
                 string uploadDir = Path.Combine(DatabaseHelper.projectRoot, "uploads");
+
                 if (!Directory.Exists(uploadDir))
                     Directory.CreateDirectory(uploadDir);
 
-                string filePath = Path.Combine(uploadDir, fileName);
+                string userDir = Path.Combine(uploadDir, ownerId); // tạo thư mục uploads/ownerId
+                if (!Directory.Exists(userDir))
+                    Directory.CreateDirectory(userDir);
+
+                string filePath = Path.Combine(userDir, fileName); // uploads/ownerId/filename
                 byte[] buffer = new byte[BUFFER_SIZE];
                 int totalRead = 0;
 
@@ -48,7 +53,7 @@ namespace FileSharingServer
                 // Kiem tra neu la file zip
                 if (fileName.EndsWith(".zip"))
                 {
-                    string extractDir = Path.Combine(uploadDir, Path.GetFileNameWithoutExtension(fileName));
+                    string extractDir = Path.Combine(userDir, Path.GetFileNameWithoutExtension(fileName));
                     ExtractZipFile(filePath, extractDir);
 
                     // Duyet qua cac file giai nen a luu thong tin vao DB
@@ -60,10 +65,10 @@ namespace FileSharingServer
                         string fileHash = CalculateSHA256(extractedFile);
 
                         // Luu thong tin vao DB voi duong dan la 'uploads/[ten file trong zip]'
-                        string filePathInDb = Path.Combine("uploads", extractedFileName);
+                        string filePathInDb = Path.Combine("uploads", ownerId, extractedFileName);
 
                         // Di chuyen cac file da giai nen vao folder uploads (khong luu muc con)
-                        string destFilePath = Path.Combine(uploadDir, extractedFileName);
+                        string destFilePath = Path.Combine(userDir, extractedFileName);
                         try
                         {
                             File.Move(extractedFile, destFilePath); // Di chuyen file giai nen vao thu muc uploads
@@ -119,7 +124,7 @@ namespace FileSharingServer
                                 cmd.Parameters.AddWithValue("@ownerId", ownerId);
                                 cmd.Parameters.AddWithValue("@fileSize", fileSize);
                                 cmd.Parameters.AddWithValue("@fileType", Path.GetExtension(fileName).TrimStart('.').ToLower());
-                                cmd.Parameters.AddWithValue("@filePath", Path.Combine("uploads", fileName));
+                                cmd.Parameters.AddWithValue("@filePath", Path.Combine("uploads",ownerId, fileName));
                                 cmd.Parameters.AddWithValue("@fileHash", fileHash);
                                 await cmd.ExecuteNonQueryAsync();
                             }

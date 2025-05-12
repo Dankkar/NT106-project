@@ -16,6 +16,7 @@ namespace FileSharingClient
 {
     public partial class UploadView: UserControl
     {
+        public event Func<Task> FileUploaded;
         private List<string> pendingFiles = new List<string>();
         private long totalSizeBytes = 0;
         private const int BUFFER_SIZE = 8192; // Match server buffer size
@@ -106,7 +107,11 @@ namespace FileSharingClient
                                 if (response.Trim() == "413")
                                     MessageBox.Show("File quá lớn. Vui lòng thử lại với file nhỏ hơn.");
                                 else if (response.Trim() == "200")
+                                {
                                     MessageBox.Show("Tải lên thành công");
+                                    if (FileUploaded != null)
+                                        await FileUploaded.Invoke();
+                                }
                                 else
                                     MessageBox.Show($"Lỗi: {response.Trim()}");
                             }

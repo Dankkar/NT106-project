@@ -27,16 +27,77 @@ namespace FileSharingClient
             InitializeComponent();
             _ = InitAsync();
         }
-
+        public async Task Reload()
+        {
+            await LoadUserFilesAsync();
+        }
         private async Task InitAsync()
         {
             currentUserId = await GetUserIdFromSessionAsync();
             if (currentUserId != -1)
             {
-                await LoadFileListAsync();
+                await LoadUserFilesAsync();
             }
         }
+        public async Task LoadUserFilesAsync()
+        {
+            int userId = await GetUserIdFromSessionAsync();
+            if (userId != -1)
+            {
+                await LoadUploadedFilesAsync(userId);  // Load files for the logged-in user
+            }
+            else
+            {
+                MessageBox.Show("User information not found", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        private async Task LoadUploadedFilesAsync(int userID)
+        {
+            try
+            {
+                cbBrowseFile.Items.Clear();
 
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // Lay cac file cua nguoi dung tu bang files
+                    string queryUserFiles = "SELECT file_name FROM files WHERE owner_id = @owner_id";
+                    using (SQLiteCommand cmd = new SQLiteCommand(queryUserFiles, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@owner_id", userID);
+
+                        using (DbDataReader reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                string fileName = reader["file_name"].ToString();
+                                cbBrowseFile.Items.Add(fileName);
+                            }
+                        }
+                    }
+
+                    string querySharedFiles = "SELECT f.file_name FROM files_share fs JOIN files f ON fs.file_id = f.file_id WHERE fs.user_id = @user_id";
+                    using (SQLiteCommand cmd = new SQLiteCommand(querySharedFiles, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@user_id", userID);
+                        using (DbDataReader reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                string sharedFileName = reader["file_name"].ToString();
+                                cbBrowseFile.Items.Add(sharedFileName);
+                            }
+                        }
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Loi tai danh sach file: {ex.Message}", "Loi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
         private async Task<int> GetUserIdFromSessionAsync()
         {
             int userId = -1;
@@ -66,48 +127,6 @@ namespace FileSharingClient
             return userId;
         }
 
-        private async Task LoadFileListAsync()
-        {
-
-            try
-            {
-                cbBrowseFile.Items.Clear();
-                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
-                {
-                    await conn.OpenAsync();
-                    string query = "SELECT file_name FROM files WHERE owner_id = @owner_Id";
-                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@owner_Id", currentUserId);
-                        using (DbDataReader reader = await cmd.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                string fileName = reader["file_name"].ToString();
-                                cbBrowseFile.Items.Add(fileName);
-                            }
-                        }
-                    }
-                    string querySharedFiles = "SELECT f.file_name FROM files_share fs JOIN files f ON fs.file_id = f.file_id WHERE fs.user_id = @user_id";
-                    using (SQLiteCommand cmd = new SQLiteCommand(querySharedFiles, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@user_id", currentUserId);
-                        using(DbDataReader reader = await cmd.ExecuteReaderAsync())
-                        {
-                            while(await reader.ReadAsync())
-                            {
-                                string shareFileName = reader["file_name"].ToString();
-                                cbBrowseFile.Items.Add(shareFileName);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi khi tải danh sách file: {ex.Message}");
-            }
-        }
 
         private async void btnPreview_Click(object sender, EventArgs e)
         {
