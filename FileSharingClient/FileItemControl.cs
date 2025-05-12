@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,7 +18,6 @@ namespace FileSharingClient
         public string FileName { get; set; }
         public string CreateAt { get; set; }
         public string Owner { get; set; }
-        
         public string FileSize { get; set; }
         public FileItemControl(string filename, string createAt, string owner, string filesize, string filepath)
         {
@@ -34,6 +34,8 @@ namespace FileSharingClient
             btnMore.Click += (s, e) => contextMenuStrip1.Show(btnMore, new Point(0, btnMore.Height));
         }
 
+
+
         private void shareToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show($"Chia sẻ file {FileName}");
@@ -48,6 +50,7 @@ namespace FileSharingClient
                 this.Dispose(); // Xóa FileItemControl khỏi giao diện
             }
         }
+       
 
         private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
         {

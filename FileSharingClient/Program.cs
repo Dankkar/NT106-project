@@ -16,7 +16,49 @@ namespace FileSharingClient
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Login());
+            Application.Run(new MainContext());
+        }
+
+        public class MainContext : ApplicationContext
+        {
+            public MainContext()
+            {
+                ShowLoginForm();
+            }
+
+            private void ShowLoginForm()
+            {
+                var loginForm = new Login();
+                loginForm.FormClosed += (s, e) =>
+                {
+                    if (loginForm.Tag as string == "register")
+                    {
+                        ShowRegisterForm();
+                    }
+                    else
+                    {
+                        ExitThread();
+                    }
+                };
+                loginForm.Show();
+            }
+            
+            private void ShowRegisterForm()
+            {
+                var registerForm = new Register();
+                registerForm.FormClosed += (s, e) =>
+                {
+                    if (registerForm.Tag as string == "login")
+                    {
+                        ShowLoginForm();
+                    }
+                    else
+                    {
+                        ExitThread();
+                    }
+                };
+                registerForm.Show();
+            }
         }
     }
 }
