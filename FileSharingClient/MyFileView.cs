@@ -21,9 +21,9 @@ namespace FileSharingClient
 
         }
 
-        public void AddFileToView(string fileName, string createAt, string owner, string filesize)
+        public void AddFileToView(string fileName, string createAt, string owner, string filesize, string filePath)
         {
-            var fileItem = new FileItemControl(fileName, createAt, owner, filesize);
+            var fileItem = new FileItemControl(fileName, createAt, owner, filesize, filePath);
             MyFileLayoutPanel.Controls.Add(fileItem);
         }
 

@@ -13,16 +13,25 @@ namespace FileSharingClient
 {
     public partial class FileItemControl : UserControl
     {
+<<<<<<< HEAD
         private List<string> pendingFiles;
         private UploadView parentView;
 
+=======
+        public string FilePath { get; set; }
+        public event Action<String> FileDeleted;
+>>>>>>> develop
         public string FileName { get; set; }
         public string CreateAt { get; set; }
         public string Owner { get; set; }
         public string FileSize { get; set; }
+<<<<<<< HEAD
        
         // My File View
         public FileItemControl(string filename, string createAt, string owner, string filesize)
+=======
+        public FileItemControl(string filename, string createAt, string owner, string filesize, string filepath)
+>>>>>>> develop
         {
             InitializeComponent();
 
@@ -31,6 +40,8 @@ namespace FileSharingClient
             lblFileSize.Text = filesize;
             lblOwner.Text = owner;
             lblCreateAt.Text = createAt;
+            FilePath = filepath;
+            lblFilePath.Text = filepath;
 
             btnMore.Click += (s, e) => contextMenuStrip1.Show(btnMore, new Point(0, btnMore.Height));
         }
@@ -62,6 +73,7 @@ namespace FileSharingClient
             DialogResult result = MessageBox.Show($"Bạn có chắc muốn xóa file {FileName}?", "Xác nhận", MessageBoxButtons.YesNo);
             if (result == DialogResult.Yes)
             {
+<<<<<<< HEAD
                 if (pendingFiles != null)
                 {
                     var toRemove = pendingFiles.FirstOrDefault(p => Path.GetFileName(p) == FileName);
@@ -77,6 +89,10 @@ namespace FileSharingClient
                 {
                     MessageBox.Show("Lỗi: Không thể xóa file, danh sách pendingFiles không hợp lệ.");
                 }
+=======
+                FileDeleted?.Invoke(FilePath);
+                this.Dispose(); // Xóa FileItemControl khỏi giao diện
+>>>>>>> develop
             }
         }
        

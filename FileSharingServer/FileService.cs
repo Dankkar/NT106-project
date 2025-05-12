@@ -13,7 +13,8 @@ namespace FileSharingServer
 
     public static class FileService
     {
-        const long MAX_UPLOAD_SIZE = 1 * 1024 * 1024; // 1MB
+        const int MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+        const int BUFFER_SIZE = 8192; // Match client buffer size
 
         public static async Task<string> ReceiveFile(string fileName, int fileSize, string ownerId, string uploadTime, NetworkStream stream)
         {
@@ -21,7 +22,6 @@ namespace FileSharingServer
             {
                 return "413\n"; // Payload too large
             }
-
             try
             {
                 string uploadDir = Path.Combine(DatabaseHelper.projectRoot, "uploads");
@@ -29,9 +29,11 @@ namespace FileSharingServer
                     Directory.CreateDirectory(uploadDir);
 
                 string filePath = Path.Combine(uploadDir, fileName);
-                byte[] buffer = new byte[4096];
+                byte[] buffer = new byte[BUFFER_SIZE];
                 int totalRead = 0;
 
+
+                // Luu file zip hoac file binh thuong vao server
                 using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
                 {
                     while (totalRead < fileSize)
@@ -43,35 +45,97 @@ namespace FileSharingServer
                     }
                 }
 
-                if (totalRead == fileSize)
+                // Kiem tra neu la file zip
+                if (fileName.EndsWith(".zip"))
                 {
-                    string fileHash = CalculateSHA256(filePath);
-                    using (SQLiteConnection conn = new SQLiteConnection(DatabaseHelper.connectionString))
+                    string extractDir = Path.Combine(uploadDir, Path.GetFileNameWithoutExtension(fileName));
+                    ExtractZipFile(filePath, extractDir);
+
+                    // Duyet qua cac file giai nen a luu thong tin vao DB
+                    string[] extractedFiles = Directory.GetFiles(extractDir);
+                    foreach (var extractedFile in extractedFiles)
                     {
-                        await conn.OpenAsync();
-                        string insertQuery = "INSERT INTO files (file_name, upload_at, owner_id, file_size, file_type, file_path, file_hash) VALUES (@fileName, @uploadTime, @ownerId, @fileSize, @fileType, @filePath, @fileHash)";
-                        using (SQLiteCommand cmd = new SQLiteCommand(insertQuery, conn))
+                        string extractedFileName = Path.GetFileName(extractedFile);
+                        long extractedFileSize = new FileInfo(extractedFile).Length;
+                        string fileHash = CalculateSHA256(extractedFile);
+
+                        // Luu thong tin vao DB voi duong dan la 'uploads/[ten file trong zip]'
+                        string filePathInDb = Path.Combine("uploads", extractedFileName);
+
+                        // Di chuyen cac file da giai nen vao folder uploads (khong luu muc con)
+                        string destFilePath = Path.Combine(uploadDir, extractedFileName);
+                        try
                         {
-                            cmd.Parameters.AddWithValue("@fileName", fileName);
-                            cmd.Parameters.AddWithValue("@uploadTime", uploadTime);
-                            cmd.Parameters.AddWithValue("@ownerId", ownerId);
-                            cmd.Parameters.AddWithValue("@fileSize", fileSize);
-                            cmd.Parameters.AddWithValue("@fileType", Path.GetExtension(fileName).TrimStart('.').ToLower());
-                            cmd.Parameters.AddWithValue("@filePath", Path.Combine("uploads", fileName));
-                            cmd.Parameters.AddWithValue("@fileHash", fileHash);
-                            await cmd.ExecuteNonQueryAsync();
+                            File.Move(extractedFile, destFilePath); // Di chuyen file giai nen vao thu muc uploads
+                        }
+                        catch(Exception ex)
+                        {
+                            Console.WriteLine($"Loi khi di chuyen file {extractedFileName} : {ex.Message}");
+                        }
+
+                        using (SQLiteConnection conn = new SQLiteConnection(DatabaseHelper.connectionString))
+                        {
+                            await conn.OpenAsync();
+                            string insertQuery = "INSERT INTO files (file_name, upload_at, owner_id, file_size, file_type, file_path, file_hash) VALUES (@fileName, @uploadTime, @ownerId, @fileSize, @fileType, @filePath, @fileHash)";
+                            using (SQLiteCommand cmd = new SQLiteCommand(insertQuery, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@fileName", extractedFileName);
+                                cmd.Parameters.AddWithValue("@uploadTime", uploadTime);
+                                cmd.Parameters.AddWithValue("@ownerId", ownerId);
+                                cmd.Parameters.AddWithValue("@fileSize", extractedFileSize); // Luu kich thuoc thuc te cua tung file
+                                cmd.Parameters.AddWithValue("@fileType", Path.GetExtension(extractedFile).TrimStart('.').ToLower());
+                                cmd.Parameters.AddWithValue("@filePath", filePathInDb);
+                                cmd.Parameters.AddWithValue("@fileHash", fileHash);
+                                await cmd.ExecuteNonQueryAsync();
+                            }
                         }
                     }
-                    return "200\n"; // Success
+                    // Sau khi giai nen va luu thong tin cac file, xoa file zip goc
+                    File.Delete(filePath); // Xoa file zip goc de khong luu lai trong thu muc uploads
+                    try
+                    {
+                        Directory.Delete(extractDir, true); // Xoa thu muc tam chua cac file giai nen
+                    }
+                    catch(Exception ex)
+                    {
+                        Console.WriteLine($"Loi khi xoa thu muc {extractDir} : {ex.Message}");
+                    }
                 }
+
                 else
                 {
-                    return "400\n"; // Bad Request
+                    string fileHash = CalculateSHA256(filePath);
+
+                    if (totalRead == fileSize)
+                    {
+                        using (SQLiteConnection conn = new SQLiteConnection(DatabaseHelper.connectionString))
+                        {
+                            await conn.OpenAsync();
+                            string insertQuery = "INSERT INTO files (file_name, upload_at, owner_id, file_size, file_type, file_path, file_hash) VALUES (@fileName, @uploadTime, @ownerId, @fileSize, @fileType, @filePath, @fileHash)";
+                            using (SQLiteCommand cmd = new SQLiteCommand(insertQuery, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@fileName", fileName);
+                                cmd.Parameters.AddWithValue("@uploadTime", uploadTime);
+                                cmd.Parameters.AddWithValue("@ownerId", ownerId);
+                                cmd.Parameters.AddWithValue("@fileSize", fileSize);
+                                cmd.Parameters.AddWithValue("@fileType", Path.GetExtension(fileName).TrimStart('.').ToLower());
+                                cmd.Parameters.AddWithValue("@filePath", Path.Combine("uploads", fileName));
+                                cmd.Parameters.AddWithValue("@fileHash", fileHash);
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+                        }
+                        return "200\n"; // Success
+                    }
+                    else
+                    {
+                        return "400\n"; // Bad Request
+                    }
                 }
+                return "200\n";
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Lỗi lưu file {ex.Message}");
+                Console.WriteLine($"Loi luu file {ex.Message}");
                 return "500\n"; // Internal Server Error
             }
         }
@@ -84,6 +148,15 @@ namespace FileSharingServer
                 var hash = sha256.ComputeHash(stream);
                 return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
             }
+        }
+
+        private static void ExtractZipFile(string zipFilePath, string extractPath)
+        {
+            if (!Directory.Exists(extractPath))
+            {
+                Directory.CreateDirectory(extractPath);
+            }
+            ZipFile.ExtractToDirectory(zipFilePath, extractPath);
         }
     }
 }
