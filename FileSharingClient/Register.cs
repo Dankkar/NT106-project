@@ -128,10 +128,7 @@ namespace FileSharingClient
           
         }
 
-        private async void btnRegister_Click(object sender, EventArgs e)
-        {
-            await HandleRegister();
-        }   
+        
         private async Task HandleRegister()
         {
             try
@@ -228,19 +225,7 @@ namespace FileSharingClient
             }
         }
 
-        private void checkBox1_CheckedChanged(object sender, EventArgs e)
-        {
-           if(checkBox1.Checked == true)
-            {
-                passtxtBox.UseSystemPasswordChar = false;
-                confpasstxtBox.UseSystemPasswordChar = false;
-            }
-           else
-            {
-                passtxtBox.UseSystemPasswordChar = true;
-                confpasstxtBox.UseSystemPasswordChar = true;
-            }
-        }
+
         bool IsValidEmail(string email)
         {
             try
@@ -254,5 +239,23 @@ namespace FileSharingClient
             }
         }
 
+        private async void btnRegister_Click(object sender, EventArgs e)
+        {
+            await HandleRegister();
+        }
+
+        private void showPassword_CheckedChanged(object sender, EventArgs e)
+        {
+            if (passtxtBox.UseSystemPasswordChar == true) passtxtBox.UseSystemPasswordChar = false;
+            else passtxtBox.UseSystemPasswordChar = true;
+        }
+
+        private void guna2ImageCheckBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (confpasstxtBox.UseSystemPasswordChar == true) confpasstxtBox.UseSystemPasswordChar = false;
+            else confpasstxtBox.UseSystemPasswordChar = true;
+        }
+
+        
     }
 }
