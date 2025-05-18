@@ -55,10 +55,11 @@
             this.ShareWithPanel.Controls.Add(this.cbBrowseFile);
             this.ShareWithPanel.Controls.Add(this.lblFileToShare);
             this.ShareWithPanel.Controls.Add(this.lblShareWith);
-            this.ShareWithPanel.Location = new System.Drawing.Point(6, 0);
+            this.ShareWithPanel.Dock = System.Windows.Forms.DockStyle.Left;
+            this.ShareWithPanel.Location = new System.Drawing.Point(0, 0);
             this.ShareWithPanel.Margin = new System.Windows.Forms.Padding(6);
             this.ShareWithPanel.Name = "ShareWithPanel";
-            this.ShareWithPanel.Size = new System.Drawing.Size(548, 716);
+            this.ShareWithPanel.Size = new System.Drawing.Size(1557, 3182);
             this.ShareWithPanel.TabIndex = 0;
             // 
             // btnShare
@@ -99,7 +100,7 @@
             this.lblPassword.Location = new System.Drawing.Point(44, 52);
             this.lblPassword.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.lblPassword.Name = "lblPassword";
-            this.lblPassword.Size = new System.Drawing.Size(132, 38);
+            this.lblPassword.Size = new System.Drawing.Size(76, 21);
             this.lblPassword.TabIndex = 0;
             this.lblPassword.Text = "Password";
             // 
@@ -120,7 +121,7 @@
             this.lblFileToShare.Location = new System.Drawing.Point(33, 159);
             this.lblFileToShare.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.lblFileToShare.Name = "lblFileToShare";
-            this.lblFileToShare.Size = new System.Drawing.Size(171, 38);
+            this.lblFileToShare.Size = new System.Drawing.Size(96, 21);
             this.lblFileToShare.TabIndex = 1;
             this.lblFileToShare.Text = "File to Share";
             // 
@@ -131,7 +132,7 @@
             this.lblShareWith.Location = new System.Drawing.Point(160, 61);
             this.lblShareWith.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.lblShareWith.Name = "lblShareWith";
-            this.lblShareWith.Size = new System.Drawing.Size(195, 46);
+            this.lblShareWith.Size = new System.Drawing.Size(109, 25);
             this.lblShareWith.TabIndex = 0;
             this.lblShareWith.Text = "Share With";
             // 
@@ -142,10 +143,11 @@
             this.GetSharePanel.Controls.Add(this.tbInputPassword);
             this.GetSharePanel.Controls.Add(this.lblInputPassword);
             this.GetSharePanel.Controls.Add(this.lblGetFile);
-            this.GetSharePanel.Location = new System.Drawing.Point(566, 0);
+            this.GetSharePanel.Dock = System.Windows.Forms.DockStyle.Right;
+            this.GetSharePanel.Location = new System.Drawing.Point(3688, 0);
             this.GetSharePanel.Margin = new System.Windows.Forms.Padding(6);
             this.GetSharePanel.Name = "GetSharePanel";
-            this.GetSharePanel.Size = new System.Drawing.Size(524, 716);
+            this.GetSharePanel.Size = new System.Drawing.Size(1557, 3182);
             this.GetSharePanel.TabIndex = 1;
             // 
             // btnGet
@@ -175,7 +177,7 @@
             this.lblInputPassword.Location = new System.Drawing.Point(40, 153);
             this.lblInputPassword.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.lblInputPassword.Name = "lblInputPassword";
-            this.lblInputPassword.Size = new System.Drawing.Size(204, 38);
+            this.lblInputPassword.Size = new System.Drawing.Size(116, 21);
             this.lblInputPassword.TabIndex = 5;
             this.lblInputPassword.Text = "Input Password";
             // 
@@ -186,7 +188,7 @@
             this.lblGetFile.Location = new System.Drawing.Point(191, 61);
             this.lblGetFile.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.lblGetFile.Name = "lblGetFile";
-            this.lblGetFile.Size = new System.Drawing.Size(140, 46);
+            this.lblGetFile.Size = new System.Drawing.Size(78, 25);
             this.lblGetFile.TabIndex = 5;
             this.lblGetFile.Text = "Get File";
             // 
@@ -196,7 +198,7 @@
             this.label1.Location = new System.Drawing.Point(730, 68);
             this.label1.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(0, 25);
+            this.label1.Size = new System.Drawing.Size(0, 24);
             this.label1.TabIndex = 2;
             // 
             // ShareView
@@ -208,8 +210,7 @@
             this.Controls.Add(this.ShareWithPanel);
             this.Margin = new System.Windows.Forms.Padding(6);
             this.Name = "ShareView";
-            this.Size = new System.Drawing.Size(1102, 724);
-            this.Load += new System.EventHandler(this.ShareView_Load);
+            this.Size = new System.Drawing.Size(5245, 3182);
             this.ShareWithPanel.ResumeLayout(false);
             this.ShareWithPanel.PerformLayout();
             this.PasswordPanel.ResumeLayout(false);

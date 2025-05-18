@@ -150,8 +150,9 @@ namespace FileSharingClient
                     FilePreview_Dashboard
                 };
         }
-        private void Share_Dashboard_Click(object sender, EventArgs e)
+        private async void Share_Dashboard_Click(object sender, EventArgs e)
         {
+            await shareView.Reload();
             LoadView(shareView);
             HightlightSelectedDashboard(Share_Dashboard);
 
@@ -166,8 +167,9 @@ namespace FileSharingClient
         }
 
 
-        private void FilePreview_Dashboard_Click(object sender, EventArgs e)
+        private async void FilePreview_Dashboard_Click(object sender, EventArgs e)
         {
+            await filepreviewView.Reload();
             LoadView(filepreviewView);
             HightlightSelectedDashboard(FilePreview_Dashboard);
         }

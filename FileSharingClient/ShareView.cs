@@ -23,6 +23,7 @@ namespace FileSharingClient
         public ShareView()
         {
             InitializeComponent();
+            tbPassword.Visible = false;
         }
 
         private async Task<int> GetUserIdFromSessionAsync()
@@ -121,11 +122,7 @@ namespace FileSharingClient
 
 
 
-        private async void ShareView_Load(object sender, EventArgs e)
-        {
-            PasswordPanel.Visible = false;
-            await LoadUserFilesAsync();
-        }
+        
 
         private async void btnShare_Click(object sender, EventArgs e)
         {
@@ -152,6 +149,7 @@ namespace FileSharingClient
                 if (result)
                 {
                     MessageBox.Show("File đã được chia sẻ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    tbPassword.Visible = true;
                 }
                 else
                 {
