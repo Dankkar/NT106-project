@@ -54,48 +54,12 @@ namespace FileSharingClient
                 }
             }
         }
-        private void usernametxtBox_Enter(object sender, EventArgs e)
-        {
-            if (usernametxtBox.Text == username)
-            {
-                usernametxtBox.Text = "";
-                usernametxtBox.ForeColor = Color.Black;
-            }
-        }
-        private void usernametxtBox_Leave(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(usernametxtBox.Text))
-            {
-                usernametxtBox.Text = username;
-                usernametxtBox.ForeColor = Color.Gray;
-            }
-        }
-        private void passtxtBox_Enter(object sender, EventArgs e)
-        {
-            if (passtxtBox.Text == password)
-            {
-                passtxtBox.Text = "";
-                passtxtBox.ForeColor = Color.Black;
-                passtxtBox.UseSystemPasswordChar = true;
-            }
-        }
-        private void passtxtBox_Leave(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(passtxtBox.Text))
-            {
-                passtxtBox.Text = password;
-                passtxtBox.ForeColor = Color.Gray;
-                passtxtBox.UseSystemPasswordChar = false;
-            }
-        }
+
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             this.Tag = "register";
             this.Close();
-
-
-
         }
 
         private void linkForgotPassword_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -111,11 +75,6 @@ namespace FileSharingClient
             }
             this.Show();
             isForgotPasswordOpen = false;
-        }
-
-        private async void btnLogin_Click(object sender, EventArgs e)
-        {
-            await HandleLogin();
         }
 
 
@@ -217,6 +176,61 @@ namespace FileSharingClient
             catch
             {
                 return -1;
+            }
+        }
+
+        private void passtxtBox_Enter(object sender, EventArgs e)
+        {
+            if (passtxtBox.Text == password)
+            {
+                passtxtBox.Text = "";
+                passtxtBox.ForeColor = Color.Black;
+                passtxtBox.UseSystemPasswordChar = true;
+            }
+        }
+
+        private void passtxtBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(passtxtBox.Text))
+            {
+                passtxtBox.Text = password;
+                passtxtBox.ForeColor = Color.Gray;
+                passtxtBox.UseSystemPasswordChar = false;
+            }
+        }
+
+        private async void btnLogin_Click(object sender, EventArgs e)
+        {
+            await HandleLogin();
+        }
+
+        private void usernametxtBox_Enter(object sender, EventArgs e)
+        {
+            if (usernametxtBox.Text == username)
+            {
+                usernametxtBox.Text = "";
+                usernametxtBox.ForeColor = Color.Black;
+            }
+        }
+
+        private void usernametxtBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(usernametxtBox.Text))
+            {
+                usernametxtBox.Text = username;
+                usernametxtBox.ForeColor = Color.Gray;
+            }
+        }
+
+        private void showPassword_CheckedChanged(object sender, EventArgs e)
+        {
+            if(passtxtBox.UseSystemPasswordChar == true)
+            {
+                passtxtBox.UseSystemPasswordChar = false;
+            }
+            else
+            {
+                passtxtBox.UseSystemPasswordChar = true;
             }
         }
     }
