@@ -81,16 +81,17 @@ namespace FileSharingServer
                         using (SQLiteConnection conn = new SQLiteConnection(DatabaseHelper.connectionString))
                         {
                             await conn.OpenAsync();
-                            string insertQuery = "INSERT INTO files (file_name, upload_at, owner_id, file_size, file_type, file_path, file_hash) VALUES (@fileName, @uploadTime, @ownerId, @fileSize, @fileType, @filePath, @fileHash)";
+                            string insertQuery = "INSERT INTO files (file_name, upload_at, owner_id, file_size, file_type, file_path, file_hash, folder_id) VALUES (@fileName, @uploadTime, @ownerId, @fileSize, @fileType, @filePath, @fileHash, @folderId)";
                             using (SQLiteCommand cmd = new SQLiteCommand(insertQuery, conn))
                             {
                                 cmd.Parameters.AddWithValue("@fileName", extractedFileName);
                                 cmd.Parameters.AddWithValue("@uploadTime", uploadTime);
-                                cmd.Parameters.AddWithValue("@ownerId", ownerId);
-                                cmd.Parameters.AddWithValue("@fileSize", extractedFileSize); // Luu kich thuoc thuc te cua tung file
+                                cmd.Parameters.AddWithValue("@ownerId", int.Parse(ownerId));
+                                cmd.Parameters.AddWithValue("@fileSize", extractedFileSize);
                                 cmd.Parameters.AddWithValue("@fileType", Path.GetExtension(extractedFile).TrimStart('.').ToLower());
                                 cmd.Parameters.AddWithValue("@filePath", filePathInDb);
                                 cmd.Parameters.AddWithValue("@fileHash", fileHash);
+                                cmd.Parameters.AddWithValue("@folderId", DBNull.Value); // NULL for legacy file uploads
                                 await cmd.ExecuteNonQueryAsync();
                             }
                         }
@@ -116,16 +117,17 @@ namespace FileSharingServer
                         using (SQLiteConnection conn = new SQLiteConnection(DatabaseHelper.connectionString))
                         {
                             await conn.OpenAsync();
-                            string insertQuery = "INSERT INTO files (file_name, upload_at, owner_id, file_size, file_type, file_path, file_hash) VALUES (@fileName, @uploadTime, @ownerId, @fileSize, @fileType, @filePath, @fileHash)";
+                            string insertQuery = "INSERT INTO files (file_name, upload_at, owner_id, file_size, file_type, file_path, file_hash, folder_id) VALUES (@fileName, @uploadTime, @ownerId, @fileSize, @fileType, @filePath, @fileHash, @folderId)";
                             using (SQLiteCommand cmd = new SQLiteCommand(insertQuery, conn))
                             {
                                 cmd.Parameters.AddWithValue("@fileName", fileName);
                                 cmd.Parameters.AddWithValue("@uploadTime", uploadTime);
-                                cmd.Parameters.AddWithValue("@ownerId", ownerId);
+                                cmd.Parameters.AddWithValue("@ownerId", int.Parse(ownerId));
                                 cmd.Parameters.AddWithValue("@fileSize", fileSize);
                                 cmd.Parameters.AddWithValue("@fileType", Path.GetExtension(fileName).TrimStart('.').ToLower());
                                 cmd.Parameters.AddWithValue("@filePath", Path.Combine("uploads",ownerId, fileName));
                                 cmd.Parameters.AddWithValue("@fileHash", fileHash);
+                                cmd.Parameters.AddWithValue("@folderId", DBNull.Value); // NULL for legacy file uploads
                                 await cmd.ExecuteNonQueryAsync();
                             }
                         }

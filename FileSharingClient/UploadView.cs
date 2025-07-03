@@ -17,7 +17,14 @@ namespace FileSharingClient
     public partial class UploadView: UserControl
     {
         public event Func<Task> FileUploaded;
-        private List<string> pendingFiles = new List<string>();
+        private class PendingFile
+        {
+            public string FilePath { get; set; }
+            public string RelativePath { get; set; }
+        }
+        private List<PendingFile> pendingFiles = new List<PendingFile>();
+        private string pendingFolder = null; // For folder upload
+        private bool isUploadingFolder = false;
         private long totalSizeBytes = 0;
         private const int BUFFER_SIZE = 8192; // Match server buffer size
 
@@ -61,7 +68,62 @@ namespace FileSharingClient
 
         private async void btnUpload_Click(object sender, EventArgs e)
         {
-            var filesToUpload = new List<string>(pendingFiles);
+            if (isUploadingFolder && pendingFiles.Count > 0)
+            {
+                string folderName = Path.GetFileName(pendingFolder);
+                int ownerId = Session.LoggedInUserId;
+                foreach (var pf in pendingFiles)
+                {
+                    FileInfo fi = new FileInfo(pf.FilePath);
+                    string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    string command = $"UPLOAD_FILE_IN_FOLDER|{folderName}|{pf.RelativePath}|{fi.Name}|{fi.Length}|{ownerId}|{uploadAt}\n";
+                    using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                    using (NetworkStream stream = client.GetStream())
+                    {
+                        byte[] commandBytes = Encoding.UTF8.GetBytes(command);
+                        await stream.WriteAsync(commandBytes, 0, commandBytes.Length);
+                        await stream.FlushAsync();
+
+                        // Gửi file data
+                        byte[] buffer = new byte[BUFFER_SIZE];
+                        using (FileStream fs = new FileStream(pf.FilePath, FileMode.Open, FileAccess.Read))
+                        {
+                            int bytesRead;
+                            while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                            {
+                                await stream.WriteAsync(buffer, 0, bytesRead);
+                            }
+                        }
+                        await stream.FlushAsync();
+
+                        // Đọc response
+                        using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                        {
+                            string response = await reader.ReadLineAsync();
+                            if (response.Trim() != "200")
+                                MessageBox.Show($"Lỗi upload file {pf.FilePath}: {response}");
+                        }
+                    }
+                }
+                MessageBox.Show("Upload folder thành công!");
+                pendingFiles.Clear();
+                totalSizeBytes = 0;
+                pendingFolder = null;
+                isUploadingFolder = false;
+                ClearFileList();
+                UpdateFileSizeLabel();
+                if (FileUploaded != null)
+                    await FileUploaded.Invoke();
+            }
+            else
+            {
+                await UploadFiles(); // Xử lý upload file lẻ như cũ
+            }
+        }
+
+        private async Task UploadFiles()
+        {
+            var filesToUpload = new List<string>(pendingFiles.Select(pf => pf.FilePath));
 
             // Neu co nhieu file -> nen lai
             if(filesToUpload.Count > 1)
@@ -120,18 +182,13 @@ namespace FileSharingClient
                 }
                 catch (Exception ex)
                 {
-                    // Thêm thông báo chi tiết hơn về lỗi
-                    MessageBox.Show($"Lỗi upload file {filePath}: {ex.Message}\nStack Trace: {ex.StackTrace}");
+                    MessageBox.Show($"Lỗi upload file {filePath}: {ex.Message}");
                 }
-
             }
+            
             pendingFiles.Clear();
             totalSizeBytes = 0;
-            for (int i = UploadFilePanel.Controls.Count - 1; i >= 1; i--)
-            {
-                var control = UploadFilePanel.Controls[i];
-                control.Dispose();
-            }
+            ClearFileList();
             UpdateFileSizeLabel();
         }
 
@@ -143,6 +200,16 @@ namespace FileSharingClient
             {
                 foreach (var filePath in dialog.FileNames)
                     ProcessLocalFile(filePath);
+            }
+        }
+
+        private void btnBrowseFolder_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            dialog.Description = "Chọn folder để upload";
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                ProcessLocalFolder(dialog.SelectedPath);
             }
         }
 
@@ -166,8 +233,42 @@ namespace FileSharingClient
 
             string fileSize = FormatFileSize(fileSizeBytes);
             AddFileToView(fileName, uploadAt, owner, fileSize, filePath);
-            pendingFiles.Add(filePath);
+            pendingFiles.Add(new PendingFile { FilePath = filePath, RelativePath = "" });
             UpdateFileSizeLabel();
+        }
+
+        private void ProcessLocalFolder(string folderPath)
+        {
+            const long MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB for folders
+            if (!Directory.Exists(folderPath)) return;
+
+            pendingFiles.Clear();
+            totalSizeBytes = 0;
+            ClearFileList();
+
+            string folderName = Path.GetFileName(folderPath);
+            string[] files = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
+            foreach (var file in files)
+            {
+                string relativePath = Path.GetDirectoryName(file.Substring(folderPath.Length).TrimStart(Path.DirectorySeparatorChar)) ?? "";
+                pendingFiles.Add(new PendingFile { FilePath = file, RelativePath = relativePath });
+                FileInfo fi = new FileInfo(file);
+                totalSizeBytes += fi.Length;
+                string fileSize = FormatFileSize(fi.Length);
+                AddFileToView(fi.Name, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), Session.LoggedInUser, fileSize, file);
+            }
+            pendingFolder = folderPath;
+            isUploadingFolder = true;
+            UpdateFileSizeLabel();
+        }
+
+        private void ClearFileList()
+        {
+            for (int i = UploadFilePanel.Controls.Count - 1; i >= 1; i--)
+            {
+                var control = UploadFilePanel.Controls[i];
+                control.Dispose();
+            }
         }
         private void UpdateFileSizeLabel()
         {
@@ -175,12 +276,12 @@ namespace FileSharingClient
         }
         private void OnFileDeleted(string filePath)
         {
-            if(pendingFiles.Contains(filePath))
+            if(pendingFiles.Any(pf => pf.FilePath == filePath))
             {
                 FileInfo fi = new FileInfo(filePath);
                 totalSizeBytes -= fi.Length;
 
-                pendingFiles.Remove(filePath);
+                pendingFiles.RemoveAll(pf => pf.FilePath == filePath);
                 UpdateFileSizeLabel();
             }
         }
@@ -195,6 +296,32 @@ namespace FileSharingClient
                     zip.CreateEntryFromFile(file, Path.GetFileName(file));
                 }
             }
+            return zipFilePath;
+        }
+
+        private string CompressFolderToZip(string folderPath, string folderName)
+        {
+            string zipFilePath = Path.Combine(Path.GetTempPath(), $"{folderName}_{Guid.NewGuid()}.zip");
+            
+            try
+            {
+                using (var zip = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
+                {
+                    string[] files = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
+                    
+                    foreach (string file in files)
+                    {
+                        string relativePath = file.Substring(folderPath.Length + 1);
+                        zip.CreateEntryFromFile(file, relativePath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi nén folder: {ex.Message}");
+                throw;
+            }
+            
             return zipFilePath;
         }
         private void AddHeaderRow()

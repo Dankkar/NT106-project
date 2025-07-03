@@ -15,6 +15,10 @@ namespace FileSharingServer
 
         public async Task StartAsync()
         {
+            // Initialize database with new folder-based schema
+            await DatabaseHelper.InitializeDatabaseAsync();
+            Console.WriteLine("Database initialized successfully");
+
             var server = new TcpListener(IPAddress.Any, Port);
             server.Start();
             Console.WriteLine($"Listening on port {Port}");
@@ -101,16 +105,64 @@ namespace FileSharingServer
                     string resetEmail = parts[1];
                     string newPasswordReset = parts[2];
                     return await OTPService.ResetPassword(resetEmail, newPasswordReset);
+                    
+                // NEW: Folder-based operations
+                case "UPLOAD_FOLDER":
+                    if (parts.Length != 5) return "400\n";
+                    string folderName = parts[1];
+                    int folderSize = int.Parse(parts[2]);
+                    string ownerId = parts[3];
+                    string uploadTime = parts[4];
+                    return await FolderService.ReceiveFolder(folderName, folderSize, ownerId, uploadTime, stream);
+                    
+                case "LIST_FOLDERS":
+                    if (parts.Length != 2) return "400\n";
+                    string userId = parts[1];
+                    var folders = await FolderService.GetUserFolders(userId);
+                    return FormatFolderList(folders);
+                    
+                // Legacy: Keep using original FileService for single file uploads
                 case "UPLOAD":
                     if (parts.Length != 5) return "400\n";
                     string fileName = parts[1];
                     int fileSize = int.Parse(parts[2]);
-                    string ownerId = parts[3];
-                    string uploadTime = parts[4];
-                    return await FileService.ReceiveFile(fileName, fileSize, ownerId, uploadTime, stream);
+                    string fileOwnerId = parts[3];
+                    string fileUploadTime = parts[4];
+                    
+                    return await FileService.ReceiveFile(fileName, fileSize, fileOwnerId, fileUploadTime, stream);
+                    
+                case "UPLOAD_FILE_IN_FOLDER":
+                    if (parts.Length != 7) return "400\n";
+                    string upFolderName = parts[1];
+                    string upRelativePath = parts[2];
+                    string upFileName = parts[3];
+                    int upFileSize = int.Parse(parts[4]);
+                    string upOwnerId = parts[5];
+                    string upUploadTime = parts[6];
+                    return await FolderService.ReceiveFileInFolder(upFolderName, upRelativePath, upFileName, upFileSize, upOwnerId, upUploadTime, stream);
+                    
                 default:
                     return "400\n";
             }
+        }
+
+        private static string FormatFolderList(List<FolderInfo> folders)
+        {
+            if (folders.Count == 0)
+            {
+                return "200|NO_FOLDERS\n";
+            }
+
+            var result = new StringBuilder();
+            result.Append("200|");
+            
+            foreach (var folder in folders)
+            {
+                result.Append($"{folder.FolderId}:{folder.FolderName}:{folder.CreatedAt}:{folder.IsShared};");
+            }
+            
+            result.Append("\n");
+            return result.ToString();
         }
     }
 }
