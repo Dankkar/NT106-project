@@ -30,6 +30,7 @@
         {
             this.DragPanel = new System.Windows.Forms.Panel();
             this.btnBrowse = new System.Windows.Forms.Button();
+            this.btnBrowseFolder = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.UploadedPanel = new System.Windows.Forms.Panel();
@@ -46,6 +47,7 @@
             this.DragPanel.AllowDrop = true;
             this.DragPanel.AutoScroll = true;
             this.DragPanel.Controls.Add(this.btnBrowse);
+            this.DragPanel.Controls.Add(this.btnBrowseFolder);
             this.DragPanel.Controls.Add(this.label1);
             this.DragPanel.Controls.Add(this.label2);
             this.DragPanel.Dock = System.Windows.Forms.DockStyle.Left;
@@ -65,9 +67,21 @@
             this.btnBrowse.Name = "btnBrowse";
             this.btnBrowse.Size = new System.Drawing.Size(154, 51);
             this.btnBrowse.TabIndex = 3;
-            this.btnBrowse.Text = "Browse";
+            this.btnBrowse.Text = "Browse Files";
             this.btnBrowse.UseVisualStyleBackColor = true;
             this.btnBrowse.Click += new System.EventHandler(this.btnBrowse_Click);
+            // 
+            // btnBrowseFolder
+            // 
+            this.btnBrowseFolder.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.btnBrowseFolder.Location = new System.Drawing.Point(92, 620);
+            this.btnBrowseFolder.Margin = new System.Windows.Forms.Padding(2);
+            this.btnBrowseFolder.Name = "btnBrowseFolder";
+            this.btnBrowseFolder.Size = new System.Drawing.Size(154, 51);
+            this.btnBrowseFolder.TabIndex = 4;
+            this.btnBrowseFolder.Text = "Browse Folder";
+            this.btnBrowseFolder.UseVisualStyleBackColor = true;
+            this.btnBrowseFolder.Click += new System.EventHandler(this.btnBrowseFolder_Click);
             // 
             // label1
             // 
@@ -174,6 +188,7 @@
         private System.Windows.Forms.FlowLayoutPanel UploadFilePanel;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button btnBrowse;
+        private System.Windows.Forms.Button btnBrowseFolder;
         private System.Windows.Forms.Label TotalSizelbl;
     }
 }
