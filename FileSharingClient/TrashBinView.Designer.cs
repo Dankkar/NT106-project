@@ -33,6 +33,7 @@
             this.FileSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.FileExtension = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Delete_at = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.TimeRemaining = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Recovery = new System.Windows.Forms.DataGridViewButtonColumn();
             this.PermanentDelete = new System.Windows.Forms.DataGridViewButtonColumn();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
@@ -46,6 +47,7 @@
             this.FileSize,
             this.FileExtension,
             this.Delete_at,
+            this.TimeRemaining,
             this.Recovery,
             this.PermanentDelete});
             this.dataGridView1.Location = new System.Drawing.Point(0, 3);
@@ -66,19 +68,28 @@
             this.FileSize.HeaderText = "Kích thước";
             this.FileSize.Name = "FileSize";
             this.FileSize.ReadOnly = true;
-            this.FileSize.Width = 50;
+            this.FileSize.Width = 80;
             // 
             // FileExtension
             // 
             this.FileExtension.HeaderText = "Đuôi File";
             this.FileExtension.Name = "FileExtension";
             this.FileExtension.ReadOnly = true;
+            this.FileExtension.Width = 80;
             // 
             // Delete_at
             // 
             this.Delete_at.HeaderText = "Ngày Xóa";
             this.Delete_at.Name = "Delete_at";
             this.Delete_at.ReadOnly = true;
+            this.Delete_at.Width = 150;
+            // 
+            // TimeRemaining
+            // 
+            this.TimeRemaining.HeaderText = "Thời gian còn lại";
+            this.TimeRemaining.Name = "TimeRemaining";
+            this.TimeRemaining.ReadOnly = true;
+            this.TimeRemaining.Width = 120;
             // 
             // Recovery
             // 
@@ -90,7 +101,7 @@
             // 
             this.PermanentDelete.HeaderText = "Xóa";
             this.PermanentDelete.Name = "PermanentDelete";
-            this.PermanentDelete.Width = 50;
+            this.PermanentDelete.Width = 70;
             // 
             // TrashBinView
             // 
@@ -111,6 +122,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn FileSize;
         private System.Windows.Forms.DataGridViewTextBoxColumn FileExtension;
         private System.Windows.Forms.DataGridViewTextBoxColumn Delete_at;
+        private System.Windows.Forms.DataGridViewTextBoxColumn TimeRemaining;
         private System.Windows.Forms.DataGridViewButtonColumn Recovery;
         private System.Windows.Forms.DataGridViewButtonColumn PermanentDelete;
     }

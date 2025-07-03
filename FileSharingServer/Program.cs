@@ -7,6 +7,7 @@ using System.Text;
 using System.Data.SQLite;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace FileSharingServer
 {
@@ -452,11 +453,20 @@ namespace FileSharingServer
             }
         }
         */
+        private static Timer _trashCleanupTimer;
         static async Task Main()
         {
             // Tao thu muc Uploads
             var root = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
             Directory.CreateDirectory(Path.Combine(root, "uploads"));
+
+            // Schedule trash cleanup task to run every 24 hours
+            _trashCleanupTimer = new Timer(
+                async (e) => await FileService.CleanUpOldTrashFilesAsync(),
+                null,
+                TimeSpan.Zero, // Start immediately
+                TimeSpan.FromHours(24) // Repeat every 24 hours
+            );
 
             // Start server
             await new ProtocolHandler().StartAsync();

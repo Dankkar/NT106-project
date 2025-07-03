@@ -165,5 +165,117 @@ namespace FileSharingServer
             }
             ZipFile.ExtractToDirectory(zipFilePath, extractPath);
         }
+
+        public static async Task<string> GetTrashFiles(int userId)
+        {
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string selectQuery = "SELECT file_id, file_name, upload_at, file_size, file_type, file_path, file_hash, folder_id FROM files WHERE owner_id = @userId AND status = 'TRASH'";
+                    using (SQLiteCommand cmd = new SQLiteCommand(selectQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@userId", userId);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            var trashFiles = new List<string>();
+                            while (await reader.ReadAsync())
+                            {
+                                trashFiles.Add(string.Join("|",
+                                    reader["file_id"], // 0
+                                    reader["file_name"], // 1
+                                    reader["upload_at"], // 2
+                                    reader["file_size"], // 3
+                                    reader["file_type"], // 4
+                                    reader["file_path"], // 5
+                                    reader["file_hash"], // 6
+                                    reader["folder_id"]  // 7
+                                ));
+                            }
+
+                            return string.Join(";", trashFiles);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting trash files: {ex.Message}");
+                return "500\n";
+            }
+        }
+
+        public static async Task CleanUpOldTrashFilesAsync()
+        {
+            Console.WriteLine("Running scheduled trash cleanup...");
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Find files in trash for more than 30 days
+                    string selectQuery = @"
+                        SELECT file_id, file_path 
+                        FROM files 
+                        WHERE status = 'TRASH' AND deleted_at <= date('now', '-30 days')";
+                    
+                    var filesToDelete = new List<(int fileId, string filePath)>();
+                    using (SQLiteCommand cmd = new SQLiteCommand(selectQuery, conn))
+                    {
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                filesToDelete.Add((
+                                    Convert.ToInt32(reader["file_id"]),
+                                    reader["file_path"].ToString()
+                                ));
+                            }
+                        }
+                    }
+
+                    if (!filesToDelete.Any())
+                    {
+                        Console.WriteLine("No old files to clean up from trash.");
+                        return;
+                    }
+
+                    Console.WriteLine($"Found {filesToDelete.Count} files to permanently delete from trash.");
+
+                    foreach (var file in filesToDelete)
+                    {
+                        // Delete physical file
+                        string fullPath = Path.Combine(DatabaseHelper.projectRoot, file.filePath);
+                        if (File.Exists(fullPath))
+                        {
+                            try
+                            {
+                                File.Delete(fullPath);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Error deleting physical file {fullPath}: {ex.Message}");
+                            }
+                        }
+
+                        // Delete from database
+                        string deleteQuery = "DELETE FROM files WHERE file_id = @fileId";
+                        using (SQLiteCommand deleteCmd = new SQLiteCommand(deleteQuery, conn))
+                        {
+                            deleteCmd.Parameters.AddWithValue("@fileId", file.fileId);
+                            await deleteCmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                    Console.WriteLine("Trash cleanup finished.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during trash cleanup: {ex.Message}");
+            }
+        }
     }
 }
