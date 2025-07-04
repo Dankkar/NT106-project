@@ -59,6 +59,7 @@
             // 
             this.previewText.Location = new System.Drawing.Point(408, 3);
             this.previewText.Name = "previewText";
+            this.previewText.ReadOnly = true;
             this.previewText.Size = new System.Drawing.Size(748, 552);
             this.previewText.TabIndex = 4;
             this.previewText.Text = "";
@@ -69,7 +70,7 @@
             this.previewPdf.MinimumSize = new System.Drawing.Size(20, 20);
             this.previewPdf.Name = "previewPdf";
             this.previewPdf.Size = new System.Drawing.Size(748, 552);
-            this.previewPdf.TabIndex = 5;
+            this.previewPdf.TabIndex = 1;
             // 
             // FilePreview
             // 

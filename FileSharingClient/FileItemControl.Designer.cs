@@ -38,6 +38,8 @@
             this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.btnMore = new System.Windows.Forms.Button();
             this.lblFilePath = new System.Windows.Forms.Label();
+            this.btnPreview = new System.Windows.Forms.Button();
+            this.btnDownload = new System.Windows.Forms.Button();
             this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -132,12 +134,38 @@
             this.lblFilePath.TabIndex = 6;
             this.lblFilePath.Text = "FilePath";
             // 
+            // btnPreview
+            // 
+            this.btnPreview.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnPreview.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.btnPreview.Location = new System.Drawing.Point(950, 8);
+            this.btnPreview.Name = "btnPreview";
+            this.btnPreview.Size = new System.Drawing.Size(60, 25);
+            this.btnPreview.TabIndex = 7;
+            this.btnPreview.Text = "Preview";
+            this.btnPreview.UseVisualStyleBackColor = true;
+            this.btnPreview.Click += new System.EventHandler(this.btnPreview_Click);
+            // 
+            // btnDownload
+            // 
+            this.btnDownload.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDownload.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.btnDownload.Location = new System.Drawing.Point(1020, 8);
+            this.btnDownload.Name = "btnDownload";
+            this.btnDownload.Size = new System.Drawing.Size(70, 25);
+            this.btnDownload.TabIndex = 8;
+            this.btnDownload.Text = "Download";
+            this.btnDownload.UseVisualStyleBackColor = true;
+            this.btnDownload.Click += new System.EventHandler(this.btnDownload_Click);
+            // 
             // FileItemControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.BackColor = System.Drawing.SystemColors.ButtonHighlight;
+            this.Controls.Add(this.btnDownload);
+            this.Controls.Add(this.btnPreview);
             this.Controls.Add(this.lblFilePath);
             this.Controls.Add(this.btnMore);
             this.Controls.Add(this.lblFileSize);
@@ -163,5 +191,7 @@
         private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
         private System.Windows.Forms.Button btnMore;
         private System.Windows.Forms.Label lblFilePath;
+        private System.Windows.Forms.Button btnPreview;
+        private System.Windows.Forms.Button btnDownload;
     }
 }
