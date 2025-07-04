@@ -24,7 +24,7 @@ namespace FileSharingServer
             }
             try
             {
-                string uploadDir = Path.Combine(DatabaseHelper.projectRoot, "uploads");
+                string uploadDir = GetSharedUploadsPath();
 
                 if (!Directory.Exists(uploadDir))
                     Directory.CreateDirectory(uploadDir);
@@ -164,6 +164,28 @@ namespace FileSharingServer
                 Directory.CreateDirectory(extractPath);
             }
             ZipFile.ExtractToDirectory(zipFilePath, extractPath);
+        }
+
+        private static string GetSharedUploadsPath()
+        {
+            // Ensure all server instances use the same uploads directory
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            
+            // Navigate up from bin\Debug\ to project root
+            DirectoryInfo current = new DirectoryInfo(baseDir);
+            while (current != null && !File.Exists(Path.Combine(current.FullName, "test.db")))
+            {
+                current = current.Parent;
+                if (current?.Parent?.Parent == null) break; // Safety check
+            }
+            
+            if (current != null && File.Exists(Path.Combine(current.FullName, "test.db")))
+            {
+                return Path.Combine(current.FullName, "uploads");
+            }
+            
+            // Fallback: use original logic
+            return Path.Combine(DatabaseHelper.projectRoot ?? Environment.CurrentDirectory, "uploads");
         }
     }
 }

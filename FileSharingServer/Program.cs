@@ -452,14 +452,21 @@ namespace FileSharingServer
             }
         }
         */
-        static async Task Main()
+        static async Task Main(string[] args)
         {
             // Tao thu muc Uploads
             var root = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
             Directory.CreateDirectory(Path.Combine(root, "uploads"));
 
+            // Parse port from args if provided
+            int port = 5000;
+            if (args.Length > 0 && int.TryParse(args[0], out int parsed))
+            {
+                port = parsed;
+            }
+
             // Start server
-            await new ProtocolHandler().StartAsync();
+            await new ProtocolHandler(port).StartAsync();
         }
     }
  }
