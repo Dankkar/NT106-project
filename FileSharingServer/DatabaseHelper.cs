@@ -11,8 +11,31 @@ namespace FileSharingServer
     public static class DatabaseHelper
     {
         public static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-        private static string dbPath = Path.Combine(projectRoot, "test.db");
+        private static string dbPath = GetDatabasePath();
         public static readonly string connectionString = $"Data Source={dbPath};Version=3;";
+
+        private static string GetDatabasePath()
+        {
+            // Ensure all server instances use the same database
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            
+            // Navigate up from bin\Debug\ to project root
+            DirectoryInfo current = new DirectoryInfo(baseDir);
+            while (current != null && !File.Exists(Path.Combine(current.FullName, "test.db")))
+            {
+                current = current.Parent;
+                if (current?.Parent?.Parent == null) break; // Safety check
+            }
+            
+            if (current != null && File.Exists(Path.Combine(current.FullName, "test.db")))
+            {
+                return Path.Combine(current.FullName, "test.db");
+            }
+            
+            // Fallback: use original logic
+            string fallbackRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+            return Path.Combine(fallbackRoot ?? Environment.CurrentDirectory, "test.db");
+        }
 
         public static async Task InitializeDatabaseAsync()
         {

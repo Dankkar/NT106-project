@@ -11,7 +11,12 @@ namespace FileSharingServer
 {
     public class ProtocolHandler
     {
-        private readonly int Port = 5000;
+        private readonly int _port;
+
+        public ProtocolHandler(int port = 5000)
+        {
+            _port = port;
+        }
 
         public async Task StartAsync()
         {
@@ -19,9 +24,9 @@ namespace FileSharingServer
             await DatabaseHelper.InitializeDatabaseAsync();
             Console.WriteLine("Database initialized successfully");
 
-            var server = new TcpListener(IPAddress.Any, Port);
+            var server = new TcpListener(IPAddress.Any, _port);
             server.Start();
-            Console.WriteLine($"Listening on port {Port}");
+            Console.WriteLine($"Listening on port {_port}");
             while (true)
             {
                 var client = await server.AcceptTcpClientAsync();
