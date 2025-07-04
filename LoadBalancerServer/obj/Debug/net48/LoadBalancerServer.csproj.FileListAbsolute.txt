@@ -1,0 +1,12 @@
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\obj\Debug\net48\LoadBalancerServer.csproj.AssemblyReference.cache
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\obj\Debug\net48\LoadBalancerServer.GeneratedMSBuildEditorConfig.editorconfig
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\obj\Debug\net48\LoadBalancerServer.AssemblyInfoInputs.cache
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\obj\Debug\net48\LoadBalancerServer.AssemblyInfo.cs
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\obj\Debug\net48\LoadBalancerServer.csproj.CoreCompileInputs.cache
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\obj\Debug\net48\LoadBalancerServer.sourcelink.json
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\bin\Debug\net48\LoadBalancerServer.exe.config
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\bin\Debug\net48\LoadBalancerServer.exe
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\bin\Debug\net48\LoadBalancerServer.pdb
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\obj\Debug\net48\LoadBalancerServer.exe
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\obj\Debug\net48\LoadBalancerServer.pdb
+D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\obj\Debug\net48\LoadBalancerServer.exe.config

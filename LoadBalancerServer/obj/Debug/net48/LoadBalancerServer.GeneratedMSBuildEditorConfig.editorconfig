@@ -1,0 +1,8 @@
+is_global = true
+build_property.RootNamespace = LoadBalancerServer
+build_property.ProjectDir = D:\Bài giảng\Năm hai\HK2\NT106. Lập Trình Mạng\test\NT106-project\LoadBalancerServer\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.CsWinRTUseWindowsUIXamlProjections = false
+build_property.EffectiveAnalysisLevelStyle = 
+build_property.EnableCodeStyleSeverity = 
