@@ -10,7 +10,7 @@ namespace FileSharingServer
 {
     public static class DatabaseHelper
     {
-        public static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+        public static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName ?? Environment.CurrentDirectory;
         private static string dbPath = GetDatabasePath();
         public static readonly string connectionString = $"Data Source={dbPath};Version=3;";
 
@@ -112,6 +112,18 @@ namespace FileSharingServer
                     FOREIGN KEY(shared_with_user_id) REFERENCES users(user_id) ON DELETE CASCADE
                 )";
 
+                // Create file sharing table
+                string createFileSharesTable = @"
+                CREATE TABLE IF NOT EXISTS files_share (
+                    file_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    share_pass TEXT,
+                    shared_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    PRIMARY KEY(file_id, user_id),
+                    FOREIGN KEY(file_id) REFERENCES files(file_id) ON DELETE CASCADE,
+                    FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                )";
+
                 using (SQLiteCommand cmd = new SQLiteCommand(createUsersTable, conn))
                 {
                     await cmd.ExecuteNonQueryAsync();
@@ -128,6 +140,11 @@ namespace FileSharingServer
                 }
                 
                 using (SQLiteCommand cmd = new SQLiteCommand(createFolderSharesTable, conn))
+                {
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                
+                using (SQLiteCommand cmd = new SQLiteCommand(createFileSharesTable, conn))
                 {
                     await cmd.ExecuteNonQueryAsync();
                 }

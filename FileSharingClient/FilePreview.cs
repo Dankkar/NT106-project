@@ -4,98 +4,358 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Data;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using System.Data.SQLite;
 
 namespace FileSharingClient
 {
     public partial class FilePreview : UserControl
     {
-        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName ?? Environment.CurrentDirectory;
+        private static string dbPath = Path.Combine(projectRoot, "test.db");
+        private static string connectionString = $"Data Source={dbPath};Version=3;Pooling=True";
         private int currentUserId = -1;
 
         public FilePreview()
         {
             InitializeComponent();
+            // Add event handler for treeView node click
+            treeView.NodeMouseClick += TreeView_NodeMouseClick;
             _ = InitAsync();
         }
+
         public async Task Reload()
         {
-            await LoadUserFilesAsync();
+            await LoadTreeViewAsync();
         }
+
         private async Task InitAsync()
         {
             currentUserId = await GetUserIdFromSessionAsync();
             if (currentUserId != -1)
             {
-                await LoadUserFilesAsync();
+                await LoadTreeViewAsync();
             }
         }
-        public async Task LoadUserFilesAsync()
-        {
-            int userId = await GetUserIdFromSessionAsync();
-            if (userId != -1)
-            {
-                await LoadUploadedFilesAsync(userId);  // Load files for the logged-in user
-            }
-            else
-            {
-                MessageBox.Show("User information not found", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-        private async Task LoadUploadedFilesAsync(int userID)
+
+        private async Task LoadTreeViewAsync()
         {
             try
             {
-                cbBrowseFile.Items.Clear();
+                treeView.Nodes.Clear();
 
-                // Get user files from server
-                List<string> userFiles = await GetUserFilesFromServer(userID);
-                foreach (string fileName in userFiles)
-                {
-                    cbBrowseFile.Items.Add(fileName);
-                }
+                // My Document node
+                TreeNode myDocNode = new TreeNode("My Document");
+                myDocNode.Tag = new NodeTag { IsFolder = true, IsRoot = true };
+                await AddUserFoldersAndFiles(myDocNode, currentUserId, null);
+                treeView.Nodes.Add(myDocNode);
 
-                // Get shared files from server
-                List<string> sharedFiles = await GetSharedFilesFromServer(userID);
-                foreach (string fileName in sharedFiles)
-                {
-                    cbBrowseFile.Items.Add(fileName);
-                }
+                // Shared With Me node
+                TreeNode sharedNode = new TreeNode("Shared With Me");
+                sharedNode.Tag = new NodeTag { IsFolder = true, IsRoot = true };
+                await AddSharedFoldersAndFiles(sharedNode, currentUserId);
+                treeView.Nodes.Add(sharedNode);
+
+                treeView.ExpandAll();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Loi tai danh sach file: {ex.Message}", "Loi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error loading tree view: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private async Task<List<string>> GetUserFilesFromServer(int userId)
+        private async Task AddUserFoldersAndFiles(TreeNode parentNode, int userId, int? parentFolderId)
         {
-            List<string> files = new List<string>();
+            using (var conn = new SQLiteConnection(connectionString))
+            {
+                await conn.OpenAsync();
+
+                // Add folders first
+                string folderQuery = @"
+                    SELECT folder_id, folder_name 
+                    FROM folders 
+                    WHERE owner_id = @userId 
+                    AND ((@parentId IS NULL AND parent_folder_id IS NULL) OR parent_folder_id = @parentId)
+                    AND status = 'ACTIVE'
+                    ORDER BY folder_name";
+
+                using (var cmd = new SQLiteCommand(folderQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@userId", userId);
+                    cmd.Parameters.AddWithValue("@parentId", (object)parentFolderId ?? DBNull.Value);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int folderId = Convert.ToInt32(reader["folder_id"]);
+                            string folderName = reader["folder_name"].ToString();
+                            
+                            TreeNode folderNode = new TreeNode($"📁 {folderName}");
+                            folderNode.Tag = new NodeTag 
+                            { 
+                                IsFolder = true, 
+                                Id = folderId, 
+                                IsShared = false,
+                                Name = folderName
+                            };
+                            
+                            // Recursively add subfolders and files
+                            await AddUserFoldersAndFiles(folderNode, userId, folderId);
+                            parentNode.Nodes.Add(folderNode);
+                        }
+                    }
+                }
+
+                // Add files in current folder
+                string fileQuery = @"
+                    SELECT file_id, file_name, file_type 
+                    FROM files 
+                    WHERE owner_id = @userId 
+                    AND ((@parentId IS NULL AND folder_id IS NULL) OR folder_id = @parentId)
+                    AND status = 'ACTIVE'
+                    ORDER BY file_name";
+
+                using (var cmd = new SQLiteCommand(fileQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@userId", userId);
+                    cmd.Parameters.AddWithValue("@parentId", (object)parentFolderId ?? DBNull.Value);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int fileId = Convert.ToInt32(reader["file_id"]);
+                            string fileName = reader["file_name"].ToString();
+                            string fileType = reader["file_type"].ToString();
+                            
+                            string icon = GetFileIcon(fileType);
+                            TreeNode fileNode = new TreeNode($"{icon} {fileName}");
+                            fileNode.Tag = new NodeTag 
+                            { 
+                                IsFolder = false, 
+                                Id = fileId, 
+                                IsShared = false,
+                                Name = fileName
+                            };
+                            
+                            parentNode.Nodes.Add(fileNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task AddSharedFoldersAndFiles(TreeNode parentNode, int userId)
+        {
+            using (var conn = new SQLiteConnection(connectionString))
+            {
+                await conn.OpenAsync();
+
+                // Add shared folders
+                string sharedFolderQuery = @"
+                    SELECT f.folder_id, f.folder_name 
+                    FROM folder_shares fs 
+                    JOIN folders f ON fs.folder_id = f.folder_id 
+                    WHERE fs.shared_with_user_id = @userId 
+                    AND f.status = 'ACTIVE'
+                    ORDER BY f.folder_name";
+
+                using (var cmd = new SQLiteCommand(sharedFolderQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@userId", userId);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int folderId = Convert.ToInt32(reader["folder_id"]);
+                            string folderName = reader["folder_name"].ToString();
+                            
+                            TreeNode folderNode = new TreeNode($"📁 {folderName} (Shared)");
+                            folderNode.Tag = new NodeTag 
+                            { 
+                                IsFolder = true, 
+                                Id = folderId, 
+                                IsShared = true,
+                                Name = folderName
+                            };
+                            
+                            // Add files in shared folder
+                            await AddFilesInSharedFolder(folderNode, folderId);
+                            parentNode.Nodes.Add(folderNode);
+                        }
+                    }
+                }
+
+                // Add directly shared files (not in folders)
+                string sharedFileQuery = @"
+                    SELECT f.file_id, f.file_name, f.file_type 
+                    FROM files_share fs 
+                    JOIN files f ON fs.file_id = f.file_id 
+                    WHERE fs.user_id = @userId 
+                    AND f.status = 'ACTIVE'
+                    ORDER BY f.file_name";
+
+                using (var cmd = new SQLiteCommand(sharedFileQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@userId", userId);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int fileId = Convert.ToInt32(reader["file_id"]);
+                            string fileName = reader["file_name"].ToString();
+                            string fileType = reader["file_type"].ToString();
+                            
+                            string icon = GetFileIcon(fileType);
+                            TreeNode fileNode = new TreeNode($"{icon} {fileName} (Shared)");
+                            fileNode.Tag = new NodeTag 
+                            { 
+                                IsFolder = false, 
+                                Id = fileId, 
+                                IsShared = true,
+                                Name = fileName
+                            };
+                            
+                            parentNode.Nodes.Add(fileNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task AddFilesInSharedFolder(TreeNode folderNode, int folderId)
+        {
+            using (var conn = new SQLiteConnection(connectionString))
+            {
+                await conn.OpenAsync();
+
+                string fileQuery = @"
+                    SELECT file_id, file_name, file_type 
+                    FROM files 
+                    WHERE folder_id = @folderId 
+                    AND status = 'ACTIVE'
+                    ORDER BY file_name";
+
+                using (var cmd = new SQLiteCommand(fileQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@folderId", folderId);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int fileId = Convert.ToInt32(reader["file_id"]);
+                            string fileName = reader["file_name"].ToString();
+                            string fileType = reader["file_type"].ToString();
+                            
+                            string icon = GetFileIcon(fileType);
+                            TreeNode fileNode = new TreeNode($"{icon} {fileName}");
+                            fileNode.Tag = new NodeTag 
+                            { 
+                                IsFolder = false, 
+                                Id = fileId, 
+                                IsShared = true,
+                                Name = fileName
+                            };
+                            
+                            folderNode.Nodes.Add(fileNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        private string GetFileIcon(string fileType)
+        {
+            switch (fileType.ToLower())
+            {
+                case "text":
+                case ".txt":
+                case ".md":
+                case ".log":
+                    return "📝";
+                case "pdf":
+                case ".pdf":
+                    return "📕";
+                case "image":
+                case ".jpg":
+                case ".jpeg":
+                case ".png":
+                case ".gif":
+                case ".bmp":
+                    return "🖼️";
+                case "video":
+                case ".mp4":
+                case ".avi":
+                case ".mov":
+                case ".wmv":
+                case ".mkv":
+                    return "🎥";
+                case "audio":
+                case ".mp3":
+                case ".wav":
+                case ".flac":
+                    return "🎵";
+                case "document":
+                case ".docx":
+                case ".doc":
+                    return "📄";
+                case "spreadsheet":
+                case ".xlsx":
+                case ".xls":
+                    return "📊";
+                case "presentation":
+                case ".pptx":
+                case ".ppt":
+                    return "📋";
+                case "archive":
+                case ".zip":
+                case ".rar":
+                case ".7z":
+                    return "📦";
+                default:
+                    return "📄";
+            }
+        }
+
+        private async void TreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            if (e.Node?.Tag is NodeTag nodeTag && !nodeTag.IsFolder && !nodeTag.IsRoot)
+            {
+                await PreviewFile(nodeTag.Id, nodeTag.IsShared);
+            }
+        }
+
+        private async Task PreviewFile(int fileId, bool isShared)
+        {
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                using (var conn = new SQLiteConnection(connectionString))
                 {
-                    string message = $"GET_USER_FILES|{userId}\n";
-                    await writer.WriteLineAsync(message);
-
-                    string response = await reader.ReadLineAsync();
-                    response = response?.Trim();
-
-                    if (response != null)
+                    await conn.OpenAsync();
+                    string query = "SELECT file_path, file_type FROM files WHERE file_id = @fileId";
+                    using (var cmd = new SQLiteCommand(query, conn))
                     {
-                        string[] parts = response.Split('|');
-                        if (parts.Length >= 2 && parts[0] == "200")
+                        cmd.Parameters.AddWithValue("@fileId", fileId);
+                        using (var reader = await cmd.ExecuteReaderAsync())
                         {
-                            if (parts[1] != "NO_FILES")
+                            if (await reader.ReadAsync())
                             {
-                                files.AddRange(parts[1].Split(';'));
+                                string filePath = reader["file_path"].ToString();
+                                string fileType = reader["file_type"].ToString();
+                                string fullPath = Path.Combine(projectRoot, filePath);
+                                
+                                await ShowPreviewAsync(fullPath, fileType);
+                            }
+                            else
+                            {
+                                MessageBox.Show("File not found in database.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
                     }
@@ -103,169 +363,94 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error getting user files: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            return files;
-        }
-
-        private async Task<List<string>> GetSharedFilesFromServer(int userId)
-        {
-            List<string> files = new List<string>();
-            try
-            {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
-                    string message = $"GET_SHARED_FILES|{userId}\n";
-                    await writer.WriteLineAsync(message);
-
-                    string response = await reader.ReadLineAsync();
-                    response = response?.Trim();
-
-                    if (response != null)
-                    {
-                        string[] parts = response.Split('|');
-                        if (parts.Length >= 2 && parts[0] == "200")
-                        {
-                            if (parts[1] != "NO_SHARED_FILES")
-                            {
-                                files.AddRange(parts[1].Split(';'));
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error getting shared files: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            return files;
-        }
-        private async Task<int> GetUserIdFromSessionAsync()
-        {
-            try
-            {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
-                    string message = $"GET_USER_ID|{Session.LoggedInUser}\n";
-                    await writer.WriteLineAsync(message);
-
-                    string response = await reader.ReadLineAsync();
-                    response = response?.Trim();
-
-                    if (response != null)
-                    {
-                        string[] parts = response.Split('|');
-                        if (parts.Length >= 2 && parts[0] == "200")
-                        {
-                            if (int.TryParse(parts[1], out int userId))
-                            {
-                                return userId;
-                            }
-                        }
-                    }
-                    return -1;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return -1;
-            }
-        }
-
-
-        private async void btnPreview_Click(object sender, EventArgs e)
-        {
-            if (cbBrowseFile.SelectedItem == null)
-            {
-                MessageBox.Show("Vui lòng chọn một file.");
-                return;
-            }
-
-            string filename = cbBrowseFile.SelectedItem.ToString();
-
-            try
-            {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
-                    string message = $"GET_FILE_INFO|{filename}|{currentUserId}\n";
-                    await writer.WriteLineAsync(message);
-
-                    string response = await reader.ReadLineAsync();
-                    response = response?.Trim();
-
-                    if (response != null)
-                    {
-                        string[] parts = response.Split('|');
-                        if (parts.Length >= 3 && parts[0] == "200")
-                        {
-                            string relativePath = parts[1];
-                            string fileType = parts[2].ToLower();
-                            string fullPath = Path.Combine(projectRoot, relativePath);
-
-                            await ShowPreviewAsync(fullPath, fileType);
-                        }
-                        else
-                        {
-                            MessageBox.Show("Không tìm thấy đường dẫn file.");
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("Không nhận được phản hồi từ server.");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi xem trước file: {ex.Message}");
+                MessageBox.Show($"Error previewing file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private async Task ShowPreviewAsync(string filePath, string fileType)
         {
-            rtbContent.Visible = false;
-            picImagePreview.Visible = false;
-            wbPdfPreview.Visible = false;
-
-            if (!File.Exists(filePath)) {
-                MessageBox.Show("File khong ton tai");
+            // Hide all preview controls first
+            previewText.Visible = false;
+            previewImage.Visible = false;
+            previewPdf.Visible = false;
+            
+            if (!File.Exists(filePath))
+            {
+                previewText.Text = $"File not found: {Path.GetFileName(filePath)}\nPath: {filePath}";
+                previewText.Visible = true;
                 return;
             }
 
-            if (fileType.Contains("text") || filePath.EndsWith(".txt"))
+            try
             {
-                string content = await Task.Run(() => File.ReadAllText(filePath));
-                rtbContent.Text = content;
-                rtbContent.Visible = true;
+                if (fileType.Contains("text") || filePath.EndsWith(".txt") || filePath.EndsWith(".md"))
+                {
+                    string content = await Task.Run(() => File.ReadAllText(filePath));
+                    previewText.Text = content;
+                    previewText.Visible = true;
+                }
+                else if (fileType.Contains("image") || filePath.EndsWith(".png") || filePath.EndsWith(".jpg") || 
+                         filePath.EndsWith(".jpeg") || filePath.EndsWith(".gif") || filePath.EndsWith(".bmp"))
+                {
+                    using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                    {
+                        previewImage.Image = Image.FromStream(fs);
+                        previewImage.Visible = true;
+                    }
+                }
+                else if (fileType.Contains("pdf") || filePath.EndsWith(".pdf"))
+                {
+                    previewPdf.Navigate(filePath);
+                    previewPdf.Visible = true;
+                }
+                else
+                {
+                    previewText.Text = $"Preview not supported for this file type.\nFile: {Path.GetFileName(filePath)}\nType: {fileType}\nPath: {filePath}";
+                    previewText.Visible = true;
+                }
             }
+            catch (Exception ex)
+            {
+                previewText.Text = $"Error loading file preview: {ex.Message}\nFile: {Path.GetFileName(filePath)}";
+                previewText.Visible = true;
+            }
+        }
 
-            else if (fileType.Contains("image") || filePath.EndsWith(".png") || filePath.EndsWith(".jpg") || filePath.EndsWith(".jpeg"))
+        private async Task<int> GetUserIdFromSessionAsync()
+        {
+            int userId = -1;
+            try
             {
-                picImagePreview.Image = Image.FromFile(filePath);
-                picImagePreview.SizeMode = PictureBoxSizeMode.Zoom;
-                picImagePreview.Visible = true;
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT user_id FROM users WHERE username = @username";
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@username", Session.LoggedInUser);
+                        object result = await cmd.ExecuteScalarAsync();
+                        if (result != null)
+                        {
+                            userId = Convert.ToInt32(result);
+                        }
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return userId;
+        }
 
-            else if(fileType.Contains("pdf") || filePath.EndsWith(".pdf"))
-            {
-                wbPdfPreview.Navigate(filePath);
-                wbPdfPreview.Visible = true;
-            }
-
-            else
-            {
-                MessageBox.Show("Dinh dang file chua duoc ho tro");
-            }
+        // Class to store node information
+        private class NodeTag
+        {
+            public bool IsFolder { get; set; }
+            public int Id { get; set; }
+            public bool IsShared { get; set; }
+            public bool IsRoot { get; set; }
+            public string Name { get; set; }
         }
     }
 }

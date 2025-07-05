@@ -71,14 +71,24 @@ namespace FileSharingClient
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
                     // Lấy thông tin từ TextBox và cắt khoảng trắng
-                    string username = usernametxtBox.Text;
+                    string username = usernametxtBox.Text.Trim();
                     string password = passtxtBox.Text;
 
-                    if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                    // Kiểm tra placeholder text
+                    if (username == this.username || string.IsNullOrWhiteSpace(username))
                     {
                         this.Invoke(new Action(() =>
                         {
-                            MessageBox.Show("Vui lòng nhập đầy đủ thông tin", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("Vui lòng nhập tên đăng nhập", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+                        return;
+                    }
+
+                    if (password == this.password || string.IsNullOrWhiteSpace(password))
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            MessageBox.Show("Vui lòng nhập mật khẩu", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }));
                         return;
                     }

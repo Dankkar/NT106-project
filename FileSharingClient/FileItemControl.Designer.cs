@@ -33,11 +33,14 @@
             this.lblOwner = new System.Windows.Forms.Label();
             this.lblCreateAt = new System.Windows.Forms.Label();
             this.lblFileSize = new System.Windows.Forms.Label();
+            this.lblFileType = new System.Windows.Forms.Label();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.shareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.downloadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.btnMore = new System.Windows.Forms.Button();
             this.lblFilePath = new System.Windows.Forms.Label();
+            this.lblFileIcon = new System.Windows.Forms.Label();
             this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -76,32 +79,51 @@
             this.lblFileSize.AutoSize = true;
             this.lblFileSize.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.lblFileSize.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFileSize.Location = new System.Drawing.Point(565, 12);
+            this.lblFileSize.Location = new System.Drawing.Point(350, 12);
             this.lblFileSize.Name = "lblFileSize";
             this.lblFileSize.Size = new System.Drawing.Size(51, 17);
             this.lblFileSize.TabIndex = 3;
             this.lblFileSize.Text = "FileSize";
             // 
+            // lblFileType
+            // 
+            this.lblFileType.AutoSize = true;
+            this.lblFileType.BackColor = System.Drawing.SystemColors.ButtonHighlight;
+            this.lblFileType.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblFileType.Location = new System.Drawing.Point(450, 12);
+            this.lblFileType.Name = "lblFileType";
+            this.lblFileType.Size = new System.Drawing.Size(51, 17);
+            this.lblFileType.TabIndex = 4;
+            this.lblFileType.Text = "FileType";
+            // 
             // contextMenuStrip1
             // 
             this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.shareToolStripMenuItem,
+            this.downloadToolStripMenuItem,
             this.deleteToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(108, 48);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(128, 70);
             this.contextMenuStrip1.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStrip1_Opening);
             // 
             // shareToolStripMenuItem
             // 
             this.shareToolStripMenuItem.Name = "shareToolStripMenuItem";
-            this.shareToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
+            this.shareToolStripMenuItem.Size = new System.Drawing.Size(127, 22);
             this.shareToolStripMenuItem.Text = "Share";
             this.shareToolStripMenuItem.Click += new System.EventHandler(this.shareToolStripMenuItem_Click);
+            // 
+            // downloadToolStripMenuItem
+            // 
+            this.downloadToolStripMenuItem.Name = "downloadToolStripMenuItem";
+            this.downloadToolStripMenuItem.Size = new System.Drawing.Size(127, 22);
+            this.downloadToolStripMenuItem.Text = "Download";
+            this.downloadToolStripMenuItem.Click += new System.EventHandler(this.downloadToolStripMenuItem_Click);
             // 
             // deleteToolStripMenuItem
             // 
             this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
-            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
+            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(127, 22);
             this.deleteToolStripMenuItem.Text = "Delete";
             this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
@@ -112,7 +134,7 @@
             this.btnMore.FlatAppearance.BorderSize = 0;
             this.btnMore.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnMore.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
-            this.btnMore.Location = new System.Drawing.Point(1253, 10);
+            this.btnMore.Location = new System.Drawing.Point(550, 10);
             this.btnMore.Name = "btnMore";
             this.btnMore.Size = new System.Drawing.Size(75, 23);
             this.btnMore.TabIndex = 5;
@@ -132,6 +154,16 @@
             this.lblFilePath.TabIndex = 6;
             this.lblFilePath.Text = "FilePath";
             // 
+            // lblFileIcon
+            // 
+            this.lblFileIcon.AutoSize = true;
+            this.lblFileIcon.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblFileIcon.Location = new System.Drawing.Point(10, 12);
+            this.lblFileIcon.Name = "lblFileIcon";
+            this.lblFileIcon.Size = new System.Drawing.Size(23, 21);
+            this.lblFileIcon.TabIndex = 9;
+            this.lblFileIcon.Text = "📄";
+            // 
             // FileItemControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -140,12 +172,14 @@
             this.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.Controls.Add(this.lblFilePath);
             this.Controls.Add(this.btnMore);
+            this.Controls.Add(this.lblFileType);
             this.Controls.Add(this.lblFileSize);
             this.Controls.Add(this.lblCreateAt);
             this.Controls.Add(this.lblOwner);
             this.Controls.Add(this.lblFileName);
+            this.Controls.Add(this.lblFileIcon);
             this.Name = "FileItemControl";
-            this.Size = new System.Drawing.Size(1331, 43);
+            this.Size = new System.Drawing.Size(650, 43);
             this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -158,10 +192,13 @@
         private System.Windows.Forms.Label lblOwner;
         private System.Windows.Forms.Label lblCreateAt;
         private System.Windows.Forms.Label lblFileSize;
+        private System.Windows.Forms.Label lblFileType;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
         private System.Windows.Forms.ToolStripMenuItem shareToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem downloadToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
         private System.Windows.Forms.Button btnMore;
         private System.Windows.Forms.Label lblFilePath;
+        private System.Windows.Forms.Label lblFileIcon;
     }
 }

@@ -107,6 +107,12 @@
     <Compile Include="FileItemControl.Designer.cs">
       <DependentUpon>FileItemControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="FolderItemControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="FolderItemControl.Designer.cs">
+      <DependentUpon>FolderItemControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="FilePreview.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -171,6 +177,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FileItemControl.resx">
       <DependentUpon>FileItemControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FolderItemControl.resx">
+      <DependentUpon>FolderItemControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FilePreview.resx">
       <DependentUpon>FilePreview.cs</DependentUpon>
