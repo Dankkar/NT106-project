@@ -33,6 +33,7 @@
             this.lblOwner = new System.Windows.Forms.Label();
             this.lblCreateAt = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.lblType = new System.Windows.Forms.Label();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.btnNewFolder = new System.Windows.Forms.ToolStripButton();
             this.btnUpload = new System.Windows.Forms.ToolStripButton();
@@ -85,16 +86,27 @@
             this.lblCreateAt.Size = new System.Drawing.Size(51, 17);
             this.lblCreateAt.TabIndex = 4;
             this.lblCreateAt.Text = "Tạo lúc";
+            this.lblCreateAt.Visible = false;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(447, 32);
+            this.label1.Location = new System.Drawing.Point(350, 32);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(72, 17);
             this.label1.TabIndex = 5;
             this.label1.Text = "Kích thước";
+            // 
+            // lblType
+            // 
+            this.lblType.AutoSize = true;
+            this.lblType.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblType.Location = new System.Drawing.Point(450, 32);
+            this.lblType.Name = "lblType";
+            this.lblType.Size = new System.Drawing.Size(35, 17);
+            this.lblType.TabIndex = 7;
+            this.lblType.Text = "Type";
             // 
             // toolStrip1
             // 
@@ -171,6 +183,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoScroll = true;
             this.Controls.Add(this.toolStrip1);
+            this.Controls.Add(this.lblType);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.lblCreateAt);
             this.Controls.Add(this.lblOwner);
@@ -192,6 +205,7 @@
         private System.Windows.Forms.Label lblOwner;
         private System.Windows.Forms.Label lblCreateAt;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lblType;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripButton btnNewFolder;
         private System.Windows.Forms.ToolStripButton btnUpload;

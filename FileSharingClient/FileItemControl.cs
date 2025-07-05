@@ -41,23 +41,31 @@ namespace FileSharingClient
             Owner = owner;
             FileSize = filesize;
 
+            // Set file type
+            string fileExtension = Path.GetExtension(filename).ToLower();
+            string fileType = GetFileType(fileExtension);
+            lblFileType.Text = fileType;
+
+            // Set file icon based on type
+            lblFileIcon.Text = GetFileIcon(fileExtension);
+
+            // Ẩn các thông tin không cần thiết - chỉ hiển thị Tên file, Người sở hữu, Kích thước, Type
+            lblCreateAt.Visible = false;
+            lblFilePath.Visible = false;
+
             btnMore.Click += (s, e) => contextMenuStrip1.Show(btnMore, new Point(0, btnMore.Height));
             
             // Add click events to main controls for preview
             this.Click += FileItemControl_Click;
             lblFileName.Click += FileItemControl_Click;
             lblOwner.Click += FileItemControl_Click;
-            lblCreateAt.Click += FileItemControl_Click;
             lblFileSize.Click += FileItemControl_Click;
-            lblFilePath.Click += FileItemControl_Click;
             
             // Make the control look clickable
             this.Cursor = Cursors.Hand;
             lblFileName.Cursor = Cursors.Hand;
             lblOwner.Cursor = Cursors.Hand;
-            lblCreateAt.Cursor = Cursors.Hand;
             lblFileSize.Cursor = Cursors.Hand;
-            lblFilePath.Cursor = Cursors.Hand;
             
             // Add hover effects
             this.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
@@ -66,25 +74,21 @@ namespace FileSharingClient
             lblFileName.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
             lblOwner.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
             lblOwner.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
-            lblCreateAt.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
-            lblCreateAt.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
             lblFileSize.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
             lblFileSize.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
-            lblFilePath.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
-            lblFilePath.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
         }
 
         private void FileItemControl_Click(object sender, EventArgs e)
         {
             // When clicked, automatically preview the file
-            btnPreview_Click(sender, e);
+            PreviewFile();
         }
 
-        private void btnPreview_Click(object sender, EventArgs e)
+        private void PreviewFile()
         {
             try
             {
-                string fullPath = Path.Combine(projectRoot, FilePath);
+                string fullPath = Path.Combine(projectRoot ?? Environment.CurrentDirectory, FilePath);
                 
                 if (!File.Exists(fullPath))
                 {
@@ -152,11 +156,16 @@ namespace FileSharingClient
             }
         }
 
-        private void btnDownload_Click(object sender, EventArgs e)
+        private void shareToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show($"Chia sẻ file {FileName}");
+        }
+
+        private void downloadToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try
             {
-                string fullPath = Path.Combine(projectRoot, FilePath);
+                string fullPath = Path.Combine(projectRoot ?? Environment.CurrentDirectory, FilePath);
                 
                 if (!File.Exists(fullPath))
                 {
@@ -188,11 +197,6 @@ namespace FileSharingClient
             }
         }
 
-        private void shareToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show($"Chia sẻ file {FileName}");
-        }
-
         private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show($"Bạn có chắc muốn xóa file {FileName}?", "Xác nhận", MessageBoxButtons.YesNo);
@@ -203,6 +207,94 @@ namespace FileSharingClient
             }
         }
        
+        private string GetFileType(string extension)
+        {
+            switch (extension)
+            {
+                case ".txt":
+                case ".md":
+                case ".log":
+                    return "Text";
+                case ".pdf":
+                    return "PDF";
+                case ".jpg":
+                case ".jpeg":
+                case ".png":
+                case ".gif":
+                case ".bmp":
+                    return "Image";
+                case ".mp4":
+                case ".avi":
+                case ".mov":
+                case ".wmv":
+                case ".mkv":
+                    return "Video";
+                case ".mp3":
+                case ".wav":
+                case ".flac":
+                    return "Audio";
+                case ".docx":
+                case ".doc":
+                    return "Word";
+                case ".xlsx":
+                case ".xls":
+                    return "Excel";
+                case ".pptx":
+                case ".ppt":
+                    return "PowerPoint";
+                case ".zip":
+                case ".rar":
+                case ".7z":
+                    return "Archive";
+                default:
+                    return "File";
+            }
+        }
+
+        private string GetFileIcon(string extension)
+        {
+            switch (extension)
+            {
+                case ".txt":
+                case ".md":
+                case ".log":
+                    return "📝";
+                case ".pdf":
+                    return "📕";
+                case ".jpg":
+                case ".jpeg":
+                case ".png":
+                case ".gif":
+                case ".bmp":
+                    return "🖼️";
+                case ".mp4":
+                case ".avi":
+                case ".mov":
+                case ".wmv":
+                case ".mkv":
+                    return "🎥";
+                case ".mp3":
+                case ".wav":
+                case ".flac":
+                    return "🎵";
+                case ".docx":
+                case ".doc":
+                    return "📄";
+                case ".xlsx":
+                case ".xls":
+                    return "📊";
+                case ".pptx":
+                case ".ppt":
+                    return "📋";
+                case ".zip":
+                case ".rar":
+                case ".7z":
+                    return "📦";
+                default:
+                    return "📄";
+            }
+        }
+
         private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
         {
 

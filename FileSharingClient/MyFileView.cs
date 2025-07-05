@@ -26,9 +26,9 @@ namespace FileSharingClient
         public MyFileView()
         {
             InitializeComponent();
-            MyFileLayoutPanel.FlowDirection = FlowDirection.LeftToRight;
+            MyFileLayoutPanel.FlowDirection = FlowDirection.TopDown;
             MyFileLayoutPanel.AutoScroll = true;
-            MyFileLayoutPanel.WrapContents = true;
+            MyFileLayoutPanel.WrapContents = false;
             
             // Set placeholder text style
             txtSearch.ForeColor = Color.Gray;
@@ -218,7 +218,9 @@ namespace FileSharingClient
             // Add folders first
             foreach (var folder in allFolders)
             {
-                var folderControl = CreateFolderControl(folder);
+                var folderControl = new FolderItemControl(folder.Name, folder.CreatedAt, folder.Owner, folder.IsShared, folder.Id);
+                folderControl.FolderClicked += async (folderId) => await NavigateToFolderById(folderId);
+                folderControl.FolderDeleted += async (folderId) => await OnFolderDeleted(folderId);
                 MyFileLayoutPanel.Controls.Add(folderControl);
             }
             
@@ -318,6 +320,16 @@ namespace FileSharingClient
             return panel;
         }
 
+        private async Task NavigateToFolderById(int folderId)
+        {
+            // Find the folder in allFolders
+            var folder = allFolders.FirstOrDefault(f => f.Id == folderId);
+            if (folder != null)
+            {
+                await NavigateToFolder(folder);
+            }
+        }
+
         private async Task NavigateToFolder(FolderItem folder)
         {
             // Save current state to navigation stack
@@ -328,6 +340,12 @@ namespace FileSharingClient
             });
             
             currentFolderId = folder.Id;
+            await LoadFoldersAndFilesAsync();
+        }
+
+        private async Task OnFolderDeleted(int folderId)
+        {
+            // Refresh the folder list after deletion
             await LoadFoldersAndFilesAsync();
         }
 
@@ -409,9 +427,41 @@ namespace FileSharingClient
             {
                 try
                 {
+                    // Build correct folder path
+                    string folderPath;
+                    string parentFolderPath = "";
+                    
                     using (var conn = new SQLiteConnection(connectionString))
                     {
                         await conn.OpenAsync();
+                        
+                        // Get parent folder path if we're inside a folder
+                        if (currentFolderId != null)
+                        {
+                            string parentQuery = "SELECT folder_path FROM folders WHERE folder_id = @folderId";
+                            using (var parentCmd = new SQLiteCommand(parentQuery, conn))
+                            {
+                                parentCmd.Parameters.AddWithValue("@folderId", currentFolderId);
+                                var result = await parentCmd.ExecuteScalarAsync();
+                                if (result != null)
+                                {
+                                    parentFolderPath = result.ToString();
+                                }
+                            }
+                        }
+                        
+                        // Build correct folder path
+                        if (currentFolderId == null)
+                        {
+                            // Root level folder
+                            folderPath = $"uploads/{currentUserId}/{folderName}";
+                        }
+                        else
+                        {
+                            // Subfolder - append to parent path
+                            folderPath = $"{parentFolderPath}/{folderName}";
+                        }
+                        
                         string insertQuery = @"
                             INSERT INTO folders (folder_name, owner_id, parent_folder_id, folder_path, created_at, updated_at)
                             VALUES (@folderName, @ownerId, @parentFolderId, @folderPath, datetime('now'), datetime('now'))";
@@ -421,23 +471,15 @@ namespace FileSharingClient
                             cmd.Parameters.AddWithValue("@folderName", folderName);
                             cmd.Parameters.AddWithValue("@ownerId", currentUserId);
                             cmd.Parameters.AddWithValue("@parentFolderId", (object)currentFolderId ?? DBNull.Value);
-                            
-                            string folderPath = currentFolderId == null 
-                                ? $"uploads/{currentUserId}/{folderName}"
-                                : $"uploads/{currentUserId}/folder_{currentFolderId}/{folderName}";
                             cmd.Parameters.AddWithValue("@folderPath", folderPath);
                             
                             await cmd.ExecuteNonQueryAsync();
                         }
                     }
 
-                    // Create physical folder
-                    string physicalFolderPath = Path.Combine(projectRoot, "uploads", currentUserId.ToString());
-                    if (currentFolderId != null)
-                    {
-                        physicalFolderPath = Path.Combine(physicalFolderPath, $"folder_{currentFolderId}");
-                    }
-                    physicalFolderPath = Path.Combine(physicalFolderPath, folderName);
+                    // Create physical folder using the folder path from database
+                    string physicalFolderPath = Path.Combine(projectRoot ?? Environment.CurrentDirectory, folderPath);
+                    
                     Directory.CreateDirectory(physicalFolderPath);
 
                     MessageBox.Show("Folder created successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);

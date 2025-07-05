@@ -13,7 +13,7 @@ namespace FileSharingServer
     internal class Program
     {
         /*
-        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName ?? Environment.CurrentDirectory;
         private static string dbPath = Path.Combine(projectRoot, "test.db");
         private static string connectionString = $"Data Source={dbPath};Version=3;";
         private static Dictionary<string, (string OTP, DateTime Expiry)> otpStorage = new Dictionary<string, (string, DateTime)>();
@@ -26,11 +26,13 @@ namespace FileSharingServer
             server.Start();
             Console.WriteLine("Server đang lắng nghe trên cổng 5000...");
 
-            string uploadsPath = Path.Combine(projectRoot, "uploads");
+            // Fix projectRoot null issue
+            string safeProjectRoot = projectRoot ?? Environment.CurrentDirectory;
+            string uploadsPath = Path.Combine(safeProjectRoot, "uploads");
             if (!Directory.Exists(uploadsPath))
             {
                 Directory.CreateDirectory(uploadsPath);
-                Console.WriteLine("Đã tạo thư mục uploads.");
+                Console.WriteLine($"Đã tạo thư mục uploads tại: {uploadsPath}");
             }
 
             while (true)
@@ -456,7 +458,15 @@ namespace FileSharingServer
         {
             // Tao thu muc Uploads
             var root = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-            Directory.CreateDirectory(Path.Combine(root, "uploads"));
+            if (root == null)
+            {
+                Console.WriteLine("Error: Cannot find project root directory. Using current directory instead.");
+                root = Directory.GetCurrentDirectory();
+            }
+            
+            string uploadsPath = Path.Combine(root, "uploads");
+            Directory.CreateDirectory(uploadsPath);
+            Console.WriteLine($"Uploads directory: {uploadsPath}");
 
             // Parse port from args if provided
             int port = 5000;

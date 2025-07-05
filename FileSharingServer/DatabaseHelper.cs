@@ -10,7 +10,7 @@ namespace FileSharingServer
 {
     public static class DatabaseHelper
     {
-        public static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+        public static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName ?? Environment.CurrentDirectory;
         private static string dbPath = GetDatabasePath();
         public static readonly string connectionString = $"Data Source={dbPath};Version=3;";
 
