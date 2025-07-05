@@ -13,7 +13,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Data.SQLite;
 
 namespace FileSharingClient
 {
@@ -25,9 +24,6 @@ namespace FileSharingClient
         private string password = "Mật khẩu";
         private const string SERVER_IP = "127.0.0.1";
         private const int SERVER_PORT = 5000;
-        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-        private static string dbPath = Path.Combine(projectRoot, "test.db");
-        private static string connectionString = $"Data Source={dbPath};Version=3;";
         public Login()
         {
             InitializeComponent();
@@ -40,20 +36,6 @@ namespace FileSharingClient
             passtxtBox.ForeColor = Color.Gray;
             passtxtBox.Enter += passtxtBox_Enter;
             passtxtBox.Leave += passtxtBox_Leave;
-            SetWALModeAsync();
-        }
-
-        private async Task SetWALModeAsync()
-        {
-            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
-            {
-                await conn.OpenAsync();
-                string query = "PRAGMA journal_mode = WAL;";
-                using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
-                {
-                    await cmd.ExecuteNonQueryAsync();  // Apply WAL mode to improve concurrency
-                }
-            }
         }
 
 
@@ -175,16 +157,31 @@ namespace FileSharingClient
         {
             try
             {
-                using (var conn = new SQLiteConnection(connectionString))
+                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    await conn.OpenAsync();
-                    string query = "SELECT user_id FROM users WHERE username = @username";
-                    using (var cmd = new SQLiteCommand(query, conn))
+                    // Gửi request GET_USER_ID
+                    string message = $"GET_USER_ID|{username}\n";
+                    await writer.WriteLineAsync(message);
+
+                    // Nhận response từ server
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
                     {
-                        cmd.Parameters.AddWithValue("@username", username);
-                        object result = await cmd.ExecuteScalarAsync();
-                        return result != null ? Convert.ToInt32(result) : -1;
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            if (int.TryParse(parts[1], out int userId))
+                            {
+                                return userId;
+                            }
+                        }
                     }
+                    return -1;
                 }
             }
             catch
