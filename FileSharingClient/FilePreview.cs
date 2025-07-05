@@ -9,15 +9,12 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using System.Data.SQLite;
-using System.Data.SqlClient;
-using System.Data.Common;
-using System.Net.NetworkInformation;
 
 namespace FileSharingClient
 {
     public partial class FilePreview : UserControl
     {
-        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName ?? Environment.CurrentDirectory;
         private static string dbPath = Path.Combine(projectRoot, "test.db");
         private static string connectionString = $"Data Source={dbPath};Version=3;Pooling=True";
         private int currentUserId = -1;
@@ -276,24 +273,55 @@ namespace FileSharingClient
 
         private string GetFileIcon(string fileType)
         {
-            if (string.IsNullOrEmpty(fileType)) return "📄";
-            
-            fileType = fileType.ToLower();
-            
-            if (fileType.Contains("image") || fileType == "jpg" || fileType == "png" || fileType == "gif" || fileType == "jpeg")
-                return "🖼️";
-            else if (fileType.Contains("pdf") || fileType == "pdf")
-                return "📕";
-            else if (fileType.Contains("text") || fileType == "txt")
-                return "📝";
-            else if (fileType.Contains("video") || fileType == "mp4" || fileType == "avi" || fileType == "mov")
-                return "🎥";
-            else if (fileType.Contains("audio") || fileType == "mp3" || fileType == "wav" || fileType == "m4a")
-                return "🎵";
-            else if (fileType == "zip" || fileType == "rar" || fileType == "7z")
-                return "📦";
-            else
-                return "📄";
+            switch (fileType.ToLower())
+            {
+                case "text":
+                case ".txt":
+                case ".md":
+                case ".log":
+                    return "📝";
+                case "pdf":
+                case ".pdf":
+                    return "📕";
+                case "image":
+                case ".jpg":
+                case ".jpeg":
+                case ".png":
+                case ".gif":
+                case ".bmp":
+                    return "🖼️";
+                case "video":
+                case ".mp4":
+                case ".avi":
+                case ".mov":
+                case ".wmv":
+                case ".mkv":
+                    return "🎥";
+                case "audio":
+                case ".mp3":
+                case ".wav":
+                case ".flac":
+                    return "🎵";
+                case "document":
+                case ".docx":
+                case ".doc":
+                    return "📄";
+                case "spreadsheet":
+                case ".xlsx":
+                case ".xls":
+                    return "📊";
+                case "presentation":
+                case ".pptx":
+                case ".ppt":
+                    return "📋";
+                case "archive":
+                case ".zip":
+                case ".rar":
+                case ".7z":
+                    return "📦";
+                default:
+                    return "📄";
+            }
         }
 
         private async void TreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -311,26 +339,19 @@ namespace FileSharingClient
                 using (var conn = new SQLiteConnection(connectionString))
                 {
                     await conn.OpenAsync();
-                    
-                    string query = @"
-                        SELECT file_path, file_type, file_name
-                        FROM files 
-                        WHERE file_id = @fileId";
-
+                    string query = "SELECT file_path, file_type FROM files WHERE file_id = @fileId";
                     using (var cmd = new SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@fileId", fileId);
-
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
                             if (await reader.ReadAsync())
                             {
-                                string relativePath = reader["file_path"].ToString();
-                                string fileType = reader["file_type"].ToString().ToLower();
-                                string fileName = reader["file_name"].ToString();
-                                string fullPath = Path.Combine(projectRoot, relativePath);
-
-                                await ShowPreviewAsync(fullPath, fileType, fileName);
+                                string filePath = reader["file_path"].ToString();
+                                string fileType = reader["file_type"].ToString();
+                                string fullPath = Path.Combine(projectRoot, filePath);
+                                
+                                await ShowPreviewAsync(fullPath, fileType);
                             }
                             else
                             {
@@ -346,15 +367,16 @@ namespace FileSharingClient
             }
         }
 
-        private async Task ShowPreviewAsync(string filePath, string fileType, string fileName)
+        private async Task ShowPreviewAsync(string filePath, string fileType)
         {
             // Hide all preview controls first
             previewText.Visible = false;
             previewImage.Visible = false;
             previewPdf.Visible = false;
+            
             if (!File.Exists(filePath))
             {
-                previewText.Text = $"File not found: {fileName}\nPath: {filePath}";
+                previewText.Text = $"File not found: {Path.GetFileName(filePath)}\nPath: {filePath}";
                 previewText.Visible = true;
                 return;
             }
@@ -383,13 +405,13 @@ namespace FileSharingClient
                 }
                 else
                 {
-                    previewText.Text = $"Preview not supported for this file type.\nFile: {fileName}\nType: {fileType}\nPath: {filePath}";
+                    previewText.Text = $"Preview not supported for this file type.\nFile: {Path.GetFileName(filePath)}\nType: {fileType}\nPath: {filePath}";
                     previewText.Visible = true;
                 }
             }
             catch (Exception ex)
             {
-                previewText.Text = $"Error loading file preview: {ex.Message}\nFile: {fileName}";
+                previewText.Text = $"Error loading file preview: {ex.Message}\nFile: {Path.GetFileName(filePath)}";
                 previewText.Visible = true;
             }
         }
@@ -397,7 +419,6 @@ namespace FileSharingClient
         private async Task<int> GetUserIdFromSessionAsync()
         {
             int userId = -1;
-
             try
             {
                 using (SQLiteConnection conn = new SQLiteConnection(connectionString))
@@ -419,7 +440,6 @@ namespace FileSharingClient
             {
                 MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
             return userId;
         }
 
@@ -434,3 +454,4 @@ namespace FileSharingClient
         }
     }
 }
+

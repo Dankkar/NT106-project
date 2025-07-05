@@ -140,6 +140,24 @@ namespace FileSharingServer
                 case "UPLOAD":
                     if (parts.Length != 5) return "400\n";
                     return await ReceiveFile(parts[1], int.Parse(parts[2]), parts[3], parts[4], stream);
+                case "GET_USER_ID":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetUserId(parts[1]);
+                case "GET_USER_FILES":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetUserFiles(parts[1]);
+                case "GET_SHARED_FILES":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetSharedFiles(parts[1]);
+                case "UPDATE_FILE_SHARE":
+                    if (parts.Length != 3) return "400\n";
+                    return await UpdateFileShare(parts[1], parts[2]);
+                case "GET_SHARE_PASS":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetSharePass(parts[1]);
+                case "GET_FILE_INFO":
+                    if (parts.Length != 3) return "400\n";
+                    return await GetFileInfo(parts[1], parts[2]);
                 default:
                     return "400\n";
             }
