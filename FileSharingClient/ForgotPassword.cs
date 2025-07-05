@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -217,7 +218,20 @@ namespace FileSharingClient
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 {
-                    string message = $"RESET_PASSWORD|{email}|{newPassword}\n";
+                    // Hash password bằng SHA256 trước khi gửi
+                    string hashedPassword;
+                    using (SHA256 sha256Hash = SHA256.Create())
+                    {
+                        byte[] data = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(newPassword));
+                        StringBuilder sb = new StringBuilder();
+                        foreach (byte b in data)
+                        {
+                            sb.Append(b.ToString("x2"));
+                        }
+                        hashedPassword = sb.ToString();
+                    }
+                    
+                    string message = $"RESET_PASSWORD|{email}|{hashedPassword}\n";
                     await writer.WriteLineAsync(message);
                     string response = await reader.ReadLineAsync();
                     return response?.Trim() ?? "500";

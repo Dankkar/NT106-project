@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -100,8 +101,21 @@ namespace FileSharingClient
                         return;
                     }
 
-                    // Gửi dữ liệu đăng nhập theo định dạng: LOGIN|username|password\n
-                    string message = $"LOGIN|{username}|{password}\n";
+                    // Hash password bằng SHA256 trước khi gửi
+                    string hashedPassword;
+                    using (SHA256 sha256Hash = SHA256.Create())
+                    {
+                        byte[] data = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+                        StringBuilder sb = new StringBuilder();
+                        foreach (byte b in data)
+                        {
+                            sb.Append(b.ToString("x2"));
+                        }
+                        hashedPassword = sb.ToString();
+                    }
+                    
+                    // Gửi dữ liệu đăng nhập theo định dạng: LOGIN|username|hashedPassword\n
+                    string message = $"LOGIN|{username}|{hashedPassword}\n";
                     await writer.WriteLineAsync(message);
 
                     // Nhận phản hồi từ server (status code dạng số)
