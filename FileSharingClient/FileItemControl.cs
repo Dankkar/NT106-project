@@ -5,6 +5,8 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -96,49 +98,28 @@ namespace FileSharingClient
                     return;
                 }
 
-                // Determine file type and open appropriate preview
-                string extension = Path.GetExtension(fullPath).ToLower();
-                
-                if (extension == ".txt" || extension == ".md" || extension == ".log")
+                // Check if we have user password for decryption
+                if (string.IsNullOrEmpty(Session.UserPassword))
                 {
-                    // Open text files in notepad
-                    System.Diagnostics.Process.Start("notepad.exe", fullPath);
+                    MessageBox.Show("Cannot preview encrypted file: User password not available.\nPlease re-login to preview encrypted files.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
-                else if (extension == ".pdf")
+
+                // Read and decrypt the file
+                byte[] encryptedData = File.ReadAllBytes(fullPath);
+                byte[] decryptedData = null;
+
+                try
                 {
-                    // Open PDF with default application
-                    System.Diagnostics.Process.Start(fullPath);
+                    decryptedData = CryptoHelper.DecryptFile(encryptedData, Session.UserPassword);
                 }
-                else if (extension == ".jpg" || extension == ".jpeg" || extension == ".png" || 
-                         extension == ".gif" || extension == ".bmp")
+                catch (Exception decryptEx)
                 {
-                    // Open images with default application
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else if (extension == ".mp4" || extension == ".avi" || extension == ".mov" || 
-                         extension == ".wmv" || extension == ".mkv")
-                {
-                    // Open videos with default application
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else if (extension == ".docx" || extension == ".doc")
-                {
-                    // Open Word documents
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else if (extension == ".xlsx" || extension == ".xls")
-                {
-                    // Open Excel files
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else if (extension == ".pptx" || extension == ".ppt")
-                {
-                    // Open PowerPoint files
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else
-                {
-                    // For other files, try to open with default application
+                    // If decryption fails, the file might not be encrypted yet (legacy files)
+                    // Try to open as is
+                    MessageBox.Show($"Decryption failed: {decryptEx.Message}\n\nThis file may not be encrypted yet. Opening as-is.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    
+                    // Try to open original file
                     try
                     {
                         System.Diagnostics.Process.Start(fullPath);
@@ -148,7 +129,108 @@ namespace FileSharingClient
                         MessageBox.Show("Cannot preview this file type. Please download to view.", 
                             "Preview Not Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
+                    return;
                 }
+
+                // Create temporary file with decrypted content
+                string originalExtension = Path.GetExtension(FileName);
+                string tempDir = Path.Combine(Path.GetTempPath(), "FileSharingPreview");
+                
+                // Create temp directory if it doesn't exist
+                if (!Directory.Exists(tempDir))
+                {
+                    Directory.CreateDirectory(tempDir);
+                }
+                
+                // Create temporary file with proper name and extension
+                string tempFileName = $"preview_{DateTime.Now:yyyyMMdd_HHmmss}_{Path.GetRandomFileName()}{originalExtension}";
+                string tempFileWithExtension = Path.Combine(tempDir, tempFileName);
+                
+                // Write decrypted data to temporary file
+                File.WriteAllBytes(tempFileWithExtension, decryptedData);
+
+                // Determine file type and open appropriate preview
+                string extension = originalExtension.ToLower();
+                
+                if (extension == ".txt" || extension == ".md" || extension == ".log")
+                {
+                    // Open text files in notepad
+                    System.Diagnostics.Process.Start("notepad.exe", tempFileWithExtension);
+                }
+                else if (extension == ".pdf")
+                {
+                    // For PDF, set file attributes to normal to avoid signature issues
+                    File.SetAttributes(tempFileWithExtension, FileAttributes.Normal);
+                    
+                    // Open PDF with default application
+                    var psi = new System.Diagnostics.ProcessStartInfo()
+                    {
+                        FileName = tempFileWithExtension,
+                        UseShellExecute = true,
+                        Verb = "open"
+                    };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                else if (extension == ".jpg" || extension == ".jpeg" || extension == ".png" || 
+                         extension == ".gif" || extension == ".bmp")
+                {
+                    // Open images with default application
+                    System.Diagnostics.Process.Start(tempFileWithExtension);
+                }
+                else if (extension == ".mp4" || extension == ".avi" || extension == ".mov" || 
+                         extension == ".wmv" || extension == ".mkv")
+                {
+                    // Open videos with default application
+                    System.Diagnostics.Process.Start(tempFileWithExtension);
+                }
+                else if (extension == ".docx" || extension == ".doc")
+                {
+                    // Open Word documents
+                    System.Diagnostics.Process.Start(tempFileWithExtension);
+                }
+                else if (extension == ".xlsx" || extension == ".xls")
+                {
+                    // Open Excel files
+                    System.Diagnostics.Process.Start(tempFileWithExtension);
+                }
+                else if (extension == ".pptx" || extension == ".ppt")
+                {
+                    // Open PowerPoint files
+                    System.Diagnostics.Process.Start(tempFileWithExtension);
+                }
+                else
+                {
+                    // For other files, try to open with default application
+                    try
+                    {
+                        System.Diagnostics.Process.Start(tempFileWithExtension);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Cannot preview this file type. Please download to view.", 
+                            "Preview Not Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+
+                // Clean up temporary file after a longer delay for PDF (30 seconds)
+                int cleanupDelay = extension == ".pdf" ? 30000 : 10000;
+                Task.Delay(cleanupDelay).ContinueWith(_ => 
+                {
+                    try 
+                    { 
+                        File.Delete(tempFileWithExtension);
+                        
+                        // Also clean up temp directory if empty
+                        if (Directory.Exists(tempDir) && !Directory.EnumerateFileSystemEntries(tempDir).Any())
+                        {
+                            Directory.Delete(tempDir);
+                        }
+                    } 
+                    catch 
+                    { 
+                        // Ignore cleanup errors
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -161,18 +243,10 @@ namespace FileSharingClient
             MessageBox.Show($"Chia sẻ file {FileName}");
         }
 
-        private void downloadToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void downloadToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try
             {
-                string fullPath = Path.Combine(projectRoot ?? Environment.CurrentDirectory, FilePath);
-                
-                if (!File.Exists(fullPath))
-                {
-                    MessageBox.Show("File not found!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
                 SaveFileDialog saveFileDialog = new SaveFileDialog();
                 saveFileDialog.FileName = FileName;
                 saveFileDialog.Title = "Save file as...";
@@ -182,7 +256,7 @@ namespace FileSharingClient
                 {
                     try
                     {
-                        File.Copy(fullPath, saveFileDialog.FileName, true);
+                        await DownloadEncryptedFile(FileName, saveFileDialog.FileName);
                         MessageBox.Show("File downloaded successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
@@ -194,6 +268,57 @@ namespace FileSharingClient
             catch (Exception ex)
             {
                 MessageBox.Show($"Error downloading file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task DownloadEncryptedFile(string fileName, string savePath)
+        {
+            using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+            using (NetworkStream stream = client.GetStream())
+            using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+            using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+            {
+                // Send download request
+                string message = $"DOWNLOAD_FILE|{fileName}|{Session.LoggedInUserId}\n";
+                await writer.WriteLineAsync(message);
+
+                // Read response header
+                string response = await reader.ReadLineAsync();
+                response = response?.Trim();
+
+                if (response != null)
+                {
+                    string[] parts = response.Split('|');
+                    if (parts.Length >= 2 && parts[0] == "200")
+                    {
+                        long fileSize = long.Parse(parts[1]);
+                        
+                        // Read encrypted file data
+                        byte[] encryptedData = new byte[fileSize];
+                        int totalRead = 0;
+                        byte[] buffer = new byte[8192];
+                        
+                        while (totalRead < fileSize)
+                        {
+                            int bytesRead = await stream.ReadAsync(buffer, 0, Math.Min(buffer.Length, (int)(fileSize - totalRead)));
+                            if (bytesRead == 0) break;
+                            
+                            Array.Copy(buffer, 0, encryptedData, totalRead, bytesRead);
+                            totalRead += bytesRead;
+                        }
+                        
+                        // Decrypt and save file
+                        CryptoHelper.DecryptFileToLocal(encryptedData, Session.UserPassword, savePath);
+                    }
+                    else
+                    {
+                        throw new Exception($"Server error: {response}");
+                    }
+                }
+                else
+                {
+                    throw new Exception("No response from server");
+                }
             }
         }
 

@@ -31,7 +31,7 @@ namespace FileSharingClient
                 using (NetworkStream stream = client.GetStream())
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
+                    {
                     // Gửi request GET_USER_ID
                     string message = $"GET_USER_ID|{Session.LoggedInUser}\n";
                     await writer.WriteLineAsync(message);
@@ -41,15 +41,15 @@ namespace FileSharingClient
                     response = response?.Trim();
 
                     if (response != null)
-                    {
+                        {
                         string[] parts = response.Split('|');
                         if (parts.Length >= 2 && parts[0] == "200")
                         {
                             if (int.TryParse(parts[1], out int userId))
                             {
                                 return userId;
-                            }
                         }
+                    }
                     }
                     return -1;
                 }
@@ -121,7 +121,7 @@ namespace FileSharingClient
                     response = response?.Trim();
 
                     if (response != null)
-                    {
+                            {
                         string[] parts = response.Split('|');
                         if (parts.Length >= 2 && parts[0] == "200")
                         {
@@ -136,7 +136,7 @@ namespace FileSharingClient
             catch (Exception ex)
             {
                 MessageBox.Show($"Error getting user files: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+                            }
             return files;
         }
 
@@ -157,7 +157,7 @@ namespace FileSharingClient
                     response = response?.Trim();
 
                     if (response != null)
-                    {
+                            {
                         string[] parts = response.Split('|');
                         if (parts.Length >= 2 && parts[0] == "200")
                         {
@@ -226,7 +226,7 @@ namespace FileSharingClient
                 using (NetworkStream stream = client.GetStream())
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
+                    {
                     string message = $"UPDATE_FILE_SHARE|{fileName}|{sharePass}\n";
                     await writer.WriteLineAsync(message);
 
@@ -264,7 +264,7 @@ namespace FileSharingClient
                 using (NetworkStream stream = client.GetStream())
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
+                    {
                     string message = $"GET_SHARE_PASS|{fileName}\n";
                     await writer.WriteLineAsync(message);
 
@@ -272,7 +272,7 @@ namespace FileSharingClient
                     response = response?.Trim();
 
                     if (response != null)
-                    {
+                        {
                         string[] parts = response.Split('|');
                         if (parts.Length >= 2 && parts[0] == "200")
                         {
@@ -354,8 +354,8 @@ namespace FileSharingClient
                         if (parts.Length >= 3 && parts[0] == "200")
                         {
                             if (int.TryParse(parts[1], out int fileId) && int.TryParse(parts[2], out int ownerId))
-                            {
-                                return (fileId, ownerId);
+                                {
+                                    return (fileId, ownerId);
                             }
                         }
                     }
@@ -378,7 +378,7 @@ namespace FileSharingClient
                 using (NetworkStream stream = client.GetStream())
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
+                    {
                     string message = $"ADD_FILE_SHARE_ENTRY|{fileId}|{userId}|{sharePass}\n";
                     await writer.WriteLineAsync(message);
 
@@ -389,7 +389,7 @@ namespace FileSharingClient
                     {
                         string[] parts = response.Split('|');
                         return parts.Length >= 2 && parts[0] == "200" && (parts[1] == "SHARE_ADDED" || parts[1] == "ALREADY_SHARED");
-                    }
+                }
                     return false;
                 }
             }

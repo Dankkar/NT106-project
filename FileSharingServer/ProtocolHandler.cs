@@ -171,6 +171,14 @@ namespace FileSharingServer
                 case "ADD_FILE_SHARE_ENTRY":
                     if (parts.Length != 4) return "400\n";
                     return await AddFileShareEntry(parts[1], parts[2], parts[3]);
+                case "GET_USER_STORAGE":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetUserStorage(parts[1]);
+                case "DOWNLOAD_FILE":
+                    if (parts.Length != 3) return "400\n";
+                    return await DownloadFile(parts[1], parts[2], stream);
+                case "HEALTH_CHECK":
+                    return "200|HEALTHY\n";
                     
                 default:
                     return "400\n";
@@ -488,6 +496,125 @@ namespace FileSharingServer
                 Console.WriteLine($"Error in AddFileShareEntry: {ex.Message}");
                 return "500|INTERNAL_ERROR\n";
             }
+        }
+
+        private static async Task<string> DownloadFile(string fileName, string userId, NetworkStream stream)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Get file path and verify user access
+                    string query = @"
+                        SELECT f.file_path, f.file_size, f.owner_id
+                        FROM files f
+                        WHERE f.file_name = @fileName
+                        AND f.status = 'ACTIVE'
+                        AND (
+                            f.owner_id = @userId
+                            OR f.file_id IN (
+                                SELECT fs.file_id FROM files_share fs WHERE fs.user_id = @userId
+                            )
+                        )
+                        LIMIT 1
+                    ";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@fileName", fileName);
+                        cmd.Parameters.AddWithValue("@userId", int.Parse(userId));
+                        
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                string filePath = reader["file_path"].ToString();
+                                long fileSize = Convert.ToInt64(reader["file_size"]);
+                                int ownerId = Convert.ToInt32(reader["owner_id"]);
+                                
+                                // Build full file path
+                                string fullFilePath = Path.Combine(GetSharedUploadsPath(), filePath);
+                                
+                                if (File.Exists(fullFilePath))
+                                {
+                                    // Send file size first
+                                    byte[] sizeBytes = Encoding.UTF8.GetBytes($"200|{fileSize}\n");
+                                    await stream.WriteAsync(sizeBytes, 0, sizeBytes.Length);
+                                    await stream.FlushAsync();
+                                    
+                                    // Send encrypted file data
+                                    byte[] encryptedData = File.ReadAllBytes(fullFilePath);
+                                    await stream.WriteAsync(encryptedData, 0, encryptedData.Length);
+                                    await stream.FlushAsync();
+                                    
+                                    return ""; // Don't return anything more since we already sent data
+                                }
+                                else
+                                {
+                                    return "404|FILE_NOT_FOUND_ON_DISK\n";
+                                }
+                            }
+                            else
+                            {
+                                return "404|FILE_NOT_FOUND\n";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in DownloadFile: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+        
+        private static async Task<string> GetUserStorage(string userId)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT COALESCE(SUM(file_size), 0) as total_size FROM files WHERE owner_id = @owner_id AND status = 'ACTIVE'";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        var result = await cmd.ExecuteScalarAsync();
+                        
+                        long totalSizeBytes = Convert.ToInt64(result);
+                        return $"200|{totalSizeBytes}\n";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetUserStorage: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static string GetSharedUploadsPath()
+        {
+            // Ensure all server instances use the same uploads directory
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            
+            // Navigate up from bin\Debug\ to project root
+            DirectoryInfo current = new DirectoryInfo(baseDir);
+            while (current != null && !File.Exists(Path.Combine(current.FullName, "test.db")))
+            {
+                current = current.Parent;
+                if (current?.Parent?.Parent == null) break; // Safety check
+            }
+            
+            if (current != null && File.Exists(Path.Combine(current.FullName, "test.db")))
+            {
+                return Path.Combine(current.FullName, "uploads");
+            }
+            
+            // Fallback: use original logic
+            return Path.Combine(DatabaseHelper.projectRoot ?? Environment.CurrentDirectory, "uploads");
         }
     }
 }

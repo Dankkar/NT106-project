@@ -125,6 +125,7 @@ namespace FileSharingClient
                                 case 200:
                                     Session.LoggedInUser = username;
                                     Session.LoggedInUserId = await GetUserIdFromLocalAsync(username);
+                                    Session.UserPassword = password; // Store original password for encryption
                                     MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                     this.Hide();
                                     // Mở giao diện chính
@@ -171,7 +172,7 @@ namespace FileSharingClient
                 using (NetworkStream stream = client.GetStream())
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
+                    {
                     // Gửi request GET_USER_ID
                     string message = $"GET_USER_ID|{username}\n";
                     await writer.WriteLineAsync(message);
@@ -260,5 +261,6 @@ namespace FileSharingClient
     {
         public static string LoggedInUser { get; set; } = "Anonymous";
         public static int LoggedInUserId { get; set; } = -1;
+        public static string UserPassword { get; set; } = ""; // Store original password for encryption
     }
 }

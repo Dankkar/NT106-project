@@ -11,6 +11,7 @@ using System.IO;
 using System.Data.SQLite;
 using System.Net.Sockets;
 using System.IO.Compression;
+using System.Security.Cryptography;
 
 namespace FileSharingClient
 {
@@ -74,9 +75,12 @@ namespace FileSharingClient
                 int ownerId = Session.LoggedInUserId;
                 foreach (var pf in pendingFiles)
                 {
+                    // Encrypt file before uploading
+                    byte[] encryptedData = CryptoHelper.EncryptFileFromDisk(pf.FilePath, Session.UserPassword);
+                    
                     FileInfo fi = new FileInfo(pf.FilePath);
                     string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                    string command = $"UPLOAD_FILE_IN_FOLDER|{folderName}|{pf.RelativePath}|{fi.Name}|{fi.Length}|{ownerId}|{uploadAt}\n";
+                    string command = $"UPLOAD_FILE_IN_FOLDER|{folderName}|{pf.RelativePath}|{fi.Name}|{encryptedData.Length}|{ownerId}|{uploadAt}\n";
                     using (TcpClient client = new TcpClient("127.0.0.1", 5000))
                     using (NetworkStream stream = client.GetStream())
                     {
@@ -84,16 +88,8 @@ namespace FileSharingClient
                         await stream.WriteAsync(commandBytes, 0, commandBytes.Length);
                         await stream.FlushAsync();
 
-                        // Gửi file data
-                        byte[] buffer = new byte[BUFFER_SIZE];
-                        using (FileStream fs = new FileStream(pf.FilePath, FileMode.Open, FileAccess.Read))
-                        {
-                            int bytesRead;
-                            while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                            {
-                                await stream.WriteAsync(buffer, 0, bytesRead);
-                            }
-                        }
+                        // Send encrypted file data
+                        await stream.WriteAsync(encryptedData, 0, encryptedData.Length);
                         await stream.FlushAsync();
 
                         // Đọc response
@@ -140,26 +136,20 @@ namespace FileSharingClient
                     {
                         using (NetworkStream stream = client.GetStream())
                         {
-                            long filesize = new FileInfo(filePath).Length;
+                            // Encrypt file before uploading
+                            byte[] encryptedData = CryptoHelper.EncryptFileFromDisk(filePath, Session.UserPassword);
+                            
                             string fileName = Path.GetFileName(filePath);
                             int ownerId = Session.LoggedInUserId;
                             string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                            string command = $"UPLOAD|{fileName}|{filesize}|{ownerId}|{uploadAt}\n";
+                            string command = $"UPLOAD|{fileName}|{encryptedData.Length}|{ownerId}|{uploadAt}\n";
                             byte[] commandBytes = Encoding.UTF8.GetBytes(command);
                             await stream.WriteAsync(commandBytes, 0, commandBytes.Length);
                             await stream.FlushAsync();
                             Console.WriteLine($"Đã gửi lệnh: {command.Trim()}");
 
-                            //Gui file theo tung phan
-                            byte[] buffer = new byte[BUFFER_SIZE];
-                            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                            {
-                                int bytesRead;
-                                while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                                {
-                                    await stream.WriteAsync(buffer, 0, bytesRead);
-                                }
-                            }
+                            // Send encrypted file data
+                            await stream.WriteAsync(encryptedData, 0, encryptedData.Length);
                             await stream.FlushAsync();
                             using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                             {
