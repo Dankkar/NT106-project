@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.SQLite;
 using System.IO;
-using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
+using System.Security.Cryptography;
 using FontAwesome.Sharp;
 
 
@@ -176,8 +176,21 @@ namespace FileSharingClient
                         return;
                     }
 
-                    // Gửi dữ liệu đăng ký theo định dạng: REGISTER|username|email|password
-                    string message = $"REGISTER|{username}|{email}|{password}\n";
+                    // Hash password bằng SHA256 trước khi gửi
+                    string hashedPassword;
+                    using (SHA256 sha256Hash = SHA256.Create())
+                    {
+                        byte[] data = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+                        StringBuilder sb = new StringBuilder();
+                        foreach (byte b in data)
+                        {
+                            sb.Append(b.ToString("x2"));
+                        }
+                        hashedPassword = sb.ToString();
+                    }
+                    
+                    // Gửi dữ liệu đăng ký theo định dạng: REGISTER|username|email|hashedPassword
+                    string message = $"REGISTER|{username}|{email}|{hashedPassword}\n";
                     await writer.WriteLineAsync(message);
 
                     // Nhận phản hồi từ server (status code dạng số)
@@ -192,7 +205,7 @@ namespace FileSharingClient
                             {
                                 case 201:
                                     MessageBox.Show("Đăng ký thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                    
+                                    this.Tag= "login"; // Đặt tag để biết form này đã đăng ký thành công
                                     this.Close();
                                     break;
                                 case 409:

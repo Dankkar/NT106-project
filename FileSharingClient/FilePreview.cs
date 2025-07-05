@@ -4,22 +4,17 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Data;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
-using System.Data.SQLite;
-using System.Data.SqlClient;
-using System.Data.Common;
-using System.Net.NetworkInformation;
 
 namespace FileSharingClient
 {
     public partial class FilePreview : UserControl
     {
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-        private static string dbPath = Path.Combine(projectRoot, "test.db");
-        private static string connectionString = $"Data Source={dbPath};Version=3;Pooling=True";
         private int currentUserId = -1;
 
         public FilePreview()
@@ -57,40 +52,18 @@ namespace FileSharingClient
             {
                 cbBrowseFile.Items.Clear();
 
-                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                // Get user files from server
+                List<string> userFiles = await GetUserFilesFromServer(userID);
+                foreach (string fileName in userFiles)
                 {
-                    await conn.OpenAsync();
+                    cbBrowseFile.Items.Add(fileName);
+                }
 
-                    // Lay cac file cua nguoi dung tu bang files
-                    string queryUserFiles = "SELECT file_name FROM files WHERE owner_id = @owner_id";
-                    using (SQLiteCommand cmd = new SQLiteCommand(queryUserFiles, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@owner_id", userID);
-
-                        using (DbDataReader reader = await cmd.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                string fileName = reader["file_name"].ToString();
-                                cbBrowseFile.Items.Add(fileName);
-                            }
-                        }
-                    }
-
-                    string querySharedFiles = "SELECT f.file_name FROM files_share fs JOIN files f ON fs.file_id = f.file_id WHERE fs.user_id = @user_id";
-                    using (SQLiteCommand cmd = new SQLiteCommand(querySharedFiles, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@user_id", userID);
-                        using (DbDataReader reader = await cmd.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                string sharedFileName = reader["file_name"].ToString();
-                                cbBrowseFile.Items.Add(sharedFileName);
-                            }
-                        }
-                    }
-
+                // Get shared files from server
+                List<string> sharedFiles = await GetSharedFilesFromServer(userID);
+                foreach (string fileName in sharedFiles)
+                {
+                    cbBrowseFile.Items.Add(fileName);
                 }
             }
             catch (Exception ex)
@@ -98,33 +71,112 @@ namespace FileSharingClient
                 MessageBox.Show($"Loi tai danh sach file: {ex.Message}", "Loi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        private async Task<int> GetUserIdFromSessionAsync()
-        {
-            int userId = -1;
 
+        private async Task<List<string>> GetUserFilesFromServer(int userId)
+        {
+            List<string> files = new List<string>();
             try
             {
-                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    await conn.OpenAsync();
-                    string query = "SELECT user_id FROM users WHERE username = @username";
-                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+                    string message = $"GET_USER_FILES|{userId}\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
                     {
-                        cmd.Parameters.AddWithValue("@username", Session.LoggedInUser);
-                        object result = await cmd.ExecuteScalarAsync();
-                        if (result != null)
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
                         {
-                            userId = Convert.ToInt32(result);
+                            if (parts[1] != "NO_FILES")
+                            {
+                                files.AddRange(parts[1].Split(';'));
+                            }
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error getting user files: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            return files;
+        }
 
-            return userId;
+        private async Task<List<string>> GetSharedFilesFromServer(int userId)
+        {
+            List<string> files = new List<string>();
+            try
+            {
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"GET_SHARED_FILES|{userId}\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            if (parts[1] != "NO_SHARED_FILES")
+                            {
+                                files.AddRange(parts[1].Split(';'));
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting shared files: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return files;
+        }
+        private async Task<int> GetUserIdFromSessionAsync()
+        {
+            try
+            {
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"GET_USER_ID|{Session.LoggedInUser}\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            if (int.TryParse(parts[1], out int userId))
+                            {
+                                return userId;
+                            }
+                        }
+                    }
+                    return -1;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return -1;
+            }
         }
 
 
@@ -140,41 +192,36 @@ namespace FileSharingClient
 
             try
             {
-                using (var conn = new SQLiteConnection(connectionString))
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    await conn.OpenAsync();
-                    string query = @"
-                        SELECT f.file_path, f.file_type
-                        FROM files f
-                        WHERE f.file_name = @fileName
-                        AND (
-                            f.owner_id = @userId
-                            OR f.file_id IN (
-                                SELECT fs.file_id FROM files_share fs WHERE fs.user_id = @userId
-                            )
-                        )
-                        LIMIT 1
-                    ";
-                    using (var cmd = new SQLiteCommand(query, conn))
+                    string message = $"GET_FILE_INFO|{filename}|{currentUserId}\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
                     {
-                        cmd.Parameters.AddWithValue("@fileName", filename);
-                        cmd.Parameters.AddWithValue("@userId", currentUserId);
-
-                        using (var reader = await cmd.ExecuteReaderAsync())
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 3 && parts[0] == "200")
                         {
-                            if (await reader.ReadAsync())
-                            {
-                                string relativePath = reader["file_path"].ToString();
-                                string fileType = reader["file_type"].ToString().ToLower();
-                                string fullPath = Path.Combine(projectRoot, relativePath);
+                            string relativePath = parts[1];
+                            string fileType = parts[2].ToLower();
+                            string fullPath = Path.Combine(projectRoot, relativePath);
 
-                                await ShowPreviewAsync(fullPath, fileType);
-                            }
-                            else
-                            {
-                                MessageBox.Show("Không tìm thấy đường dẫn file.");
-                            }
+                            await ShowPreviewAsync(fullPath, fileType);
                         }
+                        else
+                        {
+                            MessageBox.Show("Không tìm thấy đường dẫn file.");
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Không nhận được phản hồi từ server.");
                     }
                 }
             }
@@ -222,3 +269,4 @@ namespace FileSharingClient
         }
     }
 }
+

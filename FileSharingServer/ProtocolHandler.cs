@@ -146,6 +146,32 @@ namespace FileSharingServer
                     string upUploadTime = parts[6];
                     return await FolderService.ReceiveFileInFolder(upFolderName, upRelativePath, upFileName, upFileSize, upOwnerId, upUploadTime, stream);
                     
+                // API endpoints for client database replacement
+                case "GET_USER_ID":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetUserId(parts[1]);
+                case "GET_USER_FILES":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetUserFiles(parts[1]);
+                case "GET_SHARED_FILES":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetSharedFiles(parts[1]);
+                case "UPDATE_FILE_SHARE":
+                    if (parts.Length != 3) return "400\n";
+                    return await UpdateFileShare(parts[1], parts[2]);
+                case "GET_SHARE_PASS":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetSharePass(parts[1]);
+                case "GET_FILE_INFO":
+                    if (parts.Length != 3) return "400\n";
+                    return await GetFileInfo(parts[1], parts[2]);
+                case "GET_FILE_INFO_BY_SHARE_PASS":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetFileInfoBySharePass(parts[1]);
+                case "ADD_FILE_SHARE_ENTRY":
+                    if (parts.Length != 4) return "400\n";
+                    return await AddFileShareEntry(parts[1], parts[2], parts[3]);
+                    
                 default:
                     return "400\n";
             }
@@ -168,6 +194,300 @@ namespace FileSharingServer
             
             result.Append("\n");
             return result.ToString();
+        }
+
+        // API methods for client database replacement
+        private static async Task<string> GetUserId(string username)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT user_id FROM users WHERE username = @username";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@username", username);
+                        var result = await cmd.ExecuteScalarAsync();
+                        
+                        if (result != null)
+                        {
+                            return $"200|{result}\n";
+                        }
+                        else
+                        {
+                            return "404|USER_NOT_FOUND\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetUserId: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> GetUserFiles(string userId)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT file_name FROM files WHERE owner_id = @owner_id";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        var files = new List<string>();
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                files.Add(reader["file_name"].ToString());
+                            }
+                        }
+                        
+                        if (files.Count == 0)
+                        {
+                            return "200|NO_FILES\n";
+                        }
+                        
+                        return $"200|{string.Join(";", files)}\n";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetUserFiles: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> GetSharedFiles(string userId)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT f.file_name FROM files_share fs JOIN files f ON fs.file_id = f.file_id WHERE fs.user_id = @user_id";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@user_id", int.Parse(userId));
+                        
+                        var files = new List<string>();
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                files.Add(reader["file_name"].ToString());
+                            }
+                        }
+                        
+                        if (files.Count == 0)
+                        {
+                            return "200|NO_SHARED_FILES\n";
+                        }
+                        
+                        return $"200|{string.Join(";", files)}\n";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetSharedFiles: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> UpdateFileShare(string fileName, string sharePass)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string updateQuery = "UPDATE files SET share_pass = @sharePass, is_shared = 1 WHERE file_name = @file_name";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(updateQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@file_name", fileName);
+                        cmd.Parameters.AddWithValue("@sharePass", sharePass);
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        
+                        if (rowsAffected > 0)
+                        {
+                            return "200|FILE_SHARED\n";
+                        }
+                        else
+                        {
+                            return "404|FILE_NOT_FOUND\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UpdateFileShare: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> GetSharePass(string fileName)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT share_pass FROM files WHERE file_name = @file_name";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@file_name", fileName);
+                        var result = await cmd.ExecuteScalarAsync();
+                        
+                        if (result != null)
+                        {
+                            string sharePass = result.ToString();
+                            return $"200|{sharePass}\n";
+                        }
+                        else
+                        {
+                            return "404|FILE_NOT_FOUND\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetSharePass: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> GetFileInfo(string fileName, string userId)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = @"
+                        SELECT f.file_path, f.file_type
+                        FROM files f
+                        WHERE f.file_name = @fileName
+                        AND (
+                            f.owner_id = @userId
+                            OR f.file_id IN (
+                                SELECT fs.file_id FROM files_share fs WHERE fs.user_id = @userId
+                            )
+                        )
+                        LIMIT 1
+                    ";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@fileName", fileName);
+                        cmd.Parameters.AddWithValue("@userId", int.Parse(userId));
+                        
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                string filePath = reader["file_path"].ToString();
+                                string fileType = reader["file_type"].ToString();
+                                return $"200|{filePath}|{fileType}\n";
+                            }
+                            else
+                            {
+                                return "404|FILE_NOT_FOUND\n";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetFileInfo: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> GetFileInfoBySharePass(string sharePass)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT file_id, owner_id FROM files WHERE share_pass = @share_pass";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@share_pass", sharePass);
+                        
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                int fileId = Convert.ToInt32(reader["file_id"]);
+                                int ownerId = Convert.ToInt32(reader["owner_id"]);
+                                return $"200|{fileId}|{ownerId}\n";
+                            }
+                            else
+                            {
+                                return "404|FILE_NOT_FOUND\n";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetFileInfoBySharePass: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> AddFileShareEntry(string fileId, string userId, string sharePass)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Check if the entry already exists
+                    string checkQuery = "SELECT COUNT(*) FROM files_share WHERE file_id = @file_id AND user_id = @user_id";
+                    using (var checkCmd = new System.Data.SQLite.SQLiteCommand(checkQuery, conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@file_id", int.Parse(fileId));
+                        checkCmd.Parameters.AddWithValue("@user_id", int.Parse(userId));
+                        
+                        long count = (long)await checkCmd.ExecuteScalarAsync();
+                        if (count > 0)
+                        {
+                            return "200|ALREADY_SHARED\n";
+                        }
+                    }
+                    
+                    // Insert new share entry
+                    string insertQuery = "INSERT INTO files_share (file_id, user_id, share_pass) VALUES (@file_id, @user_id, @share_pass)";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(insertQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@file_id", int.Parse(fileId));
+                        cmd.Parameters.AddWithValue("@user_id", int.Parse(userId));
+                        cmd.Parameters.AddWithValue("@share_pass", sharePass);
+                        
+                        await cmd.ExecuteNonQueryAsync();
+                        return "200|SHARE_ADDED\n";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in AddFileShareEntry: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
         }
     }
 }
