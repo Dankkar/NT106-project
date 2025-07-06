@@ -148,6 +148,61 @@ namespace FileSharingServer
                 {
                     await cmd.ExecuteNonQueryAsync();
                 }
+                
+                // Migration: Add status and deleted_at columns if they don't exist
+                await MigrateFilesTableAsync(conn);
+            }
+        }
+        
+        private static async Task MigrateFilesTableAsync(SQLiteConnection conn)
+        {
+            try
+            {
+                // Check if status column exists
+                string checkStatusColumn = @"
+                    SELECT COUNT(*) as CNTREC FROM pragma_table_info('files') 
+                    WHERE name='status'";
+                
+                using (var cmd = new SQLiteCommand(checkStatusColumn, conn))
+                {
+                    var result = await cmd.ExecuteScalarAsync();
+                    if (Convert.ToInt32(result) == 0)
+                    {
+                        // Add status column
+                        string addStatusColumn = "ALTER TABLE files ADD COLUMN status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'TRASH'))";
+                        using (var addCmd = new SQLiteCommand(addStatusColumn, conn))
+                        {
+                            await addCmd.ExecuteNonQueryAsync();
+                        }
+                        Console.WriteLine("Added status column to files table");
+                    }
+                }
+                
+                // Check if deleted_at column exists
+                string checkDeletedAtColumn = @"
+                    SELECT COUNT(*) as CNTREC FROM pragma_table_info('files') 
+                    WHERE name='deleted_at'";
+                
+                using (var cmd = new SQLiteCommand(checkDeletedAtColumn, conn))
+                {
+                    var result = await cmd.ExecuteScalarAsync();
+                    if (Convert.ToInt32(result) == 0)
+                    {
+                        // Add deleted_at column
+                        string addDeletedAtColumn = "ALTER TABLE files ADD COLUMN deleted_at TEXT";
+                        using (var addCmd = new SQLiteCommand(addDeletedAtColumn, conn))
+                        {
+                            await addCmd.ExecuteNonQueryAsync();
+                        }
+                        Console.WriteLine("Added deleted_at column to files table");
+                    }
+                }
+                
+                Console.WriteLine("Database migration completed successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Migration error: {ex.Message}");
             }
         }
     }
