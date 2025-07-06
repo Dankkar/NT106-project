@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.SQLite;
 using System.IO;
+using System.Net.Sockets;
 
 namespace FileSharingClient
 {
@@ -151,6 +152,7 @@ namespace FileSharingClient
                                     IsShared = false,
                                     IsFolder = false
                                 };
+                                Console.WriteLine($"[DEBUG] Loaded file: Name={fileItem.Name}, FilePath={fileItem.FilePath}");
                                 allFiles.Add(fileItem);
                             }
                         }
@@ -228,7 +230,7 @@ namespace FileSharingClient
             foreach (var file in allFiles)
             {
                 var fileItemControl = new FileItemControl(file.Name, file.CreatedAt, file.Owner, file.Size, file.FilePath);
-                fileItemControl.FileDeleted += async (filePath) => await OnFileDeleted(filePath);
+                fileItemControl.FileDeleted += async (filePath) => await OnFileDeleted(file.Name); // Pass file.Name directly
                 MyFileLayoutPanel.Controls.Add(fileItemControl);
             }
         }
@@ -371,10 +373,39 @@ namespace FileSharingClient
             // You could add a Label at the top to show: Home > Folder1 > Subfolder2
         }
 
-        private async Task OnFileDeleted(string filePath)
+        private async Task OnFileDeleted(string fileName)
         {
-            // Refresh the file list after deletion
-            await LoadFoldersAndFilesAsync();
+            try
+            {
+                int userId = await GetUserIdFromSessionAsync();
+                
+                Console.WriteLine($"[DEBUG] OnFileDeleted called with fileName: {fileName}");
+                Console.WriteLine($"[DEBUG] Current userId: {userId}");
+                
+                if (userId == -1)
+                {
+                    MessageBox.Show("Không thể xác định người dùng hiện tại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Send DELETE_FILE request to server
+                bool success = await DeleteFileOnServer(fileName, userId);
+                
+                if (success)
+                {
+                    MessageBox.Show("File đã được chuyển vào thùng rác.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // Refresh the file list after successful deletion
+                    await LoadFoldersAndFilesAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Không thể xóa file. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi xóa file: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private string FormatFileSize(long bytes)
@@ -415,6 +446,49 @@ namespace FileSharingClient
                 MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return userId;
+        }
+
+        private async Task<bool> DeleteFileOnServer(string fileName, int userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] Sending DELETE_FILE request: fileName={fileName}, userId={userId}");
+                
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"DELETE_FILE|{fileName}|{userId}";
+                    Console.WriteLine($"[DEBUG] Sending message: {message}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Server response: {response}");
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        bool success = parts.Length >= 2 && parts[0] == "200" && parts[1] == "FILE_DELETED";
+                        Console.WriteLine($"[DEBUG] Delete success: {success}");
+                        
+                        if (!success)
+                        {
+                            MessageBox.Show($"Server response: {response}", "Debug Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        
+                        return success;
+                    }
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error deleting file on server: {ex.Message}");
+                MessageBox.Show($"Connection error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
         }
 
         // Toolbar event handlers
@@ -543,7 +617,7 @@ namespace FileSharingClient
             foreach (var file in filteredFiles)
             {
                 var fileItemControl = new FileItemControl(file.Name, file.CreatedAt, file.Owner, file.Size, file.FilePath);
-                fileItemControl.FileDeleted += async (filePath) => await OnFileDeleted(filePath);
+                fileItemControl.FileDeleted += async (filePath) => await OnFileDeleted(file.Name); // Pass file.Name directly
                 MyFileLayoutPanel.Controls.Add(fileItemControl);
             }
         }

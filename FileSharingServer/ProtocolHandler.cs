@@ -171,6 +171,12 @@ namespace FileSharingServer
                 case "ADD_FILE_SHARE_ENTRY":
                     if (parts.Length != 4) return "400\n";
                     return await AddFileShareEntry(parts[1], parts[2], parts[3]);
+                case "DELETE_FILE":
+                    if (parts.Length != 3) return "400\n";
+                    return await DeleteFile(parts[1], parts[2]);
+                case "GET_TRASH_FILES":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetTrashFiles(parts[1]);
                     
                 default:
                     return "400\n";
@@ -235,7 +241,7 @@ namespace FileSharingServer
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await conn.OpenAsync();
-                    string query = "SELECT file_name FROM files WHERE owner_id = @owner_id";
+                    string query = "SELECT file_name FROM files WHERE owner_id = @owner_id AND status = 'ACTIVE'";
                     using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
@@ -272,7 +278,7 @@ namespace FileSharingServer
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await conn.OpenAsync();
-                    string query = "SELECT f.file_name FROM files_share fs JOIN files f ON fs.file_id = f.file_id WHERE fs.user_id = @user_id";
+                    string query = "SELECT f.file_name FROM files_share fs JOIN files f ON fs.file_id = f.file_id WHERE fs.user_id = @user_id AND f.status = 'ACTIVE'";
                     using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@user_id", int.Parse(userId));
@@ -486,6 +492,103 @@ namespace FileSharingServer
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in AddFileShareEntry: {ex.Message}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> DeleteFile(string fileName, string userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] DELETE_FILE request received: fileName={fileName}, userId={userId}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // First, check if file exists
+                    string checkQuery = "SELECT COUNT(*) FROM files WHERE file_name = @file_name AND owner_id = @owner_id";
+                    using (var checkCmd = new System.Data.SQLite.SQLiteCommand(checkQuery, conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@file_name", fileName);
+                        checkCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        long fileCount = (long)await checkCmd.ExecuteScalarAsync();
+                        Console.WriteLine($"[DEBUG] Files found with name '{fileName}' for user {userId}: {fileCount}");
+                        
+                        if (fileCount == 0)
+                        {
+                            Console.WriteLine($"[DEBUG] File '{fileName}' not found for user {userId}");
+                            return "404|FILE_NOT_FOUND\n";
+                        }
+                    }
+                    
+                    // Update file status to TRASH and set deleted_at timestamp
+                    string updateQuery = "UPDATE files SET status = 'TRASH', deleted_at = datetime('now') WHERE file_name = @file_name AND owner_id = @owner_id AND status = 'ACTIVE'";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(updateQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@file_name", fileName);
+                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        Console.WriteLine($"[DEBUG] Rows affected by UPDATE: {rowsAffected}");
+                        
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine($"[SUCCESS] File '{fileName}' moved to trash by user {userId}");
+                            return "200|FILE_DELETED\n";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] No rows updated - file might not have status='ACTIVE'");
+                            return "404|FILE_NOT_FOUND_OR_ALREADY_DELETED\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in DeleteFile: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> GetTrashFiles(string userId)
+        {
+            try
+            {
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT file_name, deleted_at FROM files WHERE owner_id = @owner_id AND status = 'TRASH' ORDER BY deleted_at DESC";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        var files = new List<string>();
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                string fileName = reader["file_name"].ToString();
+                                string deletedAt = reader["deleted_at"].ToString();
+                                files.Add($"{fileName}:{deletedAt}");
+                            }
+                        }
+                        
+                        if (files.Count == 0)
+                        {
+                            return "200|NO_TRASH_FILES\n";
+                        }
+                        
+                        return $"200|{string.Join(";", files)}\n";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetTrashFiles: {ex.Message}");
                 return "500|INTERNAL_ERROR\n";
             }
         }
