@@ -54,7 +54,14 @@ namespace FileSharingServer
                     Console.WriteLine($"Nhận từ Client: {request}");
 
                     string response = await ProcessRequest(request, stream);
-                    await writer.WriteLineAsync(response);
+                    Console.WriteLine($"[DEBUG] HandleClientAsync - About to send response: '{response.Substring(0, Math.Min(200, response.Length))}...'");
+                    Console.WriteLine($"[DEBUG] HandleClientAsync - Response length: {response.Length}");
+                    Console.WriteLine($"[DEBUG] HandleClientAsync - Response ends with newline: {response.EndsWith("\n")}");
+                    
+                    // Don't use WriteLineAsync since our methods already include \n
+                    await writer.WriteAsync(response);
+                    await writer.FlushAsync(); // Ensure data is sent immediately
+                    Console.WriteLine($"[DEBUG] HandleClientAsync - Response sent and flushed");
                 }
             }
             catch (Exception ex)
@@ -69,13 +76,19 @@ namespace FileSharingServer
         }
         static async Task<string> ProcessRequest(string request, NetworkStream stream)
         {
+            Console.WriteLine($"[DEBUG] ProcessRequest - Raw request: '{request}'");
+            
             string[] parts = request.Split('|');
+            Console.WriteLine($"[DEBUG] ProcessRequest - Split into {parts.Length} parts");
+            
             if (parts.Length == 0)
             {
+                Console.WriteLine($"[ERROR] ProcessRequest - No parts found in request");
                 return "400\n"; // Bad Request
             }
 
             string command = parts[0];
+            Console.WriteLine($"[DEBUG] ProcessRequest - Command: '{command}'");
 
             switch (command)
             {
@@ -175,8 +188,34 @@ namespace FileSharingServer
                     if (parts.Length != 3) return "400\n";
                     return await DeleteFile(parts[1], parts[2]);
                 case "GET_TRASH_FILES":
+                    Console.WriteLine($"[DEBUG] ProcessRequest - GET_TRASH_FILES case reached");
+                    if (parts.Length != 2) 
+                    {
+                        Console.WriteLine($"[ERROR] ProcessRequest - GET_TRASH_FILES: Invalid parts count: {parts.Length}");
+                        return "400\n";
+                    }
+                    Console.WriteLine($"[DEBUG] ProcessRequest - GET_TRASH_FILES: Calling GetTrashFiles with userId: {parts[1]}");
+                    string trashResult = await GetTrashFiles(parts[1]);
+                    Console.WriteLine($"[DEBUG] ProcessRequest - GET_TRASH_FILES: GetTrashFiles returned: '{trashResult.Substring(0, Math.Min(100, trashResult.Length))}...'");
+                    return trashResult;
+                case "RESTORE_FILE":
+                    if (parts.Length != 3) return "400\n";
+                    return await RestoreFile(parts[1], parts[2]);
+                case "PERMANENTLY_DELETE_FILE":
+                    if (parts.Length != 3) return "400\n";
+                    return await PermanentlyDeleteFile(parts[1], parts[2]);
+                case "DELETE_FOLDER":
+                    if (parts.Length != 3) return "400\n";
+                    return await DeleteFolder(parts[1], parts[2]);
+                case "GET_TRASH_FOLDERS":
                     if (parts.Length != 2) return "400\n";
-                    return await GetTrashFiles(parts[1]);
+                    return await GetTrashFolders(parts[1]);
+                case "RESTORE_FOLDER":
+                    if (parts.Length != 3) return "400\n";
+                    return await RestoreFolder(parts[1], parts[2]);
+                case "PERMANENTLY_DELETE_FOLDER":
+                    if (parts.Length != 3) return "400\n";
+                    return await PermanentlyDeleteFolder(parts[1], parts[2]);
                     
                 default:
                     return "400\n";
@@ -400,8 +439,13 @@ namespace FileSharingServer
                         {
                             if (await reader.ReadAsync())
                             {
-                                string filePath = reader["file_path"].ToString();
-                                string fileType = reader["file_type"].ToString();
+                                string filePath = reader["file_path"]?.ToString() ?? "";
+                                string fileType = reader["file_type"]?.ToString() ?? "";
+                                
+                                // Clean file path - ensure it's safe
+                                filePath = CleanFilePath(filePath);
+                                fileType = CleanString(fileType);
+                                
                                 return $"200|{filePath}|{fileType}\n";
                             }
                             else
@@ -558,37 +602,696 @@ namespace FileSharingServer
         {
             try
             {
+                Console.WriteLine($"[DEBUG] GetTrashFiles - Called with userId: {userId}");
+                
+                // Validate userId
+                if (!int.TryParse(userId, out int userIdInt))
+                {
+                    Console.WriteLine($"[ERROR] GetTrashFiles - Invalid userId format: {userId}");
+                    return "400|INVALID_USER_ID\n";
+                }
+                
+                Console.WriteLine($"[DEBUG] GetTrashFiles - Parsed userId as: {userIdInt}");
+                
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await conn.OpenAsync();
+                    Console.WriteLine($"[DEBUG] GetTrashFiles - Database connection opened");
+                    
                     string query = "SELECT file_name, deleted_at FROM files WHERE owner_id = @owner_id AND status = 'TRASH' ORDER BY deleted_at DESC";
+                    Console.WriteLine($"[DEBUG] GetTrashFiles - Executing query: {query}");
+                    
                     using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
                     {
-                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        cmd.Parameters.AddWithValue("@owner_id", userIdInt);
+                        Console.WriteLine($"[DEBUG] GetTrashFiles - Query parameter @owner_id = {userIdInt}");
                         
                         var files = new List<string>();
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
+                            int rowCount = 0;
                             while (await reader.ReadAsync())
                             {
-                                string fileName = reader["file_name"].ToString();
-                                string deletedAt = reader["deleted_at"].ToString();
+                                rowCount++;
+                                string fileName = reader["file_name"]?.ToString() ?? "";
+                                string deletedAt = reader["deleted_at"]?.ToString() ?? "";
+                                
+                                Console.WriteLine($"[DEBUG] GetTrashFiles - Row {rowCount}: fileName='{fileName}', deletedAt='{deletedAt}'");
+                                
+                                // Clean data before sending to client
+                                fileName = CleanString(fileName);
+                                deletedAt = CleanString(deletedAt);
+                                
+                                Console.WriteLine($"[DEBUG] GetTrashFiles - Cleaned Row {rowCount}: fileName='{fileName}', deletedAt='{deletedAt}'");
+                                
+                                if (!string.IsNullOrWhiteSpace(fileName))
+                                {
                                 files.Add($"{fileName}:{deletedAt}");
+                                    Console.WriteLine($"[DEBUG] GetTrashFiles - Added to list: '{fileName}:{deletedAt}'");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"[WARNING] GetTrashFiles - Skipped row {rowCount} due to empty fileName");
+                                }
                             }
+                            
+                            Console.WriteLine($"[DEBUG] GetTrashFiles - Total rows found: {rowCount}");
+                            Console.WriteLine($"[DEBUG] GetTrashFiles - Valid files after cleaning: {files.Count}");
                         }
                         
                         if (files.Count == 0)
                         {
+                            Console.WriteLine($"[DEBUG] GetTrashFiles - No trash files found, returning NO_TRASH_FILES");
                             return "200|NO_TRASH_FILES\n";
                         }
                         
-                        return $"200|{string.Join(";", files)}\n";
+                        string result = $"200|{string.Join(";", files)}\n";
+                        Console.WriteLine($"[DEBUG] GetTrashFiles - Final result length: {result.Length}");
+                        Console.WriteLine($"[DEBUG] GetTrashFiles - Result starts with: '{result.Substring(0, Math.Min(50, result.Length))}'");
+                        Console.WriteLine($"[DEBUG] GetTrashFiles - Result ends with: '{result.Substring(Math.Max(0, result.Length - 20))}'");
+                        Console.WriteLine($"[DEBUG] GetTrashFiles - Files included: {files.Count}");
+                        
+                        // Validate result format
+                        if (!result.StartsWith("200|"))
+                        {
+                            Console.WriteLine($"[ERROR] GetTrashFiles - Result doesn't start with '200|': '{result.Substring(0, Math.Min(20, result.Length))}'");
+                        }
+                        
+                        // Additional validation
+                        result = ValidateResponse(result);
+                        Console.WriteLine($"[DEBUG] GetTrashFiles - Final validated result: '{result.Substring(0, Math.Min(100, result.Length))}...'");
+                        
+                        return result;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GetTrashFiles: {ex.Message}");
+                Console.WriteLine($"[ERROR] GetTrashFiles - Exception: {ex.Message}");
+                Console.WriteLine($"[ERROR] GetTrashFiles - StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static string CleanFilePath(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return "";
+
+            try
+            {
+                // Remove invalid characters and normalize path
+                char[] invalidChars = System.IO.Path.GetInvalidPathChars();
+                foreach (char c in invalidChars)
+                {
+                    filePath = filePath.Replace(c.ToString(), "");
+                }
+                
+                // Normalize path separators
+                filePath = filePath.Replace('\\', '/');
+                
+                return filePath;
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private static string CleanString(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return "";
+
+            try
+            {
+                // Remove control characters and other problematic characters
+                var result = new StringBuilder();
+                foreach (char c in input)
+                {
+                    if (!char.IsControl(c) && c != '|' && c != '\n' && c != '\r' && c != ';')
+                    {
+                        result.Append(c);
+                    }
+                }
+                string cleaned = result.ToString().Trim();
+                
+                // Extra safety: replace any remaining problematic characters
+                cleaned = cleaned.Replace("|", "_").Replace(";", "_").Replace("\n", "_").Replace("\r", "_");
+                
+                Console.WriteLine($"[DEBUG] CleanString - Input: '{input}' -> Output: '{cleaned}'");
+                return cleaned;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] CleanString - Exception: {ex.Message}");
+                return "CLEANED_ERROR";
+            }
+        }
+
+        private static string ValidateResponse(string response)
+        {
+            if (string.IsNullOrEmpty(response))
+            {
+                Console.WriteLine("[ERROR] ValidateResponse - Empty response");
+                return "500|EMPTY_RESPONSE\n";
+            }
+
+            try
+            {
+                // Ensure response ends with newline
+                if (!response.EndsWith("\n"))
+                {
+                    Console.WriteLine("[WARNING] ValidateResponse - Adding missing newline");
+                    response = response + "\n";
+                }
+
+                // Check for valid status code format
+                if (!response.StartsWith("200|") && !response.StartsWith("404|") && !response.StartsWith("500|") && !response.StartsWith("400|"))
+                {
+                    Console.WriteLine($"[ERROR] ValidateResponse - Invalid status code format: '{response.Substring(0, Math.Min(20, response.Length))}'");
+                    return "500|INVALID_FORMAT\n";
+                }
+
+                // Check for problematic characters that could break parsing
+                if (response.Contains("\r\n") || response.Contains("\n\r"))
+                {
+                    Console.WriteLine("[WARNING] ValidateResponse - Found CRLF combinations, cleaning...");
+                    response = response.Replace("\r\n", "\n").Replace("\n\r", "\n");
+                }
+
+                Console.WriteLine($"[DEBUG] ValidateResponse - Response validated successfully");
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] ValidateResponse - Exception: {ex.Message}");
+                return "500|VALIDATION_ERROR\n";
+            }
+        }
+
+        private static async Task<string> RestoreFile(string fileName, string userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] RESTORE_FILE request received: fileName={fileName}, userId={userId}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // First, check if file exists in trash
+                    string checkExistenceQuery = "SELECT COUNT(*) FROM files WHERE file_name = @file_name AND owner_id = @owner_id AND status = 'TRASH'";
+                    using (var checkCmd = new System.Data.SQLite.SQLiteCommand(checkExistenceQuery, conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@file_name", fileName);
+                        checkCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        long fileCount = (long)await checkCmd.ExecuteScalarAsync();
+                        Console.WriteLine($"[DEBUG] Trash files found with name '{fileName}' for user {userId}: {fileCount}");
+                        
+                        if (fileCount == 0)
+                        {
+                            Console.WriteLine($"[DEBUG] File '{fileName}' not found in trash for user {userId}");
+                            return "404|FILE_NOT_FOUND_IN_TRASH\n";
+                        }
+                    }
+                    
+                    // Then, get the folder_id (can be NULL for standalone files)
+                    string getFolderIdQuery = "SELECT folder_id FROM files WHERE file_name = @file_name AND owner_id = @owner_id AND status = 'TRASH'";
+                    int? fileFolderId = null;
+                    bool fileWasInDeletedFolder = false;
+                    
+                    using (var getFolderCmd = new System.Data.SQLite.SQLiteCommand(getFolderIdQuery, conn))
+                    {
+                        getFolderCmd.Parameters.AddWithValue("@file_name", fileName);
+                        getFolderCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        var result = await getFolderCmd.ExecuteScalarAsync();
+                        
+                        if (result != null && result != DBNull.Value && int.TryParse(result.ToString(), out int folderId))
+                        {
+                            fileFolderId = folderId;
+                            Console.WriteLine($"[DEBUG] File '{fileName}' belongs to folder_id: {fileFolderId}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] File '{fileName}' is a standalone file (folder_id = NULL)");
+                        }
+                    }
+                    
+                    // If file belongs to a folder, check if the folder is also in trash
+                    if (fileFolderId.HasValue)
+                    {
+                        string checkFolderQuery = "SELECT status FROM folders WHERE folder_id = @folder_id";
+                        using (var checkFolderCmd = new System.Data.SQLite.SQLiteCommand(checkFolderQuery, conn))
+                        {
+                            checkFolderCmd.Parameters.AddWithValue("@folder_id", fileFolderId.Value);
+                            var folderStatusResult = await checkFolderCmd.ExecuteScalarAsync();
+                            var folderStatus = folderStatusResult?.ToString();
+                            
+                            if (folderStatus == "TRASH")
+                            {
+                                fileWasInDeletedFolder = true;
+                                Console.WriteLine($"[DEBUG] Parent folder {fileFolderId.Value} is in trash, file will be moved to root level");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[DEBUG] Parent folder {fileFolderId.Value} status: {folderStatus}");
+                            }
+                        }
+                    }
+                    
+                    // Restore file - if parent folder is deleted, move file to root level (folder_id = NULL)
+                    string updateQuery;
+                    if (fileWasInDeletedFolder)
+                    {
+                        updateQuery = "UPDATE files SET status = 'ACTIVE', deleted_at = NULL, folder_id = NULL WHERE file_name = @file_name AND owner_id = @owner_id AND status = 'TRASH'";
+                        Console.WriteLine($"[DEBUG] Moving file to root level due to deleted parent folder");
+                    }
+                    else
+                    {
+                        updateQuery = "UPDATE files SET status = 'ACTIVE', deleted_at = NULL WHERE file_name = @file_name AND owner_id = @owner_id AND status = 'TRASH'";
+                        Console.WriteLine($"[DEBUG] Restoring file in its original folder");
+                    }
+                    
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(updateQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@file_name", fileName);
+                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        Console.WriteLine($"[DEBUG] Rows affected by FILE RESTORE: {rowsAffected}");
+                        
+                        if (rowsAffected > 0)
+                        {
+                            string successMessage = $"[SUCCESS] File '{fileName}' restored by user {userId}";
+                            if (fileWasInDeletedFolder)
+                            {
+                                successMessage += $" (moved to root level due to deleted parent folder {fileFolderId.Value})";
+                            }
+                            Console.WriteLine(successMessage);
+                            
+                            return "200|FILE_RESTORED\n";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] No rows updated during restore");
+                            return "404|FILE_NOT_FOUND_IN_TRASH\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in RestoreFile: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> PermanentlyDeleteFile(string fileName, string userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] PERMANENTLY_DELETE_FILE request received: fileName={fileName}, userId={userId}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Get file info before deletion
+                    string getFileQuery = "SELECT file_path FROM files WHERE file_name = @file_name AND owner_id = @owner_id AND status = 'TRASH'";
+                    string filePath = null;
+                    
+                    using (var getCmd = new System.Data.SQLite.SQLiteCommand(getFileQuery, conn))
+                    {
+                        getCmd.Parameters.AddWithValue("@file_name", fileName);
+                        getCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        var result = await getCmd.ExecuteScalarAsync();
+                        if (result != null)
+                        {
+                            filePath = result.ToString();
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] File '{fileName}' not found in trash for user {userId}");
+                            return "404|FILE_NOT_FOUND_IN_TRASH\n";
+                        }
+                    }
+                    
+                    // Delete file record from database
+                    string deleteQuery = "DELETE FROM files WHERE file_name = @file_name AND owner_id = @owner_id AND status = 'TRASH'";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(deleteQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@file_name", fileName);
+                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        Console.WriteLine($"[DEBUG] Rows affected by PERMANENT DELETE: {rowsAffected}");
+                        
+                        if (rowsAffected > 0)
+                        {
+                            // Also delete physical file if it exists
+                            if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+                            {
+                                try
+                                {
+                                    File.Delete(filePath);
+                                    Console.WriteLine($"[DEBUG] Physical file deleted: {filePath}");
+                                }
+                                catch (Exception fileEx)
+                                {
+                                    Console.WriteLine($"[WARNING] Could not delete physical file {filePath}: {fileEx.Message}");
+                                }
+                            }
+                            
+                            Console.WriteLine($"[SUCCESS] File '{fileName}' permanently deleted by user {userId}");
+                            return "200|FILE_PERMANENTLY_DELETED\n";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] No rows deleted during permanent deletion");
+                            return "404|FILE_NOT_FOUND_IN_TRASH\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in PermanentlyDeleteFile: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> DeleteFolder(string folderId, string userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] DELETE_FOLDER request received: folderId={folderId}, userId={userId}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // First, check if folder exists and belongs to user
+                    string checkQuery = "SELECT COUNT(*) FROM folders WHERE folder_id = @folder_id AND owner_id = @owner_id AND status = 'ACTIVE'";
+                    using (var checkCmd = new System.Data.SQLite.SQLiteCommand(checkQuery, conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                        checkCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        long folderCount = (long)await checkCmd.ExecuteScalarAsync();
+                        Console.WriteLine($"[DEBUG] Folders found with id '{folderId}' for user {userId}: {folderCount}");
+                        
+                        if (folderCount == 0)
+                        {
+                            Console.WriteLine($"[DEBUG] Folder '{folderId}' not found for user {userId}");
+                            return "404|FOLDER_NOT_FOUND\n";
+                        }
+                    }
+                    
+                    // Move folder to trash
+                    string updateQuery = "UPDATE folders SET status = 'TRASH', deleted_at = datetime('now') WHERE folder_id = @folder_id AND owner_id = @owner_id AND status = 'ACTIVE'";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(updateQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        Console.WriteLine($"[DEBUG] Rows affected by FOLDER DELETE: {rowsAffected}");
+                        
+                        if (rowsAffected > 0)
+                        {
+                            // Also move all files in this folder to trash
+                            string moveFilesQuery = "UPDATE files SET status = 'TRASH', deleted_at = datetime('now') WHERE folder_id = @folder_id AND status = 'ACTIVE'";
+                            using (var moveFilesCmd = new System.Data.SQLite.SQLiteCommand(moveFilesQuery, conn))
+                            {
+                                moveFilesCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                                int filesAffected = await moveFilesCmd.ExecuteNonQueryAsync();
+                                Console.WriteLine($"[DEBUG] Files moved to trash: {filesAffected}");
+                            }
+                            
+                            Console.WriteLine($"[SUCCESS] Folder '{folderId}' moved to trash by user {userId}");
+                            return "200|FOLDER_DELETED\n";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] No rows updated during folder deletion");
+                            return "404|FOLDER_NOT_FOUND\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in DeleteFolder: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> GetTrashFolders(string userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] GetTrashFolders - Called with userId: {userId}");
+                
+                if (!int.TryParse(userId, out int userIdInt))
+                {
+                    Console.WriteLine($"[ERROR] GetTrashFolders - Invalid userId format: {userId}");
+                    return "400|INVALID_USER_ID\n";
+                }
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    string query = "SELECT folder_id, folder_name, deleted_at FROM folders WHERE owner_id = @owner_id AND status = 'TRASH' ORDER BY deleted_at DESC";
+                    
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@owner_id", userIdInt);
+                        
+                        var folders = new List<string>();
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                string folderId = reader["folder_id"]?.ToString() ?? "";
+                                string folderName = reader["folder_name"]?.ToString() ?? "";
+                                string deletedAt = reader["deleted_at"]?.ToString() ?? "";
+                                
+                                // Clean data before sending to client
+                                folderName = CleanString(folderName);
+                                deletedAt = CleanString(deletedAt);
+                                
+                                if (!string.IsNullOrWhiteSpace(folderName))
+                                {
+                                    folders.Add($"{folderId}:{folderName}:{deletedAt}");
+                                }
+                            }
+                        }
+                        
+                        if (folders.Count == 0)
+                        {
+                            Console.WriteLine($"[DEBUG] GetTrashFolders - No trash folders found, returning NO_TRASH_FOLDERS");
+                            return "200|NO_TRASH_FOLDERS\n";
+                        }
+                        
+                        string result = $"200|{string.Join(";", folders)}\n";
+                        result = ValidateResponse(result);
+                        
+                        Console.WriteLine($"[DEBUG] GetTrashFolders - Final result: '{result.Substring(0, Math.Min(100, result.Length))}...'");
+                        return result;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] GetTrashFolders - Exception: {ex.Message}");
+                Console.WriteLine($"[ERROR] GetTrashFolders - StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> RestoreFolder(string folderId, string userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] RESTORE_FOLDER request received: folderId={folderId}, userId={userId}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Check if folder exists in trash
+                    string checkQuery = "SELECT COUNT(*) FROM folders WHERE folder_id = @folder_id AND owner_id = @owner_id AND status = 'TRASH'";
+                    using (var checkCmd = new System.Data.SQLite.SQLiteCommand(checkQuery, conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                        checkCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        long folderCount = (long)await checkCmd.ExecuteScalarAsync();
+                        Console.WriteLine($"[DEBUG] Trash folders found with id '{folderId}' for user {userId}: {folderCount}");
+                        
+                        if (folderCount == 0)
+                        {
+                            Console.WriteLine($"[DEBUG] Folder '{folderId}' not found in trash for user {userId}");
+                            return "404|FOLDER_NOT_FOUND_IN_TRASH\n";
+                        }
+                    }
+                    
+                    // Restore folder by changing status back to ACTIVE and clearing deleted_at
+                    string updateQuery = "UPDATE folders SET status = 'ACTIVE', deleted_at = NULL WHERE folder_id = @folder_id AND owner_id = @owner_id AND status = 'TRASH'";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(updateQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        Console.WriteLine($"[DEBUG] Rows affected by FOLDER RESTORE: {rowsAffected}");
+                        
+                        if (rowsAffected > 0)
+                        {
+                            // First, check how many files are in this folder (both TRASH and ACTIVE)
+                            string countAllFilesQuery = "SELECT COUNT(*) FROM files WHERE folder_id = @folder_id";
+                            int totalFiles = 0;
+                            using (var countAllCmd = new System.Data.SQLite.SQLiteCommand(countAllFilesQuery, conn))
+                            {
+                                countAllCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                                totalFiles = Convert.ToInt32(await countAllCmd.ExecuteScalarAsync());
+                            }
+                            
+                            // Check how many files are already ACTIVE (restored individually before)
+                            string countActiveFilesQuery = "SELECT COUNT(*) FROM files WHERE folder_id = @folder_id AND status = 'ACTIVE'";
+                            int alreadyActiveFiles = 0;
+                            using (var countActiveCmd = new System.Data.SQLite.SQLiteCommand(countActiveFilesQuery, conn))
+                            {
+                                countActiveCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                                alreadyActiveFiles = Convert.ToInt32(await countActiveCmd.ExecuteScalarAsync());
+                            }
+                            
+                            // Also restore all files in this folder that are still in TRASH
+                            string restoreFilesQuery = "UPDATE files SET status = 'ACTIVE', deleted_at = NULL WHERE folder_id = @folder_id AND status = 'TRASH'";
+                            using (var restoreFilesCmd = new System.Data.SQLite.SQLiteCommand(restoreFilesQuery, conn))
+                            {
+                                restoreFilesCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                                int filesRestored = await restoreFilesCmd.ExecuteNonQueryAsync();
+                                
+                                Console.WriteLine($"[DEBUG] Folder contains {totalFiles} total files");
+                                Console.WriteLine($"[DEBUG] Files already active (restored individually): {alreadyActiveFiles}");
+                                Console.WriteLine($"[DEBUG] Files restored with folder: {filesRestored}");
+                                Console.WriteLine($"[DEBUG] Final result: All {totalFiles} files are now active");
+                                
+                                if (alreadyActiveFiles > 0)
+                                {
+                                    Console.WriteLine($"[INFO] {alreadyActiveFiles} file(s) were already restored individually and remain unchanged (no duplicates created)");
+                                }
+                            }
+                            
+                            Console.WriteLine($"[SUCCESS] Folder '{folderId}' restored by user {userId}");
+                            return "200|FOLDER_RESTORED\n";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] No rows updated during folder restore");
+                            return "404|FOLDER_NOT_FOUND_IN_TRASH\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in RestoreFolder: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> PermanentlyDeleteFolder(string folderId, string userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] PERMANENTLY_DELETE_FOLDER request received: folderId={folderId}, userId={userId}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Get folder info before deletion
+                    string getFolderQuery = "SELECT folder_path FROM folders WHERE folder_id = @folder_id AND owner_id = @owner_id AND status = 'TRASH'";
+                    string folderPath = null;
+                    
+                    using (var getCmd = new System.Data.SQLite.SQLiteCommand(getFolderQuery, conn))
+                    {
+                        getCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                        getCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        var result = await getCmd.ExecuteScalarAsync();
+                        if (result != null)
+                        {
+                            folderPath = result.ToString();
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] Folder '{folderId}' not found in trash for user {userId}");
+                            return "404|FOLDER_NOT_FOUND_IN_TRASH\n";
+                        }
+                    }
+                    
+                    // Delete all files in this folder first
+                    string deleteFilesQuery = "DELETE FROM files WHERE folder_id = @folder_id AND status = 'TRASH'";
+                    using (var deleteFilesCmd = new System.Data.SQLite.SQLiteCommand(deleteFilesQuery, conn))
+                    {
+                        deleteFilesCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                        int filesDeleted = await deleteFilesCmd.ExecuteNonQueryAsync();
+                        Console.WriteLine($"[DEBUG] Files permanently deleted: {filesDeleted}");
+                    }
+                    
+                    // Delete folder record from database
+                    string deleteFolderQuery = "DELETE FROM folders WHERE folder_id = @folder_id AND owner_id = @owner_id AND status = 'TRASH'";
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(deleteFolderQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                        cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
+                        
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        Console.WriteLine($"[DEBUG] Rows affected by PERMANENT FOLDER DELETE: {rowsAffected}");
+                        
+                        if (rowsAffected > 0)
+                        {
+                            // Also delete physical folder if it exists
+                            if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath))
+                            {
+                                try
+                                {
+                                    Directory.Delete(folderPath, true); // Delete recursively
+                                    Console.WriteLine($"[DEBUG] Physical folder deleted: {folderPath}");
+                                }
+                                catch (Exception folderEx)
+                                {
+                                    Console.WriteLine($"[WARNING] Could not delete physical folder {folderPath}: {folderEx.Message}");
+                                }
+                            }
+                            
+                            Console.WriteLine($"[SUCCESS] Folder '{folderId}' permanently deleted by user {userId}");
+                            return "200|FOLDER_PERMANENTLY_DELETED\n";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] No rows deleted during permanent folder deletion");
+                            return "404|FOLDER_NOT_FOUND_IN_TRASH\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in PermanentlyDeleteFolder: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
                 return "500|INTERNAL_ERROR\n";
             }
         }

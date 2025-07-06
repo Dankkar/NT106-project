@@ -493,6 +493,14 @@ namespace FileSharingServer
                 port = parsed;
             }
 
+            // Start cleanup service
+            var cleanupService = new CleanupService();
+            Console.WriteLine("Cleanup service started - will run every 24 hours");
+            
+            // Display cleanup statistics
+            var stats = await cleanupService.GetTrashStatisticsAsync();
+            Console.WriteLine($"Trash statistics: {stats.totalTrashFiles} total, {stats.expiredFiles} expired, {stats.activeFiles} active files");
+
             // Start server
             await new ProtocolHandler(port).StartAsync();
         }

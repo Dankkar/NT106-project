@@ -15,6 +15,12 @@ namespace FileSharingClient
 {
     public partial class MyFileView: UserControl
     {
+        // Static event for file deletion notification
+        public static event Action<string> FileMovedToTrash;
+        
+        // Event to notify when a folder is moved to trash
+        public static event Action<int> FolderMovedToTrash;
+        
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
         private static string dbPath = Path.Combine(projectRoot, "test.db");
         private static string connectionString = $"Data Source={dbPath};Version=3;Pooling=True";
@@ -33,6 +39,11 @@ namespace FileSharingClient
             
             // Set placeholder text style
             txtSearch.ForeColor = Color.Gray;
+            
+            // Subscribe to TrashBinView events
+            TrashBinView.FileRestoredFromTrash += OnFileRestoredFromTrash;
+            TrashBinView.FolderRestoredFromTrash += OnFolderRestoredFromTrash;
+            Console.WriteLine("[DEBUG] MyFileView - Subscribed to FileRestoredFromTrash and FolderRestoredFromTrash events");
             
             _ = InitAsync();
         }
@@ -347,8 +358,42 @@ namespace FileSharingClient
 
         private async Task OnFolderDeleted(int folderId)
         {
-            // Refresh the folder list after deletion
-            await LoadFoldersAndFilesAsync();
+            try
+            {
+                int userId = await GetUserIdFromSessionAsync();
+                
+                Console.WriteLine($"[DEBUG] OnFolderDeleted called with folderId: {folderId}");
+                Console.WriteLine($"[DEBUG] Current userId: {userId}");
+                
+                if (userId == -1)
+                {
+                    MessageBox.Show("Không thể xác định người dùng hiện tại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Send DELETE_FOLDER request to server
+                bool success = await DeleteFolderOnServer(folderId.ToString(), userId);
+                
+                if (success)
+                {
+                    MessageBox.Show("Folder đã được chuyển vào thùng rác.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    // Notify other views that a folder was moved to trash
+                    FolderMovedToTrash?.Invoke(folderId);
+                    Console.WriteLine($"[DEBUG] MyFileView - FolderMovedToTrash event fired for: {folderId}");
+                    
+                    // Refresh the folder list after successful deletion
+                    await LoadFoldersAndFilesAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Không thể xóa folder. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi xóa folder: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private async Task NavigateBack()
@@ -394,6 +439,11 @@ namespace FileSharingClient
                 if (success)
                 {
                     MessageBox.Show("File đã được chuyển vào thùng rác.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    // Notify other views that a file was moved to trash
+                    FileMovedToTrash?.Invoke(fileName);
+                    Console.WriteLine($"[DEBUG] MyFileView - FileMovedToTrash event fired for: {fileName}");
+                    
                     // Refresh the file list after successful deletion
                     await LoadFoldersAndFilesAsync();
                 }
@@ -405,6 +455,36 @@ namespace FileSharingClient
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi khi xóa file: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void OnFileRestoredFromTrash(string fileName)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] MyFileView - Received FileRestoredFromTrash event for: {fileName}");
+                // Refresh the file list to show the restored file
+                await LoadFoldersAndFilesAsync();
+                Console.WriteLine($"[DEBUG] MyFileView - Refreshed file list after restore of: {fileName}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] MyFileView - Error in OnFileRestoredFromTrash: {ex.Message}");
+            }
+        }
+
+        private async void OnFolderRestoredFromTrash(int folderId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] MyFileView - Received FolderRestoredFromTrash event for: {folderId}");
+                // Refresh the folder list to show the restored folder
+                await LoadFoldersAndFilesAsync();
+                Console.WriteLine($"[DEBUG] MyFileView - Refreshed folder list after restore of: {folderId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] MyFileView - Error in OnFolderRestoredFromTrash: {ex.Message}");
             }
         }
 
@@ -486,6 +566,49 @@ namespace FileSharingClient
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Error deleting file on server: {ex.Message}");
+                MessageBox.Show($"Connection error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        private async Task<bool> DeleteFolderOnServer(string folderId, int userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] Sending DELETE_FOLDER request: folderId={folderId}, userId={userId}");
+                
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"DELETE_FOLDER|{folderId}|{userId}";
+                    Console.WriteLine($"[DEBUG] Sending message: {message}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Server response: {response}");
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        bool success = parts.Length >= 2 && parts[0] == "200" && parts[1] == "FOLDER_DELETED";
+                        Console.WriteLine($"[DEBUG] Folder delete success: {success}");
+                        
+                        if (!success)
+                        {
+                            MessageBox.Show($"Server response: {response}", "Debug Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        
+                        return success;
+                    }
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error deleting folder on server: {ex.Message}");
                 MessageBox.Show($"Connection error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
@@ -654,6 +777,21 @@ namespace FileSharingClient
         private void MyFileLayoutPanel_Paint(object sender, PaintEventArgs e)
         {
 
+        }
+
+        private void CleanupEvents()
+        {
+            try
+            {
+                // Unsubscribe from events to prevent memory leaks
+                TrashBinView.FileRestoredFromTrash -= OnFileRestoredFromTrash;
+                TrashBinView.FolderRestoredFromTrash -= OnFolderRestoredFromTrash;
+                Console.WriteLine("[DEBUG] MyFileView - Unsubscribed from FileRestoredFromTrash and FolderRestoredFromTrash events");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] MyFileView - Error unsubscribing from events: {ex.Message}");
+            }
         }
 
         // Simple input dialog method
