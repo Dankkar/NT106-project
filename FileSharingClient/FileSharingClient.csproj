@@ -48,6 +48,9 @@
     <Reference Include="Guna.UI2, Version=2.0.4.7, Culture=neutral, PublicKeyToken=8b9d14aa5142e261, processorArchitecture=MSIL">
       <HintPath>..\FileSharingServer\packages\Guna.UI2.WinForms.2.0.4.7\lib\net48\Guna.UI2.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\FileSharingServer\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -113,6 +116,7 @@
       <DependentUpon>ChangePassword.cs</DependentUpon>
     </Compile>
     <Compile Include="CryptoHelper.cs" />
+    <Compile Include="DigitalSignatureHelper.cs" />
     <Compile Include="FileItemControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -163,6 +167,8 @@
     <Compile Include="Register.Designer.cs">
       <DependentUpon>Register.cs</DependentUpon>
     </Compile>
+    <Compile Include="SecureChannelHelper.cs" />
+    <Compile Include="SessionKeyManager.cs" />
     <Compile Include="ShareView.cs">
       <SubType>UserControl</SubType>
     </Compile>
