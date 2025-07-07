@@ -454,10 +454,10 @@ namespace FileSharingClient
             {
                 Console.WriteLine($"[DEBUG] Sending DELETE_FILE request: fileName={fileName}, userId={userId}");
                 
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
                     string message = $"DELETE_FILE|{fileName}|{userId}";
                     Console.WriteLine($"[DEBUG] Sending message: {message}");
@@ -582,10 +582,10 @@ namespace FileSharingClient
 
         private async void btnSearch_Click(object sender, EventArgs e)
         {
-            await PerformSearch();
+            PerformSearch();
         }
 
-        private async Task PerformSearch()
+        private void PerformSearch()
         {
             string searchTerm = txtSearch.Text;
             if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm == "Tìm kiếm file...")
@@ -594,7 +594,7 @@ namespace FileSharingClient
                 return;
             }
 
-            var filteredFiles = allFiles.Where(f => 
+            var filteredFiles = allFiles.Where(f =>
                 f.Name.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
                 f.Type.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
                 f.Owner.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0
@@ -607,13 +607,13 @@ namespace FileSharingClient
 
             // Display filtered results
             MyFileLayoutPanel.Controls.Clear();
-            
+
             foreach (var folder in filteredFolders)
             {
                 var folderControl = CreateFolderControl(folder);
                 MyFileLayoutPanel.Controls.Add(folderControl);
             }
-            
+
             foreach (var file in filteredFiles)
             {
                 var fileItemControl = new FileItemControl(file.Name, file.CreatedAt, file.Owner, file.Size, file.FilePath);

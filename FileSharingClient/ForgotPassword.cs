@@ -10,12 +10,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using FileSharingClient;
 
 namespace FileSharingClient
 {
     public partial class ForgotPassword : Form
     {
-        private const string SERVER_IP = "127.0.0.1";
+        private const string SERVER_IP = "localhost";
         private const int SERVER_PORT = 5000;
 
         public ForgotPassword()
@@ -163,12 +164,12 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                using (sslStream)
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 {
-                    string message = $"REQUEST_OTP|{email}\n";
+                    string message = $"REQUEST_OTP|{email}";
                     await writer.WriteLineAsync(message);
                     string response = await reader.ReadLineAsync();
                     return response?.Trim() ?? "500";
@@ -188,12 +189,12 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                using (sslStream)
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 {
-                    string message = $"VERIFY_OTP|{email}|{otp}\n";
+                    string message = $"VERIFY_OTP|{email}|{otp}";
                     await writer.WriteLineAsync(message);
                     string response = await reader.ReadLineAsync();
                     return response?.Trim() ?? "500";
@@ -213,10 +214,10 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                using (sslStream)
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 {
                     // Hash password bằng SHA256 trước khi gửi
                     string hashedPassword;
@@ -231,7 +232,7 @@ namespace FileSharingClient
                         hashedPassword = sb.ToString();
                     }
                     
-                    string message = $"RESET_PASSWORD|{email}|{hashedPassword}\n";
+                    string message = $"RESET_PASSWORD|{email}|{hashedPassword}";
                     await writer.WriteLineAsync(message);
                     string response = await reader.ReadLineAsync();
                     return response?.Trim() ?? "500";

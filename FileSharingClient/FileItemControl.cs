@@ -273,13 +273,13 @@ namespace FileSharingClient
 
         private async Task DownloadEncryptedFile(string fileName, string savePath)
         {
-            using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-            using (NetworkStream stream = client.GetStream())
-            using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-            using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+            var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+            using (sslStream)
+            using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+            using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
             {
                 // Send download request
-                string message = $"DOWNLOAD_FILE|{fileName}|{Session.LoggedInUserId}\n";
+                string message = $"DOWNLOAD_FILE|{fileName}|{Session.LoggedInUserId}";
                 await writer.WriteLineAsync(message);
 
                 // Read response header
@@ -300,7 +300,7 @@ namespace FileSharingClient
                         
                         while (totalRead < fileSize)
                         {
-                            int bytesRead = await stream.ReadAsync(buffer, 0, Math.Min(buffer.Length, (int)(fileSize - totalRead)));
+                            int bytesRead = await sslStream.ReadAsync(buffer, 0, Math.Min(buffer.Length, (int)(fileSize - totalRead)));
                             if (bytesRead == 0) break;
                             
                             Array.Copy(buffer, 0, encryptedData, totalRead, bytesRead);

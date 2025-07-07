@@ -27,13 +27,13 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                     {
                     // Gửi request GET_USER_ID
-                    string message = $"GET_USER_ID|{Session.LoggedInUser}\n";
+                    string message = $"GET_USER_ID|{Session.LoggedInUser}";
                     await writer.WriteLineAsync(message);
 
                     // Nhận response từ server
@@ -109,12 +109,12 @@ namespace FileSharingClient
             List<string> files = new List<string>();
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    string message = $"GET_USER_FILES|{userId}\n";
+                    string message = $"GET_USER_FILES|{userId}";
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
@@ -145,12 +145,12 @@ namespace FileSharingClient
             List<string> files = new List<string>();
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    string message = $"GET_SHARED_FILES|{userId}\n";
+                    string message = $"GET_SHARED_FILES|{userId}";
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
@@ -222,12 +222,12 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                     {
-                    string message = $"UPDATE_FILE_SHARE|{fileName}|{sharePass}\n";
+                    string message = $"UPDATE_FILE_SHARE|{fileName}|{sharePass}";
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
@@ -260,12 +260,12 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                     {
-                    string message = $"GET_SHARE_PASS|{fileName}\n";
+                    string message = $"GET_SHARE_PASS|{fileName}";
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
@@ -337,12 +337,12 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    string message = $"GET_FILE_INFO_BY_SHARE_PASS|{sharePass}\n";
+                    string message = $"GET_FILE_INFO_BY_SHARE_PASS|{sharePass}";
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
@@ -374,12 +374,12 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                     {
-                    string message = $"ADD_FILE_SHARE_ENTRY|{fileId}|{userId}|{sharePass}\n";
+                    string message = $"ADD_FILE_SHARE_ENTRY|{fileId}|{userId}|{sharePass}";
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();

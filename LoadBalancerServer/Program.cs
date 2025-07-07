@@ -7,6 +7,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace LoadBalancerServer
 {
@@ -32,6 +34,8 @@ namespace LoadBalancerServer
         private const int LISTEN_PORT = 5000;
         private const int HEALTH_CHECK_INTERVAL_MS = 10000; // 10 seconds
         private const int MAX_FAILED_CHECKS = 3;
+        private const string CERTIFICATE_PATH = "LoadBalancerServer/cert/lb_certificate.pfx";
+        private const string CERTIFICATE_PASSWORD = "kha123456789";
 
         // Backend servers configuration
         private static readonly List<BackendServer> _backends = new List<BackendServer>
@@ -216,38 +220,85 @@ namespace LoadBalancerServer
             // Track connection
             Interlocked.Increment(ref backend.ActiveConnections);
 
+            SslStream sslStream = null;
+            NetworkStream clientStream = null;
             try
             {
+                Console.WriteLine($"[DEBUG] Attempting to connect to backend {backend.EndPoint}...");
                 await server.ConnectAsync(backend.EndPoint.Address, backend.EndPoint.Port);
+                Console.WriteLine($"[DEBUG] Successfully connected to backend {backend.EndPoint}");
                 Console.WriteLine($"[PROXY] {client.Client.RemoteEndPoint} -> {backend.EndPoint} (Active: {backend.ActiveConnections})");
+
+                // TLS termination: wrap client stream with SslStream
+                clientStream = client.GetStream();
+                sslStream = new SslStream(clientStream, false);
+                
+                X509Certificate2 certificate = null;
+                try
+                {
+                    Console.WriteLine($"[DEBUG] Loading certificate from: {CERTIFICATE_PATH}");
+                    certificate = new X509Certificate2(CERTIFICATE_PATH, CERTIFICATE_PASSWORD);
+                    Console.WriteLine($"[DEBUG] Certificate loaded successfully. Subject: {certificate.Subject}");
+                    Console.WriteLine($"[DEBUG] Certificate valid from: {certificate.NotBefore} to: {certificate.NotAfter}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[CERT ERROR] Failed to load certificate: {ex.Message}");
+                    Console.WriteLine($"[CERT ERROR] Certificate path: {Path.GetFullPath(CERTIFICATE_PATH)}");
+                    Console.WriteLine($"[CERT ERROR] File exists: {File.Exists(CERTIFICATE_PATH)}");
+                    client.Close();
+                    server.Close();
+                    Interlocked.Decrement(ref backend.ActiveConnections);
+                    return;
+                }
+                
+                try
+                {
+                    Console.WriteLine($"[DEBUG] Starting TLS handshake with client...");
+                    await Task.Factory.FromAsync(
+                        (callback, state) => sslStream.BeginAuthenticateAsServer(certificate, false, false, callback, state),
+                        sslStream.EndAuthenticateAsServer,
+                        null);
+                    Console.WriteLine($"[DEBUG] TLS handshake completed successfully");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[TLS ERROR] Handshake failed: {ex.Message}");
+                    Console.WriteLine($"[TLS ERROR] Inner exception: {ex.InnerException?.Message}");
+                    Console.WriteLine($"[TLS ERROR] Stack trace: {ex.StackTrace}");
+                    client.Close();
+                    server.Close();
+                    Interlocked.Decrement(ref backend.ActiveConnections);
+                    return;
+                }
+
+                NetworkStream serverStream = server.GetStream();
+
+                // Pump data bidirectionally until one side closes
+                Task t1 = PumpAsync(sslStream, serverStream, $"Client(TLS)->Server({backend.EndPoint})");
+                Task t2 = PumpAsync(serverStream, sslStream, $"Server({backend.EndPoint})->Client(TLS)");
+
+                await Task.WhenAny(t1, t2);
+
+                // Cleanup
+                client.Close();
+                server.Close();
+                Interlocked.Decrement(ref backend.ActiveConnections);
+                Console.WriteLine($"[CLOSED] Connection to {backend.EndPoint} closed (Active: {backend.ActiveConnections})");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Could not connect to backend {backend.EndPoint}: {ex.Message}");
-                
-                // Mark backend as potentially unhealthy for immediate recheck
+                Console.WriteLine($"[DEBUG] Exception type: {ex.GetType().Name}");
+                Console.WriteLine($"[DEBUG] Backend health status: {backend.IsHealthy}, Last check: {backend.LastHealthCheck}");
                 backend.FailedChecks++;
-                
                 client.Close();
+                server.Close();
+                if (sslStream != null) sslStream.Dispose();
+                if (clientStream != null) clientStream.Dispose();
                 Interlocked.Decrement(ref backend.ActiveConnections);
                 return;
             }
-
-            NetworkStream clientStream = client.GetStream();
-            NetworkStream serverStream = server.GetStream();
-
-            // Pump data bidirectionally until one side closes
-            Task t1 = PumpAsync(clientStream, serverStream, $"Client->Server({backend.EndPoint})");
-            Task t2 = PumpAsync(serverStream, clientStream, $"Server({backend.EndPoint})->Client");
-
-            await Task.WhenAny(t1, t2);
-
-            // Cleanup
-            client.Close();
-            server.Close();
-            Interlocked.Decrement(ref backend.ActiveConnections);
-            
-            Console.WriteLine($"[CLOSED] Connection to {backend.EndPoint} closed (Active: {backend.ActiveConnections})");
         }
 
         // --- Data Pumping -----------------------------------------------------------

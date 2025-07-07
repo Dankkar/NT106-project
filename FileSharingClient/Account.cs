@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net.Sockets;
 using System.IO;
+using FileSharingClient;
 
 namespace FileSharingClient
 {
@@ -49,12 +50,12 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    string message = $"GET_USER_STORAGE|{Session.LoggedInUserId}\n";
+                    string message = $"GET_USER_STORAGE|{Session.LoggedInUserId}";
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
@@ -199,13 +200,13 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 {
                     // Gửi yêu cầu đổi mật khẩu
-                    string message = $"CHANGE_PASSWORD|{username}|{oldPassword}|{newPassword}\n";
+                    string message = $"CHANGE_PASSWORD|{username}|{oldPassword}|{newPassword}";
                     await writer.WriteLineAsync(message);
 
                     // Nhận phản hồi từ server

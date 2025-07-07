@@ -38,32 +38,26 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient())
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                using (sslStream)
+                using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
                 {
-                    await client.ConnectAsync("172.20.10.3", 5000);
-                    using (NetworkStream stream = client.GetStream())
-                    using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
+                    long totalBytes = fileStream.Length;
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+                    long totalSent = 0;
+                    while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
-                        long totalBytes = fileStream.Length;
-                        byte[] buffer = new byte[4096];
-                        int bytesRead;
-                        long totalSent = 0;
-                        while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                        {
-                            await stream.WriteAsync(buffer, 0, bytesRead);
-                            totalSent += bytesRead;
+                        await sslStream.WriteAsync(buffer, 0, bytesRead);
+                        totalSent += bytesRead;
 
-                            //Cap nhat tien trinh
-                            int progress = (int)((totalSent * 100) / totalBytes);
-                        }
-                        totalStorageUsed += totalSent;
-                        MessageBox.Show("File đã gửi xong!");
+                        //Cap nhat tien trinh
+                        int progress = (int)((totalSent * 100) / totalBytes);
                     }
-
+                    totalStorageUsed += totalSent;
+                    MessageBox.Show("File đã gửi xong!");
                 }
             }
-
-
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);

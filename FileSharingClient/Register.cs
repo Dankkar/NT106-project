@@ -14,8 +14,7 @@ using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
 using System.Security.Cryptography;
 using FontAwesome.Sharp;
-
-
+using FileSharingClient;
 
 namespace FileSharingClient
 {
@@ -26,7 +25,7 @@ namespace FileSharingClient
         private string password = "Mật khẩu";
         private string conf_pass = "Xác nhận mật khẩu";
         private string gmail = "Gmail";
-        private const string SERVER_IP = "127.0.0.1";
+        private const string SERVER_IP = "localhost";
         private const int SERVER_PORT = 5000;
         public Register()
         {
@@ -137,10 +136,10 @@ namespace FileSharingClient
             try
             {
                 // Kết nối đến server
-                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
                     // Lấy thông tin từ các TextBox
                     string username = usernametxtBox.Text;
@@ -190,7 +189,7 @@ namespace FileSharingClient
                     }
                     
                     // Gửi dữ liệu đăng ký theo định dạng: REGISTER|username|email|hashedPassword
-                    string message = $"REGISTER|{username}|{email}|{hashedPassword}\n";
+                    string message = $"REGISTER|{username}|{email}|{hashedPassword}";
                     await writer.WriteLineAsync(message);
 
                     // Nhận phản hồi từ server (status code dạng số)

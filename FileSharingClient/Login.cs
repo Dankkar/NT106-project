@@ -13,6 +13,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using FileSharingClient;
 
 namespace FileSharingClient
 {
@@ -22,7 +23,7 @@ namespace FileSharingClient
         private bool isForgotPasswordOpen = false;
         private string username = "Tên đăng nhập";
         private string password = "Mật khẩu";
-        private const string SERVER_IP = "127.0.0.1";
+        private const string SERVER_IP = "localhost";
         private const int SERVER_PORT = 5000;
         public Login()
         {
@@ -65,15 +66,14 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
                     // Lấy thông tin từ TextBox và cắt khoảng trắng
                     string username = usernametxtBox.Text.Trim();
                     string password = passtxtBox.Text;
-
                     // Kiểm tra placeholder text
                     if (username == this.username || string.IsNullOrWhiteSpace(username))
                     {
@@ -83,7 +83,6 @@ namespace FileSharingClient
                         }));
                         return;
                     }
-
                     if (password == this.password || string.IsNullOrWhiteSpace(password))
                     {
                         this.Invoke(new Action(() =>
@@ -92,7 +91,6 @@ namespace FileSharingClient
                         }));
                         return;
                     }
-
                     // Hash password bằng SHA256 trước khi gửi
                     string hashedPassword;
                     using (SHA256 sha256Hash = SHA256.Create())
@@ -105,16 +103,13 @@ namespace FileSharingClient
                         }
                         hashedPassword = sb.ToString();
                     }
-                    
-                    // Gửi dữ liệu đăng nhập theo định dạng: LOGIN|username|hashedPassword\n
-                    string message = $"LOGIN|{username}|{hashedPassword}\n";
+                    // Gửi dữ liệu đăng nhập theo định dạng: LOGIN|username|hashedPassword
+                    string message = $"LOGIN|{username}|{hashedPassword}";
                     await writer.WriteLineAsync(message);
-
                     // Nhận phản hồi từ server (status code dạng số)
                     string response = await reader.ReadLineAsync();
                     response = response?.Trim();
                     int statusCode;
-
                     // Cập nhật giao diện theo status code nhận được
                     if (int.TryParse(response, out statusCode))
                     {
@@ -168,19 +163,17 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                    {
+                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
                     // Gửi request GET_USER_ID
-                    string message = $"GET_USER_ID|{username}\n";
+                    string message = $"GET_USER_ID|{username}";
                     await writer.WriteLineAsync(message);
-
                     // Nhận response từ server
                     string response = await reader.ReadLineAsync();
                     response = response?.Trim();
-
                     if (response != null)
                     {
                         string[] parts = response.Split('|');

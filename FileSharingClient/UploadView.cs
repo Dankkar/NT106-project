@@ -12,6 +12,9 @@ using System.Data.SQLite;
 using System.Net.Sockets;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using FileSharingClient;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 namespace FileSharingClient
 {
@@ -77,23 +80,18 @@ namespace FileSharingClient
                 {
                     // Encrypt file before uploading
                     byte[] encryptedData = CryptoHelper.EncryptFileFromDisk(pf.FilePath, Session.UserPassword);
-                    
                     FileInfo fi = new FileInfo(pf.FilePath);
                     string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                    string command = $"UPLOAD_FILE_IN_FOLDER|{folderName}|{pf.RelativePath}|{fi.Name}|{encryptedData.Length}|{ownerId}|{uploadAt}\n";
-                    using (TcpClient client = new TcpClient("127.0.0.1", 5000))
-                    using (NetworkStream stream = client.GetStream())
+                    string command = $"UPLOAD_FILE_IN_FOLDER|{folderName}|{pf.RelativePath}|{fi.Name}|{encryptedData.Length}|{ownerId}|{uploadAt}";
+                    byte[] commandBytes = Encoding.UTF8.GetBytes(command + "\n");
+                    var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                    using (sslStream)
                     {
-                        byte[] commandBytes = Encoding.UTF8.GetBytes(command);
-                        await stream.WriteAsync(commandBytes, 0, commandBytes.Length);
-                        await stream.FlushAsync();
-
+                        await sslStream.WriteAsync(commandBytes, 0, commandBytes.Length);
                         // Send encrypted file data
-                        await stream.WriteAsync(encryptedData, 0, encryptedData.Length);
-                        await stream.FlushAsync();
-
-                        // Đọc response
-                        using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                        await sslStream.WriteAsync(encryptedData, 0, encryptedData.Length);
+                        await sslStream.FlushAsync();
+                        using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                         {
                             string response = await reader.ReadLineAsync();
                             if (response.Trim() != "200")
@@ -120,53 +118,46 @@ namespace FileSharingClient
         private async Task UploadFiles()
         {
             var filesToUpload = new List<string>(pendingFiles.Select(pf => pf.FilePath));
-
             // Neu co nhieu file -> nen lai
             if(filesToUpload.Count > 1)
             {
                 string zipFilePath = CompressFiles(filesToUpload);
                 filesToUpload = new List<string> { zipFilePath };
             }
-
             foreach(var filePath in filesToUpload)
             {
                 try
                 {
-                    using(TcpClient client = new TcpClient("127.0.0.1", 5000))
+                    var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                    using (sslStream)
                     {
-                        using (NetworkStream stream = client.GetStream())
+                        // Encrypt file before uploading
+                        byte[] encryptedData = CryptoHelper.EncryptFileFromDisk(filePath, Session.UserPassword);
+                        string fileName = Path.GetFileName(filePath);
+                        int ownerId = Session.LoggedInUserId;
+                        string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                        string command = $"UPLOAD|{fileName}|{encryptedData.Length}|{ownerId}|{uploadAt}";
+                        byte[] commandBytes = Encoding.UTF8.GetBytes(command + "\n");
+                        await sslStream.WriteAsync(commandBytes, 0, commandBytes.Length);
+                        await sslStream.FlushAsync();
+                        Console.WriteLine($"Đã gửi lệnh: {command.Trim()}");
+                        // Send encrypted file data
+                        await sslStream.WriteAsync(encryptedData, 0, encryptedData.Length);
+                        await sslStream.FlushAsync();
+                        using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                         {
-                            // Encrypt file before uploading
-                            byte[] encryptedData = CryptoHelper.EncryptFileFromDisk(filePath, Session.UserPassword);
-                            
-                            string fileName = Path.GetFileName(filePath);
-                            int ownerId = Session.LoggedInUserId;
-                            string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                            string command = $"UPLOAD|{fileName}|{encryptedData.Length}|{ownerId}|{uploadAt}\n";
-                            byte[] commandBytes = Encoding.UTF8.GetBytes(command);
-                            await stream.WriteAsync(commandBytes, 0, commandBytes.Length);
-                            await stream.FlushAsync();
-                            Console.WriteLine($"Đã gửi lệnh: {command.Trim()}");
-
-                            // Send encrypted file data
-                            await stream.WriteAsync(encryptedData, 0, encryptedData.Length);
-                            await stream.FlushAsync();
-                            using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                            string response = await reader.ReadLineAsync();
+                            Console.WriteLine($"Server trả về: {response}");
+                            if (response.Trim() == "413")
+                                MessageBox.Show("File quá lớn. Vui lòng thử lại với file nhỏ hơn.");
+                            else if (response.Trim() == "200")
                             {
-                                string response = await reader.ReadLineAsync();
-                                Console.WriteLine($"Server trả về: {response}");
-
-                                if (response.Trim() == "413")
-                                    MessageBox.Show("File quá lớn. Vui lòng thử lại với file nhỏ hơn.");
-                                else if (response.Trim() == "200")
-                                {
-                                    MessageBox.Show("Tải lên thành công");
-                                    if (FileUploaded != null)
-                                        await FileUploaded.Invoke();
-                                }
-                                else
-                                    MessageBox.Show($"Lỗi: {response.Trim()}");
+                                MessageBox.Show("Tải lên thành công");
+                                if (FileUploaded != null)
+                                    await FileUploaded.Invoke();
                             }
+                            else
+                                MessageBox.Show($"Lỗi: {response.Trim()}");
                         }
                     }
                 }
@@ -175,7 +166,6 @@ namespace FileSharingClient
                     MessageBox.Show($"Lỗi upload file {filePath}: {ex.Message}");
                 }
             }
-            
             pendingFiles.Clear();
             totalSizeBytes = 0;
             ClearFileList();
