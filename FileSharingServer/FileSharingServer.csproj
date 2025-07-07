@@ -103,6 +103,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AuthService.cs" />
+    <Compile Include="CleanupService.cs" />
     <Compile Include="DatabaseHelper.cs" />
     <Compile Include="FileService.cs" />
     <Compile Include="FolderService.cs" />

@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using System.IO;
 using FileSharingClient.Services;
 using System.IO.Compression;
-using System.Net.Sockets; // Added for TcpClient
+using System.Net.Sockets;
 
 namespace FileSharingClient
 {
@@ -30,10 +30,11 @@ namespace FileSharingClient
             MyFileLayoutPanel.FlowDirection = FlowDirection.TopDown;
             MyFileLayoutPanel.AutoScroll = true;
             MyFileLayoutPanel.WrapContents = false;
-            
             // Set placeholder text style
             txtSearch.ForeColor = Color.Gray;
-            
+            // Subscribe to TrashBinView events
+            TrashBinView.FileRestoredFromTrash += OnFileRestoredFromTrash;
+            TrashBinView.FolderRestoredFromTrash += OnFolderRestoredFromTrash;
             _ = InitAsync();
         }
 
@@ -46,40 +47,26 @@ namespace FileSharingClient
         {
             try
             {
-                Console.WriteLine($"[DEBUG] LoadFoldersAndFilesAsync called for user {Session.LoggedInUserId}, currentFolderId: {currentFolderId}");
-                
                 allFiles.Clear();
                 allFolders.Clear();
                 MyFileLayoutPanel.Controls.Clear();
-
-                // Debug: Check currentUserId
                 if (Session.LoggedInUserId == -1)
                 {
                     MessageBox.Show("currentUserId is -1, cannot load files", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-
                 // Load ONLY user's own folders (from folders table where owner_id = current user)
                 var userFolders = await ApiService.GetUserFoldersAsync(Session.LoggedInUserId, currentFolderId);
-                Console.WriteLine($"[DEBUG] Loaded {userFolders.Count} user folders");
                 allFolders.AddRange(userFolders);
-
                 // Load ONLY user's own files (from files table where owner_id = current user)
                 var userFiles = await ApiService.GetUserFilesAsync(Session.LoggedInUserId, currentFolderId);
-                Console.WriteLine($"[DEBUG] Loaded {userFiles.Count} user files");
                 allFiles.AddRange(userFiles);
-
-                // Debug: Show counts
-                Console.WriteLine($"[DEBUG] Total: {allFolders.Count} folders and {allFiles.Count} files for user {Session.LoggedInUserId}");
-
                 // Display folders and files
                 DisplayFoldersAndFiles();
                 UpdateBreadcrumb();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] LoadFoldersAndFilesAsync error: {ex.Message}");
-                Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
                 MessageBox.Show($"Error loading folders and files: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -87,31 +74,24 @@ namespace FileSharingClient
         private void DisplayFoldersAndFiles()
         {
             MyFileLayoutPanel.Controls.Clear();
-            
             // Add back button if not at root
             if (currentFolderId != null)
             {
                 var backControl = CreateBackButton();
                 MyFileLayoutPanel.Controls.Add(backControl);
             }
-            
             // Add folders first
             foreach (var folder in allFolders)
             {
-                Console.WriteLine($"[DEBUG][MyFileView] Creating folder control: {folder.Name}, Owner: '{folder.Owner}'");
-                
                 var folderControl = new FolderItemControl(folder.Name, folder.CreatedAt, folder.Owner, folder.IsShared, folder.Id);
                 folderControl.FolderClicked += async (folderId) => await NavigateToFolderById(folderId);
                 folderControl.FolderDeleted += async (folderId) => await OnFolderDeleted(folderId);
                 folderControl.FolderShareRequested += async (folderIdStr) => await OnFolderShareRequested(int.Parse(folderIdStr), folder.Name);
                 MyFileLayoutPanel.Controls.Add(folderControl);
             }
-            
             // Add files
             foreach (var file in allFiles)
             {
-                Console.WriteLine($"[DEBUG][MyFileView] Creating file control: {file.Name}, Owner: '{file.Owner}'");
-                
                 var fileItemControl = new FileItemControl(file.Name, file.CreatedAt, file.Owner, file.Size, file.FilePath, file.Id);
                 fileItemControl.FileDeleted += async (filePath) => await OnFileDeleted(filePath);
                 fileItemControl.FileShareRequested += async (fileIdStr) => await OnFileShareRequested(int.Parse(fileIdStr), file.Name);
@@ -231,61 +211,40 @@ namespace FileSharingClient
             await LoadFoldersAndFilesAsync();
         }
 
-        // COMMENTED OUT: This method will be moved to "Shared With Me" tab
-        // private async Task LoadSharedFolderContentsAsync(int folderId)
-        // {
-        //     try
-        //     {
-        //         Console.WriteLine($"[DEBUG] LoadSharedFolderContentsAsync called for folder {folderId}");
-        //         
-        //         allFiles.Clear();
-        //         allFolders.Clear();
-        //         MyFileLayoutPanel.Controls.Clear();
-
-        //         // Add back button
-        //         var backControl = CreateBackButton();
-        //         MyFileLayoutPanel.Controls.Add(backControl);
-
-        //         // Get shared folder contents from server
-        //         using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
-        //         using (var stream = client.GetStream())
-        //         using (var reader = new StreamReader(stream, Encoding.UTF8))
-        //         using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-        //         {
-        //             string message = $"GET_SHARED_FOLDER_CONTENTS|{folderId}|{Session.LoggedInUserId}\n";
-        //             Console.WriteLine($"[DEBUG] Getting shared folder contents: {message.Trim()}");
-        //             await writer.WriteLineAsync(message);
-
-        //             string response = await reader.ReadLineAsync();
-        //             response = response?.Trim();
-        //             Console.WriteLine($"[DEBUG] Shared folder contents response: '{response}'");
-
-        //             if (response != null && response.StartsWith("200|"))
-        //             {
-        //                 string data = response.Substring(4);
-        //                 if (data != "NO_FILES_IN_FOLDER")
-        //                 {
-        //                     var files = ParseFileItems(data);
-        //                     allFiles.AddRange(files);
-        //                 }
-        //             }
-        //         }
-
-        //         // Display files
-        //         DisplayFoldersAndFiles();
-        //         UpdateBreadcrumb();
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine($"[ERROR] LoadSharedFolderContentsAsync error: {ex.Message}");
-        //         MessageBox.Show($"Error loading shared folder contents: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //     }
-        // }
-
         private async Task OnFolderDeleted(int folderId)
         {
-            // Refresh the folder list after deletion
-            await LoadFoldersAndFilesAsync();
+            try
+            {
+                int userId = await GetUserIdFromSessionAsync();
+                
+                Console.WriteLine($"[DEBUG] OnFolderDeleted called with folderId: {folderId}");
+                Console.WriteLine($"[DEBUG] Current userId: {userId}");
+                
+                if (userId == -1)
+                {
+                    MessageBox.Show("Không thể xác định người dùng hiện tại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Send DELETE_FOLDER request to server
+                bool success = await DeleteFolderOnServer(folderId.ToString(), userId);
+                
+                if (success)
+                {
+                    MessageBox.Show("Folder đã được chuyển vào thùng rác.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    // Refresh the folder list after successful deletion
+                    await LoadFoldersAndFilesAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Không thể xóa folder. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi xóa folder: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private async Task NavigateBack()
@@ -310,10 +269,64 @@ namespace FileSharingClient
             // You could add a Label at the top to show: Home > Folder1 > Subfolder2
         }
 
-        private async Task OnFileDeleted(string filePath)
+        private async Task OnFileDeleted(string fileName)
         {
-            // Refresh the file list after deletion
-            await LoadFoldersAndFilesAsync();
+            try
+            {
+                // Tìm fileId từ allFiles
+                var file = allFiles.FirstOrDefault(f => f.FilePath == fileName || f.Name == fileName);
+                if (file == null)
+                {
+                    MessageBox.Show("Không tìm thấy file để xóa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                int fileId = file.Id;
+                // Gọi API xóa file
+                bool success = await Services.ApiService.DeleteFileAsync(fileId);
+                if (success)
+                {
+                    MessageBox.Show("File đã được chuyển vào thùng rác.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    await LoadFoldersAndFilesAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Không thể xóa file. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi xóa file: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void OnFileRestoredFromTrash(string fileName)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] MyFileView - Received FileRestoredFromTrash event for: {fileName}");
+                // Refresh the file list to show the restored file
+                await LoadFoldersAndFilesAsync();
+                Console.WriteLine($"[DEBUG] MyFileView - Refreshed file list after restore of: {fileName}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] MyFileView - Error in OnFileRestoredFromTrash: {ex.Message}");
+            }
+        }
+
+        private async void OnFolderRestoredFromTrash(int folderId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] MyFileView - Received FolderRestoredFromTrash event for: {folderId}");
+                // Refresh the folder list to show the restored folder
+                await LoadFoldersAndFilesAsync();
+                Console.WriteLine($"[DEBUG] MyFileView - Refreshed folder list after restore of: {folderId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] MyFileView - Error in OnFolderRestoredFromTrash: {ex.Message}");
+            }
         }
 
         private async Task OnFileShareRequested(int fileId, string fileName)
@@ -584,26 +597,107 @@ namespace FileSharingClient
 
         private async Task<int> GetUserIdFromSessionAsync()
         {
-            // Debug: Check session values
-            MessageBox.Show($"Session.LoggedInUser: '{Session.LoggedInUser}', Session.LoggedInUserId: {Session.LoggedInUserId}", "Debug Session", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            
             // Use the user ID that was already retrieved during login
             if (Session.LoggedInUserId != -1)
             {
                 return Session.LoggedInUserId;
             }
-            
             // Fallback: try to get from server if not available
             try
             {
                 int userId = await ApiService.GetUserIdAsync(Session.LoggedInUser);
-                MessageBox.Show($"Got userId from server: {userId}", "Debug API", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return userId;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return -1;
+            }
+        }
+
+        private async Task<bool> DeleteFileOnServer(string fileName, int userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] Sending DELETE_FILE request: fileName={fileName}, userId={userId}");
+                
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"DELETE_FILE|{fileName}|{userId}";
+                    Console.WriteLine($"[DEBUG] Sending message: {message}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Server response: {response}");
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        bool success = parts.Length >= 2 && parts[0] == "200" && parts[1] == "FILE_DELETED";
+                        Console.WriteLine($"[DEBUG] Delete success: {success}");
+                        
+                        if (!success)
+                        {
+                            MessageBox.Show($"Server response: {response}", "Debug Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        
+                        return success;
+                    }
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error deleting file on server: {ex.Message}");
+                MessageBox.Show($"Connection error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        private async Task<bool> DeleteFolderOnServer(string folderId, int userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] Sending DELETE_FOLDER request: folderId={folderId}, userId={userId}");
+                
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"DELETE_FOLDER|{folderId}|{userId}";
+                    Console.WriteLine($"[DEBUG] Sending message: {message}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Server response: {response}");
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        bool success = parts.Length >= 2 && parts[0] == "200" && parts[1] == "FOLDER_DELETED";
+                        Console.WriteLine($"[DEBUG] Folder delete success: {success}");
+                        
+                        if (!success)
+                        {
+                            MessageBox.Show($"Server response: {response}", "Debug Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        
+                        return success;
+                    }
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error deleting folder on server: {ex.Message}");
+                MessageBox.Show($"Connection error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 
@@ -635,9 +729,6 @@ namespace FileSharingClient
                 }
             }
         }
-
-        // XÓA: btnUpload_Click và mọi tham chiếu đến btnUpload
-        // (Không còn code upload ở đây)
 
         private async void btnSearch_Click(object sender, EventArgs e)
         {
@@ -689,308 +780,10 @@ namespace FileSharingClient
             }
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-        // COMMENTED OUT: Debug method moved to "Shared With Me" tab
-        /*
-        private async void DebugListSharedFiles()
-        {
-            try
-            {
-                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
-                using (var stream = client.GetStream())
-                using (var reader = new StreamReader(stream, Encoding.UTF8))
-                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
-                    // Get all shared items
-                    string message = "DEBUG_LIST_ALL_SHARED\n";
-                    await writer.WriteLineAsync(message);
-
-                    string response = await reader.ReadLineAsync();
-                    response = response?.Trim();
-                    
-                    Console.WriteLine($"[DEBUG] All shared items response: '{response}'");
-                    
-                    if (response != null && response.StartsWith("200|"))
-                    {
-                        string data = response.Substring(4);
-                        if (data == "NO_SHARED_ITEMS")
-                        {
-                            MessageBox.Show("No shared items found.", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
-                        else
-                        {
-                            string[] parts = data.Split('|');
-                            string result = "";
-                            
-                            foreach (string part in parts)
-                            {
-                                if (part.StartsWith("FILES:"))
-                                {
-                                    string files = part.Substring(6);
-                                    if (!string.IsNullOrEmpty(files))
-                                    {
-                                        result += "SHARED FILES:\n" + files.Replace(";", "\n") + "\n\n";
-                                    }
-                                }
-                                else if (part.StartsWith("FOLDERS:"))
-                                {
-                                    string folders = part.Substring(8);
-                                    if (!string.IsNullOrEmpty(folders))
-                                    {
-                                        result += "SHARED FOLDERS:\n" + folders.Replace(";", "\n");
-                                    }
-                                }
-                            }
-                            
-                            if (!string.IsNullOrEmpty(result))
-                            {
-                                MessageBox.Show(result, "Debug - All Shared Items", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            }
-                            else
-                            {
-                                MessageBox.Show("No shared items found.", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show($"Error: {response}", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Debug error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-        */
-
-        // Debug database structure
-        private async void DebugCheckDatabase()
-        {
-            try
-            {
-                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
-                using (var stream = client.GetStream())
-                using (var reader = new StreamReader(stream, Encoding.UTF8))
-                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                {
-                    // Check database structure
-                    string message = "DEBUG_CHECK_DATABASE\n";
-                    await writer.WriteLineAsync(message);
-
-                    string response = await reader.ReadLineAsync();
-                    response = response?.Trim();
-                    
-                    Console.WriteLine($"[DEBUG] Database check response: '{response}'");
-                    
-                    if (response != null && response.StartsWith("200|"))
-                    {
-                        MessageBox.Show("Database structure check completed. Check server console for details.", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    else
-                    {
-                        MessageBox.Show($"Error: {response}", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Debug error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private List<Services.FileItem> ParseFileListFromResponse(string fileListData)
-        {
-            var files = new List<Services.FileItem>();
-            
-            try
-            {
-                Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Raw data: '{fileListData}'");
-                
-                // Check if the data contains semicolons (multiple files) or is a single file entry
-                if (fileListData.Contains(';'))
-                {
-                    // Multiple files separated by semicolons
-                    string[] fileEntries = fileListData.Split(';');
-                    Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Found {fileEntries.Length} file entries");
-                    
-                    foreach (string fileEntry in fileEntries)
-                    {
-                        Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Processing entry: '{fileEntry}'");
-                        if (!string.IsNullOrEmpty(fileEntry))
-                        {
-                            // Parse file entry: file_id:file_name:file_type:file_size:upload_at:owner_name:file_path
-                            // Use a more robust parsing approach to handle datetime with colons
-                            var parts = ParseFileEntry(fileEntry);
-                            if (parts != null)
-                            {
-                                Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Successfully parsed file: {parts["name"]}");
-                                var fileItem = new Services.FileItem
-                                {
-                                    Id = int.Parse(parts["id"]),
-                                    Name = parts["name"],
-                                    Type = parts["type"],
-                                    Size = parts["size"],
-                                    CreatedAt = parts["created_at"],
-                                    Owner = parts["owner"],
-                                    FilePath = parts["file_path"]
-                                };
-                                files.Add(fileItem);
-                            }
-                            else
-                            {
-                                Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Failed to parse file entry: '{fileEntry}'");
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    // Single file entry - treat the entire data as one file
-                    Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Single file entry detected");
-                    var parts = ParseFileEntry(fileListData);
-                    if (parts != null)
-                    {
-                        Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Successfully parsed single file: {parts["name"]}");
-                        var fileItem = new Services.FileItem
-                        {
-                            Id = int.Parse(parts["id"]),
-                            Name = parts["name"],
-                            Type = parts["type"],
-                            Size = parts["size"],
-                            CreatedAt = parts["created_at"],
-                            Owner = parts["owner"],
-                            FilePath = parts["file_path"]
-                        };
-                        files.Add(fileItem);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Failed to parse single file entry: '{fileListData}'");
-                    }
-                }
-                
-                Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Total files parsed: {files.Count}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error parsing file list: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            }
-            
-            return files;
-        }
-
-        private Dictionary<string, string> ParseFileEntry(string fileEntry)
-        {
-            try
-            {
-                Console.WriteLine($"[DEBUG][ParseFileEntry] Parsing entry: '{fileEntry}'");
-                
-                // Split by colon, but handle datetime carefully
-                string[] parts = fileEntry.Split(':');
-                Console.WriteLine($"[DEBUG][ParseFileEntry] Found {parts.Length} parts");
-                
-                if (parts.Length >= 7)
-                {
-                    var result = new Dictionary<string, string>();
-                    result["id"] = parts[0];
-                    result["name"] = parts[1];
-                    result["type"] = parts[2];
-                    result["size"] = parts[3];
-                    
-                    Console.WriteLine($"[DEBUG][ParseFileEntry] Basic parts: id={parts[0]}, name={parts[1]}, type={parts[2]}, size={parts[3]}");
-                    
-                    // Handle datetime which may contain colons
-                    // Find the owner name by looking for the last few parts
-                    if (parts.Length >= 7)
-                    {
-                        // Reconstruct datetime from parts that may have been split
-                        string datetime = parts[4];
-                        if (parts.Length > 7)
-                        {
-                            // If we have more parts, the datetime was split
-                            for (int i = 5; i < parts.Length - 2; i++)
-                            {
-                                datetime += ":" + parts[i];
-                            }
-                        }
-                        result["created_at"] = datetime;
-                        
-                        // Owner is the second-to-last part
-                        result["owner"] = parts[parts.Length - 2];
-                        // File path is the last part
-                        result["file_path"] = parts[parts.Length - 1];
-                    }
-                    
-                    Console.WriteLine($"[DEBUG][ParseFileEntry] Final result: owner={result["owner"]}, path={result["file_path"]}");
-                    return result;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error parsing file entry '{fileEntry}': {ex.Message}");
-            }
-            
-            return null;
-        }
-
-        private async Task PerformSearch()
-        {
-            string searchTerm = txtSearch.Text;
-            if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm == "Tìm kiếm file...")
-            {
-                DisplayFoldersAndFiles();
-                return;
-            }
-
-            var filteredFiles = allFiles.Where(f => 
-                f.Name.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                f.Type.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                f.Owner.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0
-            ).ToList();
-
-            var filteredFolders = allFolders.Where(f =>
-                f.Name.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                f.Owner.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0
-            ).ToList();
-
-            // Display filtered results
-            MyFileLayoutPanel.Controls.Clear();
-            
-            foreach (var folder in filteredFolders)
-            {
-                var folderControl = CreateFolderControl(folder);
-                MyFileLayoutPanel.Controls.Add(folderControl);
-            }
-            
-            foreach (var file in filteredFiles)
-            {
-                var fileItemControl = new FileItemControl(file.Name, file.CreatedAt, file.Owner, file.Size, file.FilePath);
-                fileItemControl.FileDeleted += async (filePath) => await OnFileDeleted(filePath);
-                MyFileLayoutPanel.Controls.Add(fileItemControl);
-            }
-        }
-
         private async void btnRefresh_Click(object sender, EventArgs e)
         {
             await LoadFoldersAndFilesAsync();
         }
-
-        // XÓA: btnDebug_Click, btnDebugDatabase_Click, btnDebugUserShares_Click
-        // (Không còn code debug ở đây)
 
         private void txtSearch_Enter(object sender, EventArgs e)
         {
@@ -1019,6 +812,21 @@ namespace FileSharingClient
         private void MyFileLayoutPanel_Paint(object sender, PaintEventArgs e)
         {
 
+        }
+
+        private void CleanupEvents()
+        {
+            try
+            {
+                // Unsubscribe from events to prevent memory leaks
+                TrashBinView.FileRestoredFromTrash -= OnFileRestoredFromTrash;
+                TrashBinView.FolderRestoredFromTrash -= OnFolderRestoredFromTrash;
+                Console.WriteLine("[DEBUG] MyFileView - Unsubscribed from FileRestoredFromTrash and FolderRestoredFromTrash events");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] MyFileView - Error unsubscribing from events: {ex.Message}");
+            }
         }
 
         // Simple input dialog method
@@ -1686,6 +1494,43 @@ namespace FileSharingClient
             return folders;
         }
         
+        private async Task PerformSearch()
+        {
+            string searchTerm = txtSearch.Text;
+            if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm == "Tìm kiếm file...")
+            {
+                DisplayFoldersAndFiles();
+                return;
+            }
+
+            var filteredFiles = allFiles.Where(f =>
+                (f.Name != null && f.Name.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (f.Type != null && f.Type.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (f.Owner != null && f.Owner.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
+            ).ToList();
+
+            var filteredFolders = allFolders.Where(f =>
+                (f.Name != null && f.Name.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (f.Owner != null && f.Owner.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
+            ).ToList();
+
+            MyFileLayoutPanel.Controls.Clear();
+            foreach (var folder in filteredFolders)
+            {
+                var folderControl = new FolderItemControl(folder.Name, folder.CreatedAt, folder.Owner, folder.IsShared, folder.Id);
+                folderControl.FolderClicked += async (folderId) => await NavigateToFolderById(folderId);
+                folderControl.FolderDeleted += async (folderId) => await OnFolderDeleted(folderId);
+                folderControl.FolderShareRequested += async (folderIdStr) => await OnFolderShareRequested(int.Parse(folderIdStr), folder.Name);
+                MyFileLayoutPanel.Controls.Add(folderControl);
+            }
+            foreach (var file in filteredFiles)
+            {
+                var fileItemControl = new FileItemControl(file.Name, file.CreatedAt, file.Owner, file.Size, file.FilePath, file.Id);
+                fileItemControl.FileDeleted += async (filePath) => await OnFileDeleted(filePath);
+                fileItemControl.FileShareRequested += async (fileIdStr) => await OnFileShareRequested(int.Parse(fileIdStr), file.Name);
+                MyFileLayoutPanel.Controls.Add(fileItemControl);
+            }
+        }
     }
 }
 

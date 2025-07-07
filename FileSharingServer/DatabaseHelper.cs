@@ -151,7 +151,6 @@ namespace FileSharingServer
                 {
                     await cmd.ExecuteNonQueryAsync();
                 }
-                
                 // Migrate existing tables to add missing columns
                 await MigrateDatabaseAsync(conn);
             }
@@ -186,8 +185,6 @@ namespace FileSharingServer
                         {
                             await addCmd.ExecuteNonQueryAsync();
                         }
-                        
-                        Console.WriteLine("Added share_pass and is_shared columns to files table");
                     }
                 }
 
@@ -210,8 +207,6 @@ namespace FileSharingServer
                         {
                             await addCmd.ExecuteNonQueryAsync();
                         }
-                        
-                        Console.WriteLine("Added permission column to files_share table");
                     }
                 }
 
@@ -234,8 +229,6 @@ namespace FileSharingServer
                         {
                             await addCmd.ExecuteNonQueryAsync();
                         }
-                        
-                        Console.WriteLine("Added shared_at column to files_share table");
                     }
                 }
 
@@ -258,8 +251,6 @@ namespace FileSharingServer
                         {
                             await addCmd.ExecuteNonQueryAsync();
                         }
-                        
-                        Console.WriteLine("Added shared_at column to folder_shares table");
                     }
                 }
 
@@ -282,8 +273,6 @@ namespace FileSharingServer
                         {
                             await addCmd.ExecuteNonQueryAsync();
                         }
-                        
-                        Console.WriteLine("Added folder_id column to files table");
                     }
                 }
             }
