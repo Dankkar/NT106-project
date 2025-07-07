@@ -22,6 +22,7 @@ namespace FileSharingClient
         public event Action<int> FolderClicked;
         public event Action<int> FolderDeleted;
         public event Action<int> FolderShared;
+        public event Action<string> FolderShareRequested;
 
         public FolderItemControl(string folderName, string createdAt, string owner, bool isShared, int folderId)
         {
@@ -33,6 +34,8 @@ namespace FileSharingClient
             CreatedAt = createdAt;
             Owner = owner;
             IsShared = isShared;
+
+            Console.WriteLine($"[DEBUG][FolderItemControl] Setting owner: '{owner}' for folder: '{folderName}'");
 
             lblFolderName.Text = folderName;
             lblOwner.Text = owner;
@@ -75,8 +78,16 @@ namespace FileSharingClient
 
         private void shareToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            FolderShared?.Invoke(FolderId);
-            MessageBox.Show($"Chia sẻ folder {FolderName}");
+            // Query current share password from server
+            try
+            {
+                // Trigger the share event to get current share password
+                FolderShareRequested?.Invoke(FolderId.ToString());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting share password: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void deleteToolStripMenuItem_Click(object sender, EventArgs e)

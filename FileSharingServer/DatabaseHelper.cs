@@ -80,20 +80,22 @@ namespace FileSharingServer
                     FOREIGN KEY(parent_folder_id) REFERENCES folders(folder_id) ON DELETE CASCADE
                 )";
                 
-                // Create files table with backward compatibility
+                // Create files table
                 string createFilesTable = @"
                 CREATE TABLE IF NOT EXISTS files (
                     file_id INTEGER NOT NULL UNIQUE,
-                    file_name TEXT NOT NULL,
-                    folder_id INTEGER,
                     owner_id INTEGER NOT NULL,
+                    file_name TEXT NOT NULL,
                     file_size INTEGER NOT NULL,
                     file_type TEXT NOT NULL,
                     file_path TEXT NOT NULL,
                     upload_at TEXT NOT NULL DEFAULT (datetime('now')),
                     file_hash TEXT NOT NULL,
+                    share_pass TEXT,
+                    is_shared INTEGER NOT NULL DEFAULT 0 CHECK(is_shared IN (0, 1)),
                     status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'TRASH')),
                     deleted_at TEXT,
+                    folder_id INTEGER,
                     PRIMARY KEY(file_id AUTOINCREMENT),
                     FOREIGN KEY(folder_id) REFERENCES folders(folder_id) ON DELETE CASCADE,
                     FOREIGN KEY(owner_id) REFERENCES users(user_id) ON DELETE CASCADE
@@ -112,16 +114,17 @@ namespace FileSharingServer
                     FOREIGN KEY(shared_with_user_id) REFERENCES users(user_id) ON DELETE CASCADE
                 )";
 
-                // Create file sharing table
+                // Create file sharing table - updated to match actual schema
                 string createFileSharesTable = @"
                 CREATE TABLE IF NOT EXISTS files_share (
                     file_id INTEGER NOT NULL,
                     user_id INTEGER NOT NULL,
-                    share_pass TEXT,
+                    share_pass TEXT NOT NULL,
+                    permission TEXT NOT NULL DEFAULT 'read' CHECK(permission IN ('read', 'write')),
                     shared_at TEXT NOT NULL DEFAULT (datetime('now')),
                     PRIMARY KEY(file_id, user_id),
-                    FOREIGN KEY(file_id) REFERENCES files(file_id) ON DELETE CASCADE,
-                    FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                    FOREIGN KEY(file_id) REFERENCES files(file_id),
+                    FOREIGN KEY(user_id) REFERENCES users(user_id)
                 )";
 
                 using (SQLiteCommand cmd = new SQLiteCommand(createUsersTable, conn))
@@ -148,6 +151,145 @@ namespace FileSharingServer
                 {
                     await cmd.ExecuteNonQueryAsync();
                 }
+                
+                // Migrate existing tables to add missing columns
+                await MigrateDatabaseAsync(conn);
+            }
+        }
+        
+        private static async Task MigrateDatabaseAsync(SQLiteConnection conn)
+        {
+            try
+            {
+                // Check if share_pass column exists in files table
+                string checkFilesColumns = @"
+                    SELECT COUNT(*) FROM pragma_table_info('files') 
+                    WHERE name IN ('share_pass', 'is_shared')";
+                
+                using (var cmd = new SQLiteCommand(checkFilesColumns, conn))
+                {
+                    var result = await cmd.ExecuteScalarAsync();
+                    int columnCount = Convert.ToInt32(result);
+                    
+                    if (columnCount < 2)
+                    {
+                        // Add missing columns to files table
+                        string addSharePassColumn = "ALTER TABLE files ADD COLUMN share_pass TEXT";
+                        string addIsSharedColumn = "ALTER TABLE files ADD COLUMN is_shared INTEGER NOT NULL DEFAULT 0 CHECK(is_shared IN (0, 1))";
+                        
+                        using (var addCmd = new SQLiteCommand(addSharePassColumn, conn))
+                        {
+                            await addCmd.ExecuteNonQueryAsync();
+                        }
+                        
+                        using (var addCmd = new SQLiteCommand(addIsSharedColumn, conn))
+                        {
+                            await addCmd.ExecuteNonQueryAsync();
+                        }
+                        
+                        Console.WriteLine("Added share_pass and is_shared columns to files table");
+                    }
+                }
+
+                // Check if permission column exists in files_share table
+                string checkFilesSharePermissionColumn = @"
+                    SELECT COUNT(*) FROM pragma_table_info('files_share') 
+                    WHERE name = 'permission'";
+                
+                using (var cmd = new SQLiteCommand(checkFilesSharePermissionColumn, conn))
+                {
+                    var result = await cmd.ExecuteScalarAsync();
+                    int columnCount = Convert.ToInt32(result);
+                    
+                    if (columnCount == 0)
+                    {
+                        // Add missing permission column to files_share table
+                        string addPermissionColumn = "ALTER TABLE files_share ADD COLUMN permission TEXT NOT NULL DEFAULT 'read' CHECK(permission IN ('read', 'write'))";
+                        
+                        using (var addCmd = new SQLiteCommand(addPermissionColumn, conn))
+                        {
+                            await addCmd.ExecuteNonQueryAsync();
+                        }
+                        
+                        Console.WriteLine("Added permission column to files_share table");
+                    }
+                }
+
+                // Check if shared_at column exists in files_share table
+                string checkFilesShareColumns = @"
+                    SELECT COUNT(*) FROM pragma_table_info('files_share') 
+                    WHERE name = 'shared_at'";
+                
+                using (var cmd = new SQLiteCommand(checkFilesShareColumns, conn))
+                {
+                    var result = await cmd.ExecuteScalarAsync();
+                    int columnCount = Convert.ToInt32(result);
+                    
+                    if (columnCount == 0)
+                    {
+                        // Add missing shared_at column to files_share table
+                        string addSharedAtColumn = "ALTER TABLE files_share ADD COLUMN shared_at TEXT NOT NULL DEFAULT (datetime('now'))";
+                        
+                        using (var addCmd = new SQLiteCommand(addSharedAtColumn, conn))
+                        {
+                            await addCmd.ExecuteNonQueryAsync();
+                        }
+                        
+                        Console.WriteLine("Added shared_at column to files_share table");
+                    }
+                }
+
+                // Check if shared_at column exists in folder_shares table
+                string checkFolderSharesColumns = @"
+                    SELECT COUNT(*) FROM pragma_table_info('folder_shares') 
+                    WHERE name = 'shared_at'";
+                
+                using (var cmd = new SQLiteCommand(checkFolderSharesColumns, conn))
+                {
+                    var result = await cmd.ExecuteScalarAsync();
+                    int columnCount = Convert.ToInt32(result);
+                    
+                    if (columnCount == 0)
+                    {
+                        // Add missing shared_at column to folder_shares table
+                        string addSharedAtColumn = "ALTER TABLE folder_shares ADD COLUMN shared_at TEXT NOT NULL DEFAULT (datetime('now'))";
+                        
+                        using (var addCmd = new SQLiteCommand(addSharedAtColumn, conn))
+                        {
+                            await addCmd.ExecuteNonQueryAsync();
+                        }
+                        
+                        Console.WriteLine("Added shared_at column to folder_shares table");
+                    }
+                }
+
+                // Check if folder_id column exists in files table
+                string checkFilesFolderColumn = @"
+                    SELECT COUNT(*) FROM pragma_table_info('files') 
+                    WHERE name = 'folder_id'";
+                
+                using (var cmd = new SQLiteCommand(checkFilesFolderColumn, conn))
+                {
+                    var result = await cmd.ExecuteScalarAsync();
+                    int columnCount = Convert.ToInt32(result);
+                    
+                    if (columnCount == 0)
+                    {
+                        // Add missing folder_id column to files table
+                        string addFolderIdColumn = "ALTER TABLE files ADD COLUMN folder_id INTEGER";
+                        
+                        using (var addCmd = new SQLiteCommand(addFolderIdColumn, conn))
+                        {
+                            await addCmd.ExecuteNonQueryAsync();
+                        }
+                        
+                        Console.WriteLine("Added folder_id column to files table");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during database migration: {ex.Message}");
             }
         }
     }

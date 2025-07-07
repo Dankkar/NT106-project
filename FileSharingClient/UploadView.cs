@@ -148,7 +148,6 @@ namespace FileSharingClient
                             byte[] commandBytes = Encoding.UTF8.GetBytes(command);
                             await stream.WriteAsync(commandBytes, 0, commandBytes.Length);
                             await stream.FlushAsync();
-                            Console.WriteLine($"Đã gửi lệnh: {command.Trim()}");
 
                             //Gui file theo tung phan
                             byte[] buffer = new byte[BUFFER_SIZE];
@@ -164,7 +163,6 @@ namespace FileSharingClient
                             using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                             {
                                 string response = await reader.ReadLineAsync();
-                                Console.WriteLine($"Server trả về: {response}");
 
                                 if (response.Trim() == "413")
                                     MessageBox.Show("File quá lớn. Vui lòng thử lại với file nhỏ hơn.");

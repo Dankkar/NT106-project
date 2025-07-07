@@ -48,7 +48,7 @@
             // 
             this.lblFileName.AutoSize = true;
             this.lblFileName.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFileName.Location = new System.Drawing.Point(39, 12);
+            this.lblFileName.Location = new System.Drawing.Point(50, 12);
             this.lblFileName.Name = "lblFileName";
             this.lblFileName.Size = new System.Drawing.Size(64, 17);
             this.lblFileName.TabIndex = 0;
@@ -58,7 +58,7 @@
             // 
             this.lblOwner.AutoSize = true;
             this.lblOwner.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblOwner.Location = new System.Drawing.Point(248, 12);
+            this.lblOwner.Location = new System.Drawing.Point(260, 12);
             this.lblOwner.Name = "lblOwner";
             this.lblOwner.Size = new System.Drawing.Size(48, 17);
             this.lblOwner.TabIndex = 1;
@@ -68,18 +68,19 @@
             // 
             this.lblCreateAt.AutoSize = true;
             this.lblCreateAt.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblCreateAt.Location = new System.Drawing.Point(420, 12);
+            this.lblCreateAt.Location = new System.Drawing.Point(600, 12);
             this.lblCreateAt.Name = "lblCreateAt";
             this.lblCreateAt.Size = new System.Drawing.Size(37, 17);
             this.lblCreateAt.TabIndex = 2;
             this.lblCreateAt.Text = "Time";
+            this.lblCreateAt.Visible = false;
             // 
             // lblFileSize
             // 
             this.lblFileSize.AutoSize = true;
             this.lblFileSize.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.lblFileSize.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFileSize.Location = new System.Drawing.Point(350, 12);
+            this.lblFileSize.Location = new System.Drawing.Point(420, 12);
             this.lblFileSize.Name = "lblFileSize";
             this.lblFileSize.Size = new System.Drawing.Size(51, 17);
             this.lblFileSize.TabIndex = 3;
@@ -90,7 +91,7 @@
             this.lblFileType.AutoSize = true;
             this.lblFileType.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.lblFileType.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFileType.Location = new System.Drawing.Point(450, 12);
+            this.lblFileType.Location = new System.Drawing.Point(650, 12);
             this.lblFileType.Name = "lblFileType";
             this.lblFileType.Size = new System.Drawing.Size(51, 17);
             this.lblFileType.TabIndex = 4;
@@ -134,7 +135,7 @@
             this.btnMore.FlatAppearance.BorderSize = 0;
             this.btnMore.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnMore.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
-            this.btnMore.Location = new System.Drawing.Point(550, 10);
+            this.btnMore.Location = new System.Drawing.Point(750, 10);
             this.btnMore.Name = "btnMore";
             this.btnMore.Size = new System.Drawing.Size(75, 23);
             this.btnMore.TabIndex = 5;
@@ -168,7 +169,9 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.AutoSize = true;
+            this.AutoSize = false;
+            this.Height = 43;
+            this.Margin = new System.Windows.Forms.Padding(0);
             this.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.Controls.Add(this.lblFilePath);
             this.Controls.Add(this.btnMore);
@@ -179,7 +182,7 @@
             this.Controls.Add(this.lblFileName);
             this.Controls.Add(this.lblFileIcon);
             this.Name = "FileItemControl";
-            this.Size = new System.Drawing.Size(650, 43);
+            this.Size = new System.Drawing.Size(800, 43);
             this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();

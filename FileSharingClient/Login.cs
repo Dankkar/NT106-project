@@ -13,6 +13,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using FileSharingClient.Services;
 
 namespace FileSharingClient
 {
@@ -118,13 +119,20 @@ namespace FileSharingClient
                     // Cập nhật giao diện theo status code nhận được
                     if (int.TryParse(response, out statusCode))
                     {
-                        this.Invoke(new Action(async () =>
+                        int userId = -1;
+                        if (statusCode == 200)
+                        {
+                            // Lấy userId ngay sau khi đăng nhập thành công
+                            userId = await ApiService.GetUserIdAsync(username);
+                        }
+
+                        this.Invoke(new Action(() =>
                         {
                             switch (statusCode)
                             {
                                 case 200:
                                     Session.LoggedInUser = username;
-                                    Session.LoggedInUserId = await GetUserIdFromLocalAsync(username);
+                                    Session.LoggedInUserId = userId;
                                     MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                     this.Hide();
                                     // Mở giao diện chính

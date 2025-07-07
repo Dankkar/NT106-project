@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "../NodeJSPro"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "NodeJSPro"
+	}
+}

@@ -36,7 +36,7 @@
             this.lblType = new System.Windows.Forms.Label();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.btnNewFolder = new System.Windows.Forms.ToolStripButton();
-            this.btnUpload = new System.Windows.Forms.ToolStripButton();
+            this.btnGetFile = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.txtSearch = new System.Windows.Forms.ToolStripTextBox();
             this.btnSearch = new System.Windows.Forms.ToolStripButton();
@@ -61,7 +61,7 @@
             // 
             this.lblFileName.AutoSize = true;
             this.lblFileName.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFileName.Location = new System.Drawing.Point(32, 32);
+            this.lblFileName.Location = new System.Drawing.Point(50, 32);
             this.lblFileName.Name = "lblFileName";
             this.lblFileName.Size = new System.Drawing.Size(53, 17);
             this.lblFileName.TabIndex = 2;
@@ -71,7 +71,7 @@
             // 
             this.lblOwner.AutoSize = true;
             this.lblOwner.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblOwner.Location = new System.Drawing.Point(181, 32);
+            this.lblOwner.Location = new System.Drawing.Point(260, 32);
             this.lblOwner.Name = "lblOwner";
             this.lblOwner.Size = new System.Drawing.Size(91, 17);
             this.lblOwner.TabIndex = 3;
@@ -92,7 +92,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(350, 32);
+            this.label1.Location = new System.Drawing.Point(420, 32);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(72, 17);
             this.label1.TabIndex = 5;
@@ -102,7 +102,7 @@
             // 
             this.lblType.AutoSize = true;
             this.lblType.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblType.Location = new System.Drawing.Point(450, 32);
+            this.lblType.Location = new System.Drawing.Point(650, 32);
             this.lblType.Name = "lblType";
             this.lblType.Size = new System.Drawing.Size(35, 17);
             this.lblType.TabIndex = 7;
@@ -113,7 +113,7 @@
             this.toolStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.btnNewFolder,
-            this.btnUpload,
+            this.btnGetFile,
             this.toolStripSeparator1,
             this.txtSearch,
             this.btnSearch,
@@ -133,13 +133,13 @@
             this.btnNewFolder.Text = "New Folder";
             this.btnNewFolder.Click += new System.EventHandler(this.btnNewFolder_Click);
             // 
-            // btnUpload
+            // btnGetFile
             // 
-            this.btnUpload.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnUpload.Name = "btnUpload";
-            this.btnUpload.Size = new System.Drawing.Size(49, 22);
-            this.btnUpload.Text = "Upload";
-            this.btnUpload.Click += new System.EventHandler(this.btnUpload_Click);
+            this.btnGetFile.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnGetFile.Name = "btnGetFile";
+            this.btnGetFile.Size = new System.Drawing.Size(60, 22);
+            this.btnGetFile.Text = "Get File";
+            this.btnGetFile.Click += new System.EventHandler(this.btnGetFile_Click);
             // 
             // toolStripSeparator1
             // 
@@ -208,7 +208,7 @@
         private System.Windows.Forms.Label lblType;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripButton btnNewFolder;
-        private System.Windows.Forms.ToolStripButton btnUpload;
+        private System.Windows.Forms.ToolStripButton btnGetFile;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripTextBox txtSearch;
         private System.Windows.Forms.ToolStripButton btnSearch;

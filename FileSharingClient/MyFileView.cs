@@ -7,21 +7,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Data.SQLite;
 using System.IO;
+using FileSharingClient.Services;
+using System.IO.Compression;
+using System.Net.Sockets; // Added for TcpClient
 
 namespace FileSharingClient
 {
     public partial class MyFileView: UserControl
     {
-        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-        private static string dbPath = Path.Combine(projectRoot, "test.db");
-        private static string connectionString = $"Data Source={dbPath};Version=3;Pooling=True";
-        private int currentUserId = -1;
-        private List<FileItem> allFiles = new List<FileItem>();
-        private List<FolderItem> allFolders = new List<FolderItem>();
+        private List<Services.FileItem> allFiles = new List<Services.FileItem>();
+        private List<Services.FolderItem> allFolders = new List<Services.FolderItem>();
         private int? currentFolderId = null; // null = root level
         private Stack<FolderNavigationItem> navigationStack = new Stack<FolderNavigationItem>();
+
+        // Thêm event để main form bắt chuyển tab
+        public event Action RequestUploadTab;
 
         public MyFileView()
         {
@@ -38,161 +39,38 @@ namespace FileSharingClient
 
         private async Task InitAsync()
         {
-            currentUserId = await GetUserIdFromSessionAsync();
-            if (currentUserId != -1)
-            {
-                await LoadFoldersAndFilesAsync();
-            }
+            await LoadFoldersAndFilesAsync();
         }
 
         private async Task LoadFoldersAndFilesAsync()
         {
             try
             {
+                Console.WriteLine($"[DEBUG] LoadFoldersAndFilesAsync called for user {Session.LoggedInUserId}, currentFolderId: {currentFolderId}");
+                
                 allFiles.Clear();
                 allFolders.Clear();
                 MyFileLayoutPanel.Controls.Clear();
 
-                using (var conn = new SQLiteConnection(connectionString))
+                // Debug: Check currentUserId
+                if (Session.LoggedInUserId == -1)
                 {
-                    await conn.OpenAsync();
-
-                    // Load folders in current directory
-                    string foldersQuery = @"
-                        SELECT folder_id, folder_name, created_at, 'Me' as owner_type, 0 as is_shared
-                        FROM folders 
-                        WHERE owner_id = @userId 
-                        AND (@currentFolderId IS NULL AND parent_folder_id IS NULL OR parent_folder_id = @currentFolderId)
-                        AND status = 'ACTIVE'
-                        ORDER BY folder_name";
-
-                    using (var cmd = new SQLiteCommand(foldersQuery, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@userId", currentUserId);
-                        cmd.Parameters.AddWithValue("@currentFolderId", (object)currentFolderId ?? DBNull.Value);
-                        
-                        using (var reader = await cmd.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                var folderItem = new FolderItem
-                                {
-                                    Id = Convert.ToInt32(reader["folder_id"]),
-                                    Name = reader["folder_name"].ToString(),
-                                    CreatedAt = reader["created_at"].ToString(),
-                                    Owner = "Me",
-                                    IsShared = false
-                                };
-                                allFolders.Add(folderItem);
-                            }
-                        }
-                    }
-
-                    // Load shared folders (only at root level)
-                    if (currentFolderId == null)
-                    {
-                        string sharedFoldersQuery = @"
-                            SELECT f.folder_id, f.folder_name, f.created_at, u.username as owner_name
-                            FROM folder_shares fs 
-                            JOIN folders f ON fs.folder_id = f.folder_id 
-                            JOIN users u ON f.owner_id = u.user_id
-                            WHERE fs.shared_with_user_id = @userId 
-                            AND f.status = 'ACTIVE'
-                            ORDER BY f.folder_name";
-
-                        using (var cmd = new SQLiteCommand(sharedFoldersQuery, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@userId", currentUserId);
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    var folderItem = new FolderItem
-                                    {
-                                        Id = Convert.ToInt32(reader["folder_id"]),
-                                        Name = reader["folder_name"].ToString(),
-                                        CreatedAt = reader["created_at"].ToString(),
-                                        Owner = reader["owner_name"].ToString() + " (Shared)",
-                                        IsShared = true
-                                    };
-                                    allFolders.Add(folderItem);
-                                }
-                            }
-                        }
-                    }
-
-                    // Load files in current directory
-                    string myFilesQuery = @"
-                        SELECT file_id, file_name, file_type, file_size, upload_at, file_path, 'Me' as owner_type
-                        FROM files 
-                        WHERE owner_id = @userId 
-                        AND (@currentFolderId IS NULL AND folder_id IS NULL OR folder_id = @currentFolderId)
-                        AND status = 'ACTIVE'
-                        ORDER BY file_name";
-
-                    using (var cmd = new SQLiteCommand(myFilesQuery, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@userId", currentUserId);
-                        cmd.Parameters.AddWithValue("@currentFolderId", (object)currentFolderId ?? DBNull.Value);
-                        
-                        using (var reader = await cmd.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                var fileItem = new FileItem
-                                {
-                                    Id = Convert.ToInt32(reader["file_id"]),
-                                    Name = reader["file_name"].ToString(),
-                                    Type = reader["file_type"].ToString(),
-                                    Size = FormatFileSize(Convert.ToInt64(reader["file_size"])),
-                                    CreatedAt = reader["upload_at"].ToString(),
-                                    Owner = "Me",
-                                    FilePath = reader["file_path"].ToString(),
-                                    IsShared = false,
-                                    IsFolder = false
-                                };
-                                allFiles.Add(fileItem);
-                            }
-                        }
-                    }
-
-                    // Load shared files (only at root level)
-                    if (currentFolderId == null)
-                    {
-                        string sharedFilesQuery = @"
-                            SELECT f.file_id, f.file_name, f.file_type, f.file_size, f.upload_at, f.file_path, u.username as owner_name
-                            FROM files_share fs 
-                            JOIN files f ON fs.file_id = f.file_id 
-                            JOIN users u ON f.owner_id = u.user_id
-                            WHERE fs.user_id = @userId 
-                            AND f.status = 'ACTIVE'
-                            ORDER BY f.file_name";
-
-                        using (var cmd = new SQLiteCommand(sharedFilesQuery, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@userId", currentUserId);
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    var fileItem = new FileItem
-                                    {
-                                        Id = Convert.ToInt32(reader["file_id"]),
-                                        Name = reader["file_name"].ToString(),
-                                        Type = reader["file_type"].ToString(),
-                                        Size = FormatFileSize(Convert.ToInt64(reader["file_size"])),
-                                        CreatedAt = reader["upload_at"].ToString(),
-                                        Owner = reader["owner_name"].ToString() + " (Shared)",
-                                        FilePath = reader["file_path"].ToString(),
-                                        IsShared = true,
-                                        IsFolder = false
-                                    };
-                                    allFiles.Add(fileItem);
-                                }
-                            }
-                        }
-                    }
+                    MessageBox.Show("currentUserId is -1, cannot load files", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
+
+                // Load ONLY user's own folders (from folders table where owner_id = current user)
+                var userFolders = await ApiService.GetUserFoldersAsync(Session.LoggedInUserId, currentFolderId);
+                Console.WriteLine($"[DEBUG] Loaded {userFolders.Count} user folders");
+                allFolders.AddRange(userFolders);
+
+                // Load ONLY user's own files (from files table where owner_id = current user)
+                var userFiles = await ApiService.GetUserFilesAsync(Session.LoggedInUserId, currentFolderId);
+                Console.WriteLine($"[DEBUG] Loaded {userFiles.Count} user files");
+                allFiles.AddRange(userFiles);
+
+                // Debug: Show counts
+                Console.WriteLine($"[DEBUG] Total: {allFolders.Count} folders and {allFiles.Count} files for user {Session.LoggedInUserId}");
 
                 // Display folders and files
                 DisplayFoldersAndFiles();
@@ -200,6 +78,8 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[ERROR] LoadFoldersAndFilesAsync error: {ex.Message}");
+                Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
                 MessageBox.Show($"Error loading folders and files: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -218,17 +98,23 @@ namespace FileSharingClient
             // Add folders first
             foreach (var folder in allFolders)
             {
+                Console.WriteLine($"[DEBUG][MyFileView] Creating folder control: {folder.Name}, Owner: '{folder.Owner}'");
+                
                 var folderControl = new FolderItemControl(folder.Name, folder.CreatedAt, folder.Owner, folder.IsShared, folder.Id);
                 folderControl.FolderClicked += async (folderId) => await NavigateToFolderById(folderId);
                 folderControl.FolderDeleted += async (folderId) => await OnFolderDeleted(folderId);
+                folderControl.FolderShareRequested += async (folderIdStr) => await OnFolderShareRequested(int.Parse(folderIdStr), folder.Name);
                 MyFileLayoutPanel.Controls.Add(folderControl);
             }
             
             // Add files
             foreach (var file in allFiles)
             {
-                var fileItemControl = new FileItemControl(file.Name, file.CreatedAt, file.Owner, file.Size, file.FilePath);
+                Console.WriteLine($"[DEBUG][MyFileView] Creating file control: {file.Name}, Owner: '{file.Owner}'");
+                
+                var fileItemControl = new FileItemControl(file.Name, file.CreatedAt, file.Owner, file.Size, file.FilePath, file.Id);
                 fileItemControl.FileDeleted += async (filePath) => await OnFileDeleted(filePath);
+                fileItemControl.FileShareRequested += async (fileIdStr) => await OnFileShareRequested(int.Parse(fileIdStr), file.Name);
                 MyFileLayoutPanel.Controls.Add(fileItemControl);
             }
         }
@@ -248,7 +134,7 @@ namespace FileSharingClient
             return backButton;
         }
 
-        private Control CreateFolderControl(FolderItem folder)
+        private Control CreateFolderControl(Services.FolderItem folder)
         {
             var panel = new Panel()
             {
@@ -330,7 +216,7 @@ namespace FileSharingClient
             }
         }
 
-        private async Task NavigateToFolder(FolderItem folder)
+        private async Task NavigateToFolder(Services.FolderItem folder)
         {
             // Save current state to navigation stack
             navigationStack.Push(new FolderNavigationItem 
@@ -340,8 +226,61 @@ namespace FileSharingClient
             });
             
             currentFolderId = folder.Id;
+            
+            // Load user's own folder contents only
             await LoadFoldersAndFilesAsync();
         }
+
+        // COMMENTED OUT: This method will be moved to "Shared With Me" tab
+        // private async Task LoadSharedFolderContentsAsync(int folderId)
+        // {
+        //     try
+        //     {
+        //         Console.WriteLine($"[DEBUG] LoadSharedFolderContentsAsync called for folder {folderId}");
+        //         
+        //         allFiles.Clear();
+        //         allFolders.Clear();
+        //         MyFileLayoutPanel.Controls.Clear();
+
+        //         // Add back button
+        //         var backControl = CreateBackButton();
+        //         MyFileLayoutPanel.Controls.Add(backControl);
+
+        //         // Get shared folder contents from server
+        //         using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+        //         using (var stream = client.GetStream())
+        //         using (var reader = new StreamReader(stream, Encoding.UTF8))
+        //         using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+        //         {
+        //             string message = $"GET_SHARED_FOLDER_CONTENTS|{folderId}|{Session.LoggedInUserId}\n";
+        //             Console.WriteLine($"[DEBUG] Getting shared folder contents: {message.Trim()}");
+        //             await writer.WriteLineAsync(message);
+
+        //             string response = await reader.ReadLineAsync();
+        //             response = response?.Trim();
+        //             Console.WriteLine($"[DEBUG] Shared folder contents response: '{response}'");
+
+        //             if (response != null && response.StartsWith("200|"))
+        //             {
+        //                 string data = response.Substring(4);
+        //                 if (data != "NO_FILES_IN_FOLDER")
+        //                 {
+        //                     var files = ParseFileItems(data);
+        //                     allFiles.AddRange(files);
+        //                 }
+        //             }
+        //         }
+
+        //         // Display files
+        //         DisplayFoldersAndFiles();
+        //         UpdateBreadcrumb();
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[ERROR] LoadSharedFolderContentsAsync error: {ex.Message}");
+        //         MessageBox.Show($"Error loading shared folder contents: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //     }
+        // }
 
         private async Task OnFolderDeleted(int folderId)
         {
@@ -377,6 +316,259 @@ namespace FileSharingClient
             await LoadFoldersAndFilesAsync();
         }
 
+        private async Task OnFileShareRequested(int fileId, string fileName)
+        {
+            try
+            {
+                // Show permission selection dialog
+                string permission = ShowPermissionDialog("file", fileName);
+                if (string.IsNullOrEmpty(permission))
+                {
+                    return; // User cancelled
+                }
+
+                // Send share request to server with permission
+                bool shareSuccess = await ShareFileAsync(fileId, fileName, permission);
+                if (shareSuccess)
+                {
+                    // Query the generated share password
+                    string sharePassword = await GetFileSharePasswordAsync(fileName);
+                    if (!string.IsNullOrEmpty(sharePassword))
+                    {
+                        MessageBox.Show($"File '{fileName}' shared successfully with {permission} permission!\nShare password: {sharePassword}", 
+                            "Share Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"File '{fileName}' shared successfully with {permission} permission!", 
+                            "Share Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    
+                    // Refresh the list to show updated share status
+                    await LoadFoldersAndFilesAsync();
+                }
+                else
+                {
+                    MessageBox.Show($"Failed to share file '{fileName}'.", 
+                        "Share Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error sharing file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task OnFolderShareRequested(int folderId, string folderName)
+        {
+            try
+            {
+                // Show permission selection dialog
+                string permission = ShowPermissionDialog("folder", folderName);
+                if (string.IsNullOrEmpty(permission))
+                {
+                    return; // User cancelled
+                }
+
+                // Send share request to server with permission
+                bool shareSuccess = await ShareFolderAsync(folderId, folderName, permission);
+                if (shareSuccess)
+                {
+                    // Query the generated share password
+                    string sharePassword = await GetFolderSharePasswordAsync(folderName);
+                    if (!string.IsNullOrEmpty(sharePassword))
+                    {
+                        MessageBox.Show($"Folder '{folderName}' shared successfully with {permission} permission!\nShare password: {sharePassword}", 
+                            "Share Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Folder '{folderName}' shared successfully with {permission} permission!", 
+                            "Share Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    
+                    // Refresh the list to show updated share status
+                    await LoadFoldersAndFilesAsync();
+                }
+                else
+                {
+                    MessageBox.Show($"Failed to share folder '{folderName}'.", 
+                        "Share Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error sharing folder: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task<bool> ShareFileAsync(int fileId, string fileName, string permission = "read")
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send SHARE_FILE command with file ID and permission
+                    // This will:
+                    // 1. Generate a share_pass for the file
+                    // 2. Update files table: set share_pass and is_shared=1
+                    // 3. Store the permission info for later use
+                    string message = $"SHARE_FILE|{fileId}|{permission}\n";
+                    Console.WriteLine($"[DEBUG] Sharing file with permission: {message.Trim()}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Share file response: '{response}'");
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            // Success - file shared with permission
+                            return true;
+                        }
+                        else
+                        {
+                            // Error
+                            Console.WriteLine($"[ERROR] Share file failed: {response}");
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error sharing file: {ex.Message}");
+                MessageBox.Show($"Error sharing file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        private async Task<bool> ShareFolderAsync(int folderId, string folderName, string permission = "read")
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send SHARE_FOLDER command with folder ID and permission
+                    // This will:
+                    // 1. Generate a share_pass for the folder
+                    // 2. Update folders table: set share_pass and is_shared=1
+                    // 3. Store the permission info for later use
+                    string message = $"SHARE_FOLDER|{folderId}|{permission}\n";
+                    Console.WriteLine($"[DEBUG] Sharing folder with permission: {message.Trim()}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Share folder response: '{response}'");
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            // Success - folder shared with permission
+                            return true;
+                        }
+                        else
+                        {
+                            // Error
+                            Console.WriteLine($"[ERROR] Share folder failed: {response}");
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error sharing folder: {ex.Message}");
+                MessageBox.Show($"Error sharing folder: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        private List<Services.FileItem> ParseFileItems(string data)
+        {
+            var files = new List<Services.FileItem>();
+            if (data == "NO_FILES" || data == "NO_SHARED_FILES" || data == "NO_FILES_IN_FOLDER") return files;
+            
+            Console.WriteLine($"[DEBUG][ParseFileItems] Raw data: {data}");
+            
+            string[] fileStrings = data.Split(';');
+            foreach (string fileString in fileStrings)
+            {
+                if (string.IsNullOrEmpty(fileString)) continue;
+                
+                Console.WriteLine($"[DEBUG][ParseFileItems] FileString: {fileString}");
+                
+                // Format: id:name:type:size:upload_at:owner_name:path
+                // upload_at format: "yyyy-MM-dd HH:mm:ss" (contains colons)
+                string[] parts = fileString.Split(':');
+                Console.WriteLine($"[DEBUG][ParseFileItems] Total parts: {parts.Length}");
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    Console.WriteLine($"[DEBUG][ParseFileItems] parts[{i}]: {parts[i]}");
+                }
+                
+                if (parts.Length >= 7)
+                {
+                    string id = parts[0];
+                    string name = parts[1];
+                    string type = parts[2];
+                    string size = parts[3];
+                    
+                    // Handle upload_at which contains colons: "yyyy-MM-dd HH:mm:ss"
+                    string uploadAt;
+                    string owner;
+                    string path;
+                    
+                    if (parts.Length == 7)
+                    {
+                        // Simple case: id:name:type:size:datetime:owner:path
+                        uploadAt = parts[4];
+                        owner = parts[5];
+                        path = parts[6];
+                    }
+                    else
+                    {
+                        // Complex case: id:name:type:size:yyyy-MM-dd:HH:mm:ss:owner:path
+                        // Reconstruct datetime from parts[4], parts[5], parts[6]
+                        uploadAt = $"{parts[4]}:{parts[5]}:{parts[6]}";
+                        owner = parts[7];
+                        path = parts[8];
+                    }
+                    
+                    Console.WriteLine($"[DEBUG][ParseFileItems] Parsed file: {name}, Owner: {owner}");
+                    
+                    long sizeBytes = 0;
+                    long.TryParse(size, out sizeBytes);
+                    
+                    files.Add(new Services.FileItem
+                    {
+                        Id = int.Parse(id),
+                        Name = name,
+                        Type = type,
+                        Size = FormatFileSize(sizeBytes),
+                        CreatedAt = uploadAt,
+                        Owner = owner,
+                        FilePath = path
+                    });
+                }
+            }
+            return files;
+        }
+
         private string FormatFileSize(long bytes)
         {
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
@@ -392,29 +584,27 @@ namespace FileSharingClient
 
         private async Task<int> GetUserIdFromSessionAsync()
         {
-            int userId = -1;
+            // Debug: Check session values
+            MessageBox.Show($"Session.LoggedInUser: '{Session.LoggedInUser}', Session.LoggedInUserId: {Session.LoggedInUserId}", "Debug Session", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            
+            // Use the user ID that was already retrieved during login
+            if (Session.LoggedInUserId != -1)
+            {
+                return Session.LoggedInUserId;
+            }
+            
+            // Fallback: try to get from server if not available
             try
             {
-                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
-                {
-                    await conn.OpenAsync();
-                    string query = "SELECT user_id FROM users WHERE username = @username";
-                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@username", Session.LoggedInUser);
-                        object result = await cmd.ExecuteScalarAsync();
-                        if (result != null)
-                        {
-                            userId = Convert.ToInt32(result);
-                        }
-                    }
-                }
+                int userId = await ApiService.GetUserIdAsync(Session.LoggedInUser);
+                MessageBox.Show($"Got userId from server: {userId}", "Debug API", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return userId;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return -1;
             }
-            return userId;
         }
 
         // Toolbar event handlers
@@ -427,63 +617,17 @@ namespace FileSharingClient
             {
                 try
                 {
-                    // Build correct folder path
-                    string folderPath;
-                    string parentFolderPath = "";
+                    bool success = await ApiService.CreateFolderAsync(Session.LoggedInUserId, folderName, currentFolderId);
                     
-                    using (var conn = new SQLiteConnection(connectionString))
+                    if (success)
                     {
-                        await conn.OpenAsync();
-                        
-                        // Get parent folder path if we're inside a folder
-                        if (currentFolderId != null)
-                        {
-                            string parentQuery = "SELECT folder_path FROM folders WHERE folder_id = @folderId";
-                            using (var parentCmd = new SQLiteCommand(parentQuery, conn))
-                            {
-                                parentCmd.Parameters.AddWithValue("@folderId", currentFolderId);
-                                var result = await parentCmd.ExecuteScalarAsync();
-                                if (result != null)
-                                {
-                                    parentFolderPath = result.ToString();
-                                }
-                            }
-                        }
-                        
-                        // Build correct folder path
-                        if (currentFolderId == null)
-                        {
-                            // Root level folder
-                            folderPath = $"uploads/{currentUserId}/{folderName}";
-                        }
-                        else
-                        {
-                            // Subfolder - append to parent path
-                            folderPath = $"{parentFolderPath}/{folderName}";
-                        }
-                        
-                        string insertQuery = @"
-                            INSERT INTO folders (folder_name, owner_id, parent_folder_id, folder_path, created_at, updated_at)
-                            VALUES (@folderName, @ownerId, @parentFolderId, @folderPath, datetime('now'), datetime('now'))";
-
-                        using (var cmd = new SQLiteCommand(insertQuery, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@folderName", folderName);
-                            cmd.Parameters.AddWithValue("@ownerId", currentUserId);
-                            cmd.Parameters.AddWithValue("@parentFolderId", (object)currentFolderId ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@folderPath", folderPath);
-                            
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                        MessageBox.Show("Folder created successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        await LoadFoldersAndFilesAsync();
                     }
-
-                    // Create physical folder using the folder path from database
-                    string physicalFolderPath = Path.Combine(projectRoot ?? Environment.CurrentDirectory, folderPath);
-                    
-                    Directory.CreateDirectory(physicalFolderPath);
-
-                    MessageBox.Show("Folder created successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    await LoadFoldersAndFilesAsync();
+                    else
+                    {
+                        MessageBox.Show("Failed to create folder. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -492,23 +636,315 @@ namespace FileSharingClient
             }
         }
 
-        private void btnUpload_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Multiselect = true;
-            openFileDialog.Title = "Select files to upload";
-
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                MessageBox.Show($"Selected {openFileDialog.FileNames.Length} files. Upload functionality will be implemented.", 
-                    "Upload", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                // TODO: Implement upload functionality
-            }
-        }
+        // XÓA: btnUpload_Click và mọi tham chiếu đến btnUpload
+        // (Không còn code upload ở đây)
 
         private async void btnSearch_Click(object sender, EventArgs e)
         {
             await PerformSearch();
+        }
+
+        private async void btnGetFile_Click(object sender, EventArgs e)
+        {
+            Console.WriteLine($"[DEBUG] btnGetFile_Click called");
+            
+            // Show dialog to enter password for getting files
+            string password = ShowPasswordDialog();
+            Console.WriteLine($"[DEBUG] Password entered: '{password}'");
+            
+            if (!string.IsNullOrEmpty(password))
+            {
+                try
+                {
+                    Console.WriteLine($"[DEBUG] Calling GetItemsByPasswordAsync with password: '{password}'");
+                    
+                    // Get files and folders using password
+                    var (files, folders, success) = await GetItemsByPasswordAsync(password);
+                    Console.WriteLine($"[DEBUG] GetItemsByPasswordAsync returned: success={success}");
+                    
+                    if (success)
+                    {
+                        Console.WriteLine($"[DEBUG] Success! Note: Files/folders will not be shown here as this tab only shows your own files.");
+                        
+                        // Don't refresh the list since MyFileView only shows user's own files
+                        // The shared files will be accessible through "Shared With Me" tab
+                        
+                        Console.WriteLine($"[DEBUG] Get file operation completed");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DEBUG] No items found or invalid password");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERROR] Exception in btnGetFile_Click: {ex.Message}");
+                    Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
+                    MessageBox.Show($"Error getting files: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[DEBUG] No password entered");
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // COMMENTED OUT: Debug method moved to "Shared With Me" tab
+        /*
+        private async void DebugListSharedFiles()
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Get all shared items
+                    string message = "DEBUG_LIST_ALL_SHARED\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    
+                    Console.WriteLine($"[DEBUG] All shared items response: '{response}'");
+                    
+                    if (response != null && response.StartsWith("200|"))
+                    {
+                        string data = response.Substring(4);
+                        if (data == "NO_SHARED_ITEMS")
+                        {
+                            MessageBox.Show("No shared items found.", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        else
+                        {
+                            string[] parts = data.Split('|');
+                            string result = "";
+                            
+                            foreach (string part in parts)
+                            {
+                                if (part.StartsWith("FILES:"))
+                                {
+                                    string files = part.Substring(6);
+                                    if (!string.IsNullOrEmpty(files))
+                                    {
+                                        result += "SHARED FILES:\n" + files.Replace(";", "\n") + "\n\n";
+                                    }
+                                }
+                                else if (part.StartsWith("FOLDERS:"))
+                                {
+                                    string folders = part.Substring(8);
+                                    if (!string.IsNullOrEmpty(folders))
+                                    {
+                                        result += "SHARED FOLDERS:\n" + folders.Replace(";", "\n");
+                                    }
+                                }
+                            }
+                            
+                            if (!string.IsNullOrEmpty(result))
+                            {
+                                MessageBox.Show(result, "Debug - All Shared Items", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                            else
+                            {
+                                MessageBox.Show("No shared items found.", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Error: {response}", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Debug error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        */
+
+        // Debug database structure
+        private async void DebugCheckDatabase()
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Check database structure
+                    string message = "DEBUG_CHECK_DATABASE\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    
+                    Console.WriteLine($"[DEBUG] Database check response: '{response}'");
+                    
+                    if (response != null && response.StartsWith("200|"))
+                    {
+                        MessageBox.Show("Database structure check completed. Check server console for details.", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Error: {response}", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Debug error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private List<Services.FileItem> ParseFileListFromResponse(string fileListData)
+        {
+            var files = new List<Services.FileItem>();
+            
+            try
+            {
+                Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Raw data: '{fileListData}'");
+                
+                // Check if the data contains semicolons (multiple files) or is a single file entry
+                if (fileListData.Contains(';'))
+                {
+                    // Multiple files separated by semicolons
+                    string[] fileEntries = fileListData.Split(';');
+                    Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Found {fileEntries.Length} file entries");
+                    
+                    foreach (string fileEntry in fileEntries)
+                    {
+                        Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Processing entry: '{fileEntry}'");
+                        if (!string.IsNullOrEmpty(fileEntry))
+                        {
+                            // Parse file entry: file_id:file_name:file_type:file_size:upload_at:owner_name:file_path
+                            // Use a more robust parsing approach to handle datetime with colons
+                            var parts = ParseFileEntry(fileEntry);
+                            if (parts != null)
+                            {
+                                Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Successfully parsed file: {parts["name"]}");
+                                var fileItem = new Services.FileItem
+                                {
+                                    Id = int.Parse(parts["id"]),
+                                    Name = parts["name"],
+                                    Type = parts["type"],
+                                    Size = parts["size"],
+                                    CreatedAt = parts["created_at"],
+                                    Owner = parts["owner"],
+                                    FilePath = parts["file_path"]
+                                };
+                                files.Add(fileItem);
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Failed to parse file entry: '{fileEntry}'");
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Single file entry - treat the entire data as one file
+                    Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Single file entry detected");
+                    var parts = ParseFileEntry(fileListData);
+                    if (parts != null)
+                    {
+                        Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Successfully parsed single file: {parts["name"]}");
+                        var fileItem = new Services.FileItem
+                        {
+                            Id = int.Parse(parts["id"]),
+                            Name = parts["name"],
+                            Type = parts["type"],
+                            Size = parts["size"],
+                            CreatedAt = parts["created_at"],
+                            Owner = parts["owner"],
+                            FilePath = parts["file_path"]
+                        };
+                        files.Add(fileItem);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Failed to parse single file entry: '{fileListData}'");
+                    }
+                }
+                
+                Console.WriteLine($"[DEBUG][ParseFileListFromResponse] Total files parsed: {files.Count}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error parsing file list: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            }
+            
+            return files;
+        }
+
+        private Dictionary<string, string> ParseFileEntry(string fileEntry)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG][ParseFileEntry] Parsing entry: '{fileEntry}'");
+                
+                // Split by colon, but handle datetime carefully
+                string[] parts = fileEntry.Split(':');
+                Console.WriteLine($"[DEBUG][ParseFileEntry] Found {parts.Length} parts");
+                
+                if (parts.Length >= 7)
+                {
+                    var result = new Dictionary<string, string>();
+                    result["id"] = parts[0];
+                    result["name"] = parts[1];
+                    result["type"] = parts[2];
+                    result["size"] = parts[3];
+                    
+                    Console.WriteLine($"[DEBUG][ParseFileEntry] Basic parts: id={parts[0]}, name={parts[1]}, type={parts[2]}, size={parts[3]}");
+                    
+                    // Handle datetime which may contain colons
+                    // Find the owner name by looking for the last few parts
+                    if (parts.Length >= 7)
+                    {
+                        // Reconstruct datetime from parts that may have been split
+                        string datetime = parts[4];
+                        if (parts.Length > 7)
+                        {
+                            // If we have more parts, the datetime was split
+                            for (int i = 5; i < parts.Length - 2; i++)
+                            {
+                                datetime += ":" + parts[i];
+                            }
+                        }
+                        result["created_at"] = datetime;
+                        
+                        // Owner is the second-to-last part
+                        result["owner"] = parts[parts.Length - 2];
+                        // File path is the last part
+                        result["file_path"] = parts[parts.Length - 1];
+                    }
+                    
+                    Console.WriteLine($"[DEBUG][ParseFileEntry] Final result: owner={result["owner"]}, path={result["file_path"]}");
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error parsing file entry '{fileEntry}': {ex.Message}");
+            }
+            
+            return null;
         }
 
         private async Task PerformSearch()
@@ -552,6 +988,9 @@ namespace FileSharingClient
         {
             await LoadFoldersAndFilesAsync();
         }
+
+        // XÓA: btnDebug_Click, btnDebugDatabase_Click, btnDebugUserShares_Click
+        // (Không còn code debug ở đây)
 
         private void txtSearch_Enter(object sender, EventArgs e)
         {
@@ -614,33 +1053,639 @@ namespace FileSharingClient
             return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
         }
 
-        // Helper classes
-        private class FileItem
+        private string ShowPasswordDialog()
         {
-            public int Id { get; set; }
-            public string Name { get; set; }
-            public string Type { get; set; }
-            public string Size { get; set; }
-            public string CreatedAt { get; set; }
-            public string Owner { get; set; }
-            public string FilePath { get; set; }
-            public bool IsShared { get; set; }
-            public bool IsFolder { get; set; }
+            Form prompt = new Form()
+            {
+                Width = 400,
+                Height = 200,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = "Get File from Other User",
+                StartPosition = FormStartPosition.CenterScreen,
+                MaximizeBox = false,
+                MinimizeBox = false
+            };
+            
+            Label textLabel = new Label() { Left = 20, Top = 20, Width = 350, Text = "Enter password to get files from other users:" };
+            TextBox passwordBox = new TextBox() { Left = 20, Top = 50, Width = 350, UseSystemPasswordChar = true };
+            Button confirmation = new Button() { Text = "Get Files", Left = 200, Width = 80, Top = 100, DialogResult = DialogResult.OK };
+            Button cancel = new Button() { Text = "Cancel", Left = 290, Width = 80, Top = 100, DialogResult = DialogResult.Cancel };
+            
+            confirmation.Click += (sender, e) => { prompt.Close(); };
+            cancel.Click += (sender, e) => { prompt.Close(); };
+            
+            prompt.Controls.Add(textLabel);
+            prompt.Controls.Add(passwordBox);
+            prompt.Controls.Add(confirmation);
+            prompt.Controls.Add(cancel);
+            prompt.AcceptButton = confirmation;
+            prompt.CancelButton = cancel;
+            
+            return prompt.ShowDialog() == DialogResult.OK ? passwordBox.Text : "";
         }
 
-        private class FolderItem
+        private string ShowPermissionDialog(string itemType, string itemName)
         {
-            public int Id { get; set; }
-            public string Name { get; set; }
-            public string CreatedAt { get; set; }
-            public string Owner { get; set; }
-            public bool IsShared { get; set; }
+            Form prompt = new Form()
+            {
+                Width = 450,
+                Height = 220,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = $"Share {itemType}",
+                StartPosition = FormStartPosition.CenterScreen,
+                MaximizeBox = false,
+                MinimizeBox = false
+            };
+            
+            Label textLabel = new Label() 
+            { 
+                Left = 20, 
+                Top = 20, 
+                Width = 400, 
+                Text = $"Select permission for sharing '{itemName}':" 
+            };
+            
+            ComboBox permissionCombo = new ComboBox() 
+            { 
+                Left = 20, 
+                Top = 50, 
+                Width = 350,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            
+            if (itemType == "file")
+            {
+                permissionCombo.Items.AddRange(new string[] { "read", "write" });
+            }
+            else // folder
+            {
+                permissionCombo.Items.AddRange(new string[] { "read", "write", "admin" });
+            }
+            permissionCombo.SelectedIndex = 0; // Default to "read"
+            
+            Label descLabel = new Label() 
+            { 
+                Left = 20, 
+                Top = 80, 
+                Width = 400, 
+                Height = 40,
+                Text = "• read: View only\n• write: View and edit\n• admin: Full control (folders only)"
+            };
+            
+            Button confirmation = new Button() 
+            { 
+                Text = "Share", 
+                Left = 200, 
+                Width = 80, 
+                Top = 130, 
+                DialogResult = DialogResult.OK 
+            };
+            
+            Button cancel = new Button() 
+            { 
+                Text = "Cancel", 
+                Left = 290, 
+                Width = 80, 
+                Top = 130, 
+                DialogResult = DialogResult.Cancel 
+            };
+            
+            confirmation.Click += (sender, e) => { prompt.Close(); };
+            cancel.Click += (sender, e) => { prompt.Close(); };
+            
+            prompt.Controls.Add(textLabel);
+            prompt.Controls.Add(permissionCombo);
+            prompt.Controls.Add(descLabel);
+            prompt.Controls.Add(confirmation);
+            prompt.Controls.Add(cancel);
+            prompt.AcceptButton = confirmation;
+            prompt.CancelButton = cancel;
+            
+            return prompt.ShowDialog() == DialogResult.OK ? permissionCombo.SelectedItem.ToString() : "";
         }
+
+        // Helper classes
+
 
         private class FolderNavigationItem
         {
             public int? FolderId { get; set; }
             public string FolderName { get; set; }
         }
+
+        private async Task<string> GetFileSharePasswordAsync(string fileName)
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send GET_FILE_SHARE_PASSWORD command
+                    string message = $"GET_FILE_SHARE_PASSWORD|{fileName}\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            return parts[1]; // Return the share password
+                        }
+                    }
+                    return null; // No share password found
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting file share password: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
+        }
+
+        private async Task<string> GetFolderSharePasswordAsync(string folderName)
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send GET_FOLDER_SHARE_PASSWORD command
+                    string message = $"GET_FOLDER_SHARE_PASSWORD|{folderName}\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            return parts[1]; // Return the share password
+                        }
+                    }
+                    return null; // No share password found
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting folder share password: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
+        }
+
+        private async Task<(List<Services.FileItem> files, List<Services.FolderItem> folders, bool success)> GetItemsByPasswordAsync(string password)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] GetItemsByPasswordAsync called with password: '{password}'");
+                
+                // First try to get file info from share password
+                (int fileId, int ownerId) = await GetFileInfoFromSharePassAsync(password);
+                Console.WriteLine($"[DEBUG] GetFileInfoFromSharePassAsync returned: fileId={fileId}, ownerId={ownerId}");
+                
+                if (fileId != -1)
+                {
+                    // Check if current user is the owner
+                    int currentUserId = Session.LoggedInUserId;
+                    if (currentUserId == ownerId)
+                    {
+                        Console.WriteLine($"[DEBUG] Current user is the owner, no need to share");
+                        MessageBox.Show("Bạn là chủ sở hữu của file này. Không cần chia sẻ lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return (null, null, false);
+                    }
+                    
+                    // Add reference to files_share table
+                    bool shareResult = await AddFileReferenceAsync(fileId.ToString(), currentUserId.ToString(), password);
+                    Console.WriteLine($"[DEBUG] AddFileReferenceAsync result: {shareResult}");
+                    
+                    if (shareResult)
+                    {
+                        Console.WriteLine($"[DEBUG] File reference added successfully");
+                        MessageBox.Show("Bạn đã có quyền truy cập vào file này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return (new List<Services.FileItem>(), new List<Services.FolderItem>(), true);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DEBUG] Failed to add file reference");
+                        MessageBox.Show("Lỗi khi thêm quyền truy cập file!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return (null, null, false);
+                    }
+                }
+                
+                // If no file found, try to get folder info from share password
+                Console.WriteLine($"[DEBUG] No file found, trying folder...");
+                (int folderId, int folderOwnerId) = await GetFolderInfoFromSharePassAsync(password);
+                Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync returned: folderId={folderId}, ownerId={folderOwnerId}");
+                
+                if (folderId != -1)
+                {
+                    // Check if current user is the owner
+                    int currentUserId = Session.LoggedInUserId;
+                    Console.WriteLine($"[DEBUG] Current user ID: {currentUserId}, Folder owner ID: {folderOwnerId}");
+                    
+                    if (currentUserId == folderOwnerId)
+                    {
+                        Console.WriteLine($"[DEBUG] Current user is the folder owner, no need to share");
+                        MessageBox.Show("Bạn là chủ sở hữu của thư mục này. Không cần chia sẻ lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return (null, null, false);
+                    }
+                    
+                    // Add reference to folder_shares table
+                    bool shareResult = await AddFolderReferenceAsync(folderId.ToString(), currentUserId.ToString(), password);
+                    Console.WriteLine($"[DEBUG] AddFolderReferenceAsync result: {shareResult}");
+                    
+                    if (shareResult)
+                    {
+                        Console.WriteLine($"[DEBUG] Folder reference added successfully");
+                        MessageBox.Show("Bạn đã có quyền truy cập vào thư mục này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return (new List<Services.FileItem>(), new List<Services.FolderItem>(), true);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DEBUG] Failed to add folder reference");
+                        MessageBox.Show("Lỗi khi thêm quyền truy cập thư mục!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return (null, null, false);
+                    }
+                }
+                
+                Console.WriteLine($"[DEBUG] Invalid password, no file or folder found");
+                MessageBox.Show("Mật khẩu không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return (null, null, false);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Exception in GetItemsByPasswordAsync: {ex.Message}");
+                Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
+                MessageBox.Show($"Error getting items by password: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return (null, null, false);
+            }
+        }
+
+        // COMMENTED OUT: Moved to "Shared With Me" tab  
+        private async Task<bool> AddFileReferenceAsync(string fileId, string userId, string sharePass)
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // First get the permission from the share pass
+                    string permission = await GetPermissionFromSharePassAsync(sharePass, "file");
+                    
+                    // Add entry to files_share table with permission
+                    string message = $"ADD_FILE_SHARE_ENTRY_WITH_PERMISSION|{fileId}|{userId}|{sharePass}|{permission}\n";
+                    Console.WriteLine($"[DEBUG] Adding file share entry: {message.Trim()}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    Console.WriteLine($"[DEBUG] Add file reference response: '{response}'");
+                    
+                    return response != null && response.StartsWith("200|");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding file reference: {ex.Message}");
+                return false;
+            }
+        }
+
+        private async Task<bool> AddFolderReferenceAsync(string folderId, string userId, string sharePass)
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // First get the permission from the share pass
+                    string permission = await GetPermissionFromSharePassAsync(sharePass, "folder");
+                    
+                    // Add entry to folder_shares table with permission
+                    string message = $"ADD_FOLDER_SHARE_ENTRY_WITH_PERMISSION|{folderId}|{userId}|{sharePass}|{permission}\n";
+                    Console.WriteLine($"[DEBUG] Adding folder share entry: {message.Trim()}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    Console.WriteLine($"[DEBUG] Add folder reference response: '{response}'");
+                    
+                    if (response != null && response.StartsWith("200|"))
+                    {
+                        // Also add all files in this folder to files_share table
+                        bool filesAdded = await AddFilesInFolderToShareAsync(folderId, userId, sharePass, permission);
+                        Console.WriteLine($"[DEBUG] Files in folder added to share: {filesAdded}");
+                        
+                        return true;
+                    }
+                    
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding folder reference: {ex.Message}");
+                return false;
+            }
+        }
+
+        private async Task<bool> AddFilesInFolderToShareAsync(string folderId, string userId, string sharePass, string permission)
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send command to add all files in folder to files_share table
+                    string message = $"ADD_FILES_IN_FOLDER_TO_SHARE|{folderId}|{userId}|{sharePass}|{permission}\n";
+                    Console.WriteLine($"[DEBUG] Adding files in folder to share: {message.Trim()}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    Console.WriteLine($"[DEBUG] Add files in folder response: '{response}'");
+                    
+                    return response != null && response.StartsWith("200|");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding files in folder to share: {ex.Message}");
+                return false;
+            }
+        }
+
+        private async Task<string> GetPermissionFromSharePassAsync(string sharePass, string itemType)
+        {
+            try
+            {
+                using (var client = new System.Net.Sockets.TcpClient("127.0.0.1", 5000))
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string command = itemType == "file" ? "GET_FILE_PERMISSION_BY_SHARE_PASS" : "GET_FOLDER_PERMISSION_BY_SHARE_PASS";
+                    string message = $"{command}|{sharePass}\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null && response.StartsWith("200|"))
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2)
+                        {
+                            return parts[1]; // Return the permission
+                        }
+                    }
+                    return "read"; // Default to read permission
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting permission from share pass: {ex.Message}");
+                return "read"; // Default to read permission
+            }
+        }
+
+        private async Task<(int, int)> GetFolderInfoFromSharePassAsync(string sharePass)
+        {
+            try
+            {
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"GET_FOLDER_INFO_BY_SHARE_PASS|{sharePass}\n";
+                    Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync: Sending message: {message.Trim()}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync response: '{response}'");
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync: Response parts count: {parts.Length}");
+                        for (int i = 0; i < parts.Length; i++)
+                        {
+                            Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync: parts[{i}] = '{parts[i]}'");
+                        }
+                        
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            // Parse folder info: folder_id:folder_name:created_at:owner_name
+                            string[] folderInfo = parts[1].Split(':');
+                            Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync: Folder info parts count: {folderInfo.Length}");
+                            for (int i = 0; i < folderInfo.Length; i++)
+                            {
+                                Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync: folderInfo[{i}] = '{folderInfo[i]}'");
+                            }
+                            
+                            if (folderInfo.Length >= 4)
+                            {
+                                if (int.TryParse(folderInfo[0], out int folderId))
+                                {
+                                    // Get owner_id from owner_name (we need to query this)
+                                    int ownerId = await GetOwnerIdFromUsernameAsync(folderInfo[3]);
+                                    Console.WriteLine($"[DEBUG] Parsed folder: id={folderId}, owner={folderInfo[3]}, ownerId={ownerId}");
+                                    return (folderId, ownerId);
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"[DEBUG] Failed to parse folder ID: '{folderInfo[0]}'");
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[DEBUG] Invalid folder info format: expected >=4 parts, got {folderInfo.Length}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] Invalid response format: expected '200|...', got '{response}'");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DEBUG] No response received");
+                    }
+                    return (-1, -1);
+                }
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error getting folder info from share pass: {ex.Message}");
+                return (-1, -1);
+            }
+        }
+
+        private async Task<int> GetOwnerIdFromUsernameAsync(string username)
+        {
+            try
+            {
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"GET_USER_ID|{username}\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            if (int.TryParse(parts[1], out int userId))
+                            {
+                                return userId;
+                            }
+                        }
+                    }
+                    return -1;
+                }
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error getting user ID from username: {ex.Message}");
+                return -1;
+            }
+        }
+
+        // Get file info from share password (copied from ShareView)
+        private async Task<(int, int)> GetFileInfoFromSharePassAsync(string sharePass)
+        {
+            try
+            {
+                using (TcpClient client = new TcpClient("127.0.0.1", 5000))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"GET_FILE_INFO_BY_SHARE_PASS|{sharePass}\n";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 3 && parts[0] == "200")
+                        {
+                            if (int.TryParse(parts[1], out int fileId) && int.TryParse(parts[2], out int ownerId))
+                            {
+                                return (fileId, ownerId);
+                            }
+                        }
+                    }
+                    return (-1, -1);
+                }
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error getting file info from share pass: {ex.Message}");
+                return (-1, -1);
+            }
+        }
+
+        // COMMENTED OUT: Moved to "Shared With Me" tab
+        
+        private List<Services.FolderItem> ParseFolderListFromResponse(string folderListData)
+        {
+            var folders = new List<Services.FolderItem>();
+            
+            try
+            {
+                Console.WriteLine($"[DEBUG][ParseFolderListFromResponse] Raw data: '{folderListData}'");
+                
+                // Check if the data contains semicolons (multiple folders) or is a single folder entry
+                if (folderListData.Contains(';'))
+                {
+                    // Multiple folders separated by semicolons
+                    string[] folderEntries = folderListData.Split(';');
+                    Console.WriteLine($"[DEBUG][ParseFolderListFromResponse] Found {folderEntries.Length} folder entries");
+                    
+                    foreach (string folderEntry in folderEntries)
+                    {
+                        Console.WriteLine($"[DEBUG][ParseFolderListFromResponse] Processing entry: '{folderEntry}'");
+                        if (!string.IsNullOrEmpty(folderEntry))
+                        {
+                            // Parse folder entry: folder_id:folder_name:created_at:owner_name
+                            string[] parts = folderEntry.Split(':');
+                            if (parts.Length >= 4)
+                            {
+                                var folderItem = new Services.FolderItem
+                                {
+                                    Id = int.Parse(parts[0]),
+                                    Name = parts[1],
+                                    CreatedAt = parts[2],
+                                    Owner = parts[3],
+                                    IsShared = true
+                                };
+                                folders.Add(folderItem);
+                                Console.WriteLine($"[DEBUG][ParseFolderListFromResponse] Successfully parsed folder: {parts[1]}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[DEBUG][ParseFolderListFromResponse] Failed to parse folder entry: '{folderEntry}'");
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Single folder entry - treat the entire data as one folder
+                    Console.WriteLine($"[DEBUG][ParseFolderListFromResponse] Single folder entry detected");
+                    string[] parts = folderListData.Split(':');
+                    if (parts.Length >= 4)
+                    {
+                        var folderItem = new Services.FolderItem
+                        {
+                            Id = int.Parse(parts[0]),
+                            Name = parts[1],
+                            CreatedAt = parts[2],
+                            Owner = parts[3],
+                            IsShared = true
+                        };
+                        folders.Add(folderItem);
+                        Console.WriteLine($"[DEBUG][ParseFolderListFromResponse] Successfully parsed single folder: {parts[1]}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DEBUG][ParseFolderListFromResponse] Failed to parse single folder entry: '{folderListData}'");
+                    }
+                }
+                
+                Console.WriteLine($"[DEBUG][ParseFolderListFromResponse] Total folders parsed: {folders.Count}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error parsing folder list: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            }
+            
+            return folders;
+        }
+        
     }
 }
+
