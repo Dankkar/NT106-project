@@ -17,15 +17,17 @@ namespace FileSharingClient
         public event Action<String> FileDeleted;
         public event Action<String> FilePreviewRequested;
         public event Action<String> FileDownloadRequested;
+        public event Action<String> FileShareRequested;
         
         public string FileName { get; set; }
         public string CreateAt { get; set; }
         public string Owner { get; set; }
         public string FileSize { get; set; }
+        public int FileId { get; set; }
         
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
 
-        public FileItemControl(string filename, string createAt, string owner, string filesize, string filepath)
+        public FileItemControl(string filename, string createAt, string owner, string filesize, string filepath, int fileId = -1)
         {
             InitializeComponent();
 
@@ -40,6 +42,9 @@ namespace FileSharingClient
             CreateAt = createAt;
             Owner = owner;
             FileSize = filesize;
+            FileId = fileId;
+
+            Console.WriteLine($"[DEBUG][FileItemControl] Setting owner: '{owner}' for file: '{filename}'");
 
             // Set file type
             string fileExtension = Path.GetExtension(filename).ToLower();
@@ -84,70 +89,54 @@ namespace FileSharingClient
             PreviewFile();
         }
 
-        private void PreviewFile()
+        private async void PreviewFile()
         {
             try
             {
-                string fullPath = Path.Combine(projectRoot ?? Environment.CurrentDirectory, FilePath);
-                
-                if (!File.Exists(fullPath))
+                string extension = Path.GetExtension(FileName).ToLower();
+                if (FileId > 0)
                 {
-                    MessageBox.Show("File not found!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                // Determine file type and open appropriate preview
-                string extension = Path.GetExtension(fullPath).ToLower();
-                
-                if (extension == ".txt" || extension == ".md" || extension == ".log")
-                {
-                    // Open text files in notepad
-                    System.Diagnostics.Process.Start("notepad.exe", fullPath);
-                }
-                else if (extension == ".pdf")
-                {
-                    // Open PDF with default application
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else if (extension == ".jpg" || extension == ".jpeg" || extension == ".png" || 
-                         extension == ".gif" || extension == ".bmp")
-                {
-                    // Open images with default application
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else if (extension == ".mp4" || extension == ".avi" || extension == ".mov" || 
-                         extension == ".wmv" || extension == ".mkv")
-                {
-                    // Open videos with default application
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else if (extension == ".docx" || extension == ".doc")
-                {
-                    // Open Word documents
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else if (extension == ".xlsx" || extension == ".xls")
-                {
-                    // Open Excel files
-                    System.Diagnostics.Process.Start(fullPath);
-                }
-                else if (extension == ".pptx" || extension == ".ppt")
-                {
-                    // Open PowerPoint files
-                    System.Diagnostics.Process.Start(fullPath);
+                    var (fileBytes, error) = await Services.ApiService.DownloadFileForPreviewAsync(FileId);
+                    if (error == "FILE_TOO_LARGE")
+                    {
+                        MessageBox.Show("File quá lớn, vui lòng tải về để xem.", "File quá lớn", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                    if (fileBytes == null)
+                    {
+                        MessageBox.Show(error ?? "Không thể tải file từ server.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    if (extension == ".jpg" || extension == ".jpeg" || extension == ".png" || extension == ".gif" || extension == ".bmp")
+                    {
+                        using (var ms = new MemoryStream(fileBytes))
+                        {
+                            var img = Image.FromStream(ms);
+                            Form frm = new Form { Width = img.Width + 40, Height = img.Height + 60, Text = FileName };
+                            var pb = new PictureBox { Image = img, Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom };
+                            frm.Controls.Add(pb);
+                            frm.ShowDialog();
+                        }
+                    }
+                    else if (extension == ".txt" || extension == ".md" || extension == ".log")
+                    {
+                        string text = Encoding.UTF8.GetString(fileBytes);
+                        Form frm = new Form { Width = 800, Height = 600, Text = FileName };
+                        var rtb = new RichTextBox { Text = text, Dock = DockStyle.Fill, ReadOnly = true, Font = new Font("Consolas", 11) };
+                        frm.Controls.Add(rtb);
+                        frm.ShowDialog();
+                    }
+                    else
+                    {
+                        // Các loại khác: lưu file tạm rồi mở bằng app mặc định
+                        string tempPath = Path.Combine(Path.GetTempPath(), FileName);
+                        File.WriteAllBytes(tempPath, fileBytes);
+                        System.Diagnostics.Process.Start(tempPath);
+                    }
                 }
                 else
                 {
-                    // For other files, try to open with default application
-                    try
-                    {
-                        System.Diagnostics.Process.Start(fullPath);
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Cannot preview this file type. Please download to view.", 
-                            "Preview Not Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
+                    MessageBox.Show("Không xác định được fileId để preview!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
@@ -158,7 +147,16 @@ namespace FileSharingClient
 
         private void shareToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show($"Chia sẻ file {FileName}");
+            // Query current share password from server
+            try
+            {
+                // Trigger the share event to get current share password
+                FileShareRequested?.Invoke(FileId.ToString());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting share password: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void downloadToolStripMenuItem_Click(object sender, EventArgs e)

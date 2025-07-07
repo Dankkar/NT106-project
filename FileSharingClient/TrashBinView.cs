@@ -40,11 +40,6 @@ namespace FileSharingClient
             // Set placeholder text style for search
             txtSearch.ForeColor = Color.Gray;
             
-            // Subscribe to file deletion events from MyFileView
-            MyFileView.FileMovedToTrash += OnFileMovedToTrash;
-            MyFileView.FolderMovedToTrash += OnFolderMovedToTrash;
-            Console.WriteLine("[DEBUG] TrashBinView - Subscribed to FileMovedToTrash and FolderMovedToTrash events");
-            
             // Subscribe to visibility changes to refresh when view becomes visible
             this.VisibleChanged += OnVisibilityChanged;
             
@@ -714,40 +709,6 @@ namespace FileSharingClient
             await LoadTrashFilesAsync();
         }
 
-        private async void OnFileMovedToTrash(string fileName)
-        {
-            try
-            {
-                Console.WriteLine($"[DEBUG] TrashBinView - Received FileMovedToTrash event for: {fileName}");
-                
-                // Always refresh to ensure files are loaded, regardless of visibility
-                Console.WriteLine("[DEBUG] TrashBinView - Auto-refreshing trash files due to new deletion");
-                await LoadTrashFilesAsync();
-                Console.WriteLine($"[DEBUG] TrashBinView - Refresh completed after file {fileName} deletion");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] TrashBinView - Error in OnFileMovedToTrash: {ex.Message}");
-            }
-        }
-
-        private async void OnFolderMovedToTrash(int folderId)
-        {
-            try
-            {
-                Console.WriteLine($"[DEBUG] TrashBinView - Received FolderMovedToTrash event for: {folderId}");
-                
-                // Always refresh to ensure folders are loaded, regardless of visibility
-                Console.WriteLine("[DEBUG] TrashBinView - Auto-refreshing trash items due to new folder deletion");
-                await LoadTrashFilesAsync();
-                Console.WriteLine($"[DEBUG] TrashBinView - Refresh completed after folder {folderId} deletion");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] TrashBinView - Error in OnFolderMovedToTrash: {ex.Message}");
-            }
-        }
-
         private async void OnVisibilityChanged(object sender, EventArgs e)
         {
             try
@@ -1001,8 +962,6 @@ namespace FileSharingClient
             try
             {
                 // Unsubscribe from events to prevent memory leaks
-                MyFileView.FileMovedToTrash -= OnFileMovedToTrash;
-                MyFileView.FolderMovedToTrash -= OnFolderMovedToTrash;
                 this.VisibleChanged -= OnVisibilityChanged;
                 Console.WriteLine("[DEBUG] TrashBinView - Unsubscribed from events");
             }

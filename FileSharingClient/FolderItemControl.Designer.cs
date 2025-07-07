@@ -45,7 +45,7 @@ namespace FileSharingClient
             // 
             this.lblFolderName.AutoSize = true;
             this.lblFolderName.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFolderName.Location = new System.Drawing.Point(39, 12);
+            this.lblFolderName.Location = new System.Drawing.Point(50, 12);
             this.lblFolderName.Name = "lblFolderName";
             this.lblFolderName.Size = new System.Drawing.Size(64, 17);
             this.lblFolderName.TabIndex = 0;
@@ -55,7 +55,7 @@ namespace FileSharingClient
             // 
             this.lblOwner.AutoSize = true;
             this.lblOwner.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblOwner.Location = new System.Drawing.Point(248, 12);
+            this.lblOwner.Location = new System.Drawing.Point(260, 12);
             this.lblOwner.Name = "lblOwner";
             this.lblOwner.Size = new System.Drawing.Size(48, 17);
             this.lblOwner.TabIndex = 1;
@@ -69,14 +69,14 @@ namespace FileSharingClient
             this.lblCreatedAt.Name = "lblCreatedAt";
             this.lblCreatedAt.Size = new System.Drawing.Size(37, 17);
             this.lblCreatedAt.TabIndex = 2;
-            this.lblCreatedAt.Text = "Time";
+            this.lblCreatedAt.Text = "-";
             // 
             // lblType
             // 
             this.lblType.AutoSize = true;
             this.lblType.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.lblType.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblType.Location = new System.Drawing.Point(450, 12);
+            this.lblType.Location = new System.Drawing.Point(650, 12);
             this.lblType.Name = "lblType";
             this.lblType.Size = new System.Drawing.Size(51, 17);
             this.lblType.TabIndex = 3;
@@ -112,7 +112,7 @@ namespace FileSharingClient
             this.btnMore.FlatAppearance.BorderSize = 0;
             this.btnMore.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnMore.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
-            this.btnMore.Location = new System.Drawing.Point(550, 10);
+            this.btnMore.Location = new System.Drawing.Point(750, 10);
             this.btnMore.Name = "btnMore";
             this.btnMore.Size = new System.Drawing.Size(75, 23);
             this.btnMore.TabIndex = 5;
@@ -134,7 +134,9 @@ namespace FileSharingClient
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.AutoSize = true;
+            this.AutoSize = false;
+            this.Height = 43;
+            this.Margin = new System.Windows.Forms.Padding(0);
             this.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.Controls.Add(this.lblFolderIcon);
             this.Controls.Add(this.btnMore);
@@ -143,7 +145,7 @@ namespace FileSharingClient
             this.Controls.Add(this.lblOwner);
             this.Controls.Add(this.lblFolderName);
             this.Name = "FolderItemControl";
-            this.Size = new System.Drawing.Size(650, 43);
+            this.Size = new System.Drawing.Size(800, 43);
             this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
