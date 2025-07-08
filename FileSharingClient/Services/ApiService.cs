@@ -13,10 +13,41 @@ namespace FileSharingClient.Services
     {
         private const string SERVER_IP = "127.0.0.1";
         private const int SERVER_PORT = 5000; // Connect directly to backend server for testing
+        private const int MAX_RETRY_ATTEMPTS = 3;
+        private const int RETRY_DELAY_MS = 500;
+
+        /// <summary>
+        /// Retry helper method for API calls
+        /// </summary>
+        private static async Task<T> RetryApiCall<T>(Func<Task<T>> apiCall, T defaultValue)
+        {
+            for (int attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++)
+            {
+                try
+                {
+                    return await apiCall();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[RETRY] Attempt {attempt + 1}/{MAX_RETRY_ATTEMPTS} failed: {ex.Message}");
+                    
+                    if (attempt == MAX_RETRY_ATTEMPTS - 1)
+                    {
+                        Console.WriteLine($"[ERROR] All {MAX_RETRY_ATTEMPTS} attempts failed for API call");
+                        System.Windows.Forms.MessageBox.Show($"Không thể kết nối đến server sau {MAX_RETRY_ATTEMPTS} lần thử. Vui lòng kiểm tra kết nối mạng.", "Lỗi kết nối", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                        return defaultValue;
+                    }
+                    
+                    // Wait before retrying
+                    await Task.Delay(RETRY_DELAY_MS * (attempt + 1)); // Exponential backoff
+                }
+            }
+            return defaultValue;
+        }
 
         public static async Task<int> GetUserIdAsync(string username)
         {
-            try
+            return await RetryApiCall(async () =>
             {
                 var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 var sslStream = connection.sslStream;
@@ -47,12 +78,7 @@ namespace FileSharingClient.Services
                     }
                     return -1;
                 }
-            }
-            catch (Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show($"[DEBUG] Exception: {ex.Message}", "DEBUG", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                return -1;
-            }
+            }, -1);
         }
 
         public static async Task<List<FileItem>> GetUserFilesAsync(int userId, int? folderId = null)
