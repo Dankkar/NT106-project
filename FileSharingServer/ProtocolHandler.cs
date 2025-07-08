@@ -1975,22 +1975,26 @@ namespace FileSharingServer
                     string sharePassword = GenerateHashPassword(fileId);
                     Console.WriteLine($"[DEBUG] Generated share password for file {fileId}: {sharePassword}");
                     
-                    // Update file to set is_shared = 1 and share_pass
+                    // Update file to set is_shared = 1 and share_pass (no permission column in files table)
                     string updateQuery = @"
                         UPDATE files 
-                        SET is_shared = 1, share_pass = @sharePass, permission = @permission 
+                        SET is_shared = 1, share_pass = @sharePass 
                         WHERE file_id = @fileId";
                     
                     using (var command = new System.Data.SQLite.SQLiteCommand(updateQuery, connection))
                     {
                         command.Parameters.AddWithValue("@sharePass", sharePassword);
                         command.Parameters.AddWithValue("@fileId", fileId);
-                        command.Parameters.AddWithValue("@permission", permission);
                         
                         int rowsAffected = await command.ExecuteNonQueryAsync();
                         if (rowsAffected > 0)
                         {
                             Console.WriteLine($"[DEBUG] Successfully updated file {fileId} with share password: {sharePassword}");
+                            
+                            // Store the default permission info for this shared file in a metadata table or use default
+                            // Permission will be handled when users access the file via AddFileShareEntryWithPermission
+                            Console.WriteLine($"[DEBUG] File {fileId} shared with default permission: {permission}");
+                            
                             return $"200|{sharePassword}\n";
                         }
                         else
@@ -2020,17 +2024,16 @@ namespace FileSharingServer
                     string sharePassword = GenerateHashPassword(folderId);
                     Console.WriteLine($"[DEBUG] Generated share password for folder {folderId}: {sharePassword}");
                     
-                    // Update folder to set is_shared = 1 and share_pass
+                    // Update folder to set is_shared = 1 and share_pass (no permission column in folders table)
                     string updateFolderQuery = @"
                         UPDATE folders 
-                        SET is_shared = 1, share_pass = @sharePass, permission = @permission 
+                        SET is_shared = 1, share_pass = @sharePass 
                         WHERE folder_id = @folderId";
                     
                     using (var command = new System.Data.SQLite.SQLiteCommand(updateFolderQuery, connection))
                     {
                         command.Parameters.AddWithValue("@sharePass", sharePassword);
                         command.Parameters.AddWithValue("@folderId", folderId);
-                        command.Parameters.AddWithValue("@permission", permission);
                         
                         int rowsAffected = await command.ExecuteNonQueryAsync();
                         if (rowsAffected > 0)
@@ -2051,6 +2054,10 @@ namespace FileSharingServer
                                 int filesUpdated = await filesCommand.ExecuteNonQueryAsync();
                                 Console.WriteLine($"[DEBUG] Updated {filesUpdated} files in folder {folderId} with share password: {sharePassword}");
                             }
+                            
+                            // Store the default permission info for this shared folder
+                            // Permission will be handled when users access the folder via AddFolderShareEntryWithPermission
+                            Console.WriteLine($"[DEBUG] Folder {folderId} shared with default permission: {permission}");
                             
                             return $"200|{sharePassword}\n";
                         }

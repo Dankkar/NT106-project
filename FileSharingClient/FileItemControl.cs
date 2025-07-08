@@ -56,7 +56,7 @@ namespace FileSharingClient
             // Set file icon based on type
             lblFileIcon.Text = GetFileIcon(fileExtension);
 
-            // ?n c�c th�ng tin kh�ng c?n thi?t - ch? hi?n th? T�n file, Ngu?i s? h?u, K�ch thu?c, Type
+            // ?n c�c th�ng tin kh�ng c?n thi?t - ch? hi?n th? T�n file, Ngu?i s? h?u, K�ch thu?c, Type
             lblCreateAt.Visible = false;
             lblFilePath.Visible = false;
 
@@ -101,17 +101,40 @@ namespace FileSharingClient
                     var (fileBytes, error) = await Services.ApiService.DownloadFileForPreviewAsync(FileId);
                     if (error == "FILE_TOO_LARGE")
                     {
-                        MessageBox.Show("File qu� l?n, vui l�ng t?i v? d? xem.", "File qu� l?n", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
+                        MessageBox.Show("File quá lớn, vui lòng tải về để xem.", "File quá lớn", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
                         return;
                     }
                     if (fileBytes == null)
                     {
-                        MessageBox.Show(error ?? "Kh�ng th? t?i file t? server.", "L?i", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                        MessageBox.Show(error ?? "Không thể tải file từ server.", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                         return;
                     }
+
+                    // Check if we have user password for decryption
+                    if (string.IsNullOrEmpty(Session.UserPassword))
+                    {
+                        MessageBox.Show("Không thể preview file đã mã hóa: Mật khẩu người dùng không khả dụng.\nVui lòng đăng nhập lại để preview file đã mã hóa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // Decrypt the file data before displaying
+                    byte[] decryptedData = null;
+                    try
+                    {
+                        decryptedData = CryptoHelper.DecryptFile(fileBytes, Session.UserPassword);
+                    }
+                    catch (Exception decryptEx)
+                    {
+                        // If decryption fails, the file might not be encrypted yet (legacy files)
+                        // Try to display as is, but show warning
+                        MessageBox.Show($"Giải mã thất bại: {decryptEx.Message}\n\nFile này có thể chưa được mã hóa. Hiển thị nội dung gốc.", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        decryptedData = fileBytes;
+                    }
+
+                    // Display the decrypted file data
                     if (extension == ".jpg" || extension == ".jpeg" || extension == ".png" || extension == ".gif" || extension == ".bmp")
                     {
-                        using (var ms = new MemoryStream(fileBytes))
+                        using (var ms = new MemoryStream(decryptedData))
                         {
                             var img = Image.FromStream(ms);
                             Form frm = new Form { Width = img.Width + 40, Height = img.Height + 60, Text = FileName };
@@ -122,7 +145,7 @@ namespace FileSharingClient
                     }
                     else if (extension == ".txt" || extension == ".md" || extension == ".log")
                     {
-                        string text = Encoding.UTF8.GetString(fileBytes);
+                        string text = Encoding.UTF8.GetString(decryptedData);
                         Form frm = new Form { Width = 800, Height = 600, Text = FileName };
                         var rtb = new RichTextBox { Text = text, Dock = DockStyle.Fill, ReadOnly = true, Font = new Font("Consolas", 11) };
                         frm.Controls.Add(rtb);
@@ -130,15 +153,15 @@ namespace FileSharingClient
                     }
                     else
                     {
-                        // C�c lo?i kh�c: luu file t?m r?i m? b?ng app m?c d?nh
+                        // Các loại khác: luu file tạm rồi mở bằng app mặc định
                         string tempPath = Path.Combine(Path.GetTempPath(), FileName);
-                        File.WriteAllBytes(tempPath, fileBytes);
+                        File.WriteAllBytes(tempPath, decryptedData);
                         System.Diagnostics.Process.Start(tempPath);
                     }
                 }
                 else
                 {
-                    MessageBox.Show("Kh�ng x�c d?nh du?c fileId d? preview!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Không xác định được fileId để preview!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
             }
@@ -197,8 +220,8 @@ namespace FileSharingClient
             using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
             using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
             {
-                // Send download request
-                string message = $"DOWNLOAD_FILE|{fileName}|{Session.LoggedInUserId}";
+                // Send download request with FileId instead of fileName
+                string message = $"DOWNLOAD_FILE|{FileId}|{Session.LoggedInUserId}";
                 await writer.WriteLineAsync(message);
 
                 // Read response header
@@ -210,24 +233,19 @@ namespace FileSharingClient
                     string[] parts = response.Split('|');
                     if (parts.Length >= 2 && parts[0] == "200")
                     {
-                        long fileSize = long.Parse(parts[1]);
-                        
-                        // Read encrypted file data
-                        byte[] encryptedData = new byte[fileSize];
-                        int totalRead = 0;
-                        byte[] buffer = new byte[8192];
-                        
-                        while (totalRead < fileSize)
-                        {
-                            int bytesRead = await sslStream.ReadAsync(buffer, 0, Math.Min(buffer.Length, (int)(fileSize - totalRead)));
-                            if (bytesRead == 0) break;
-                            
-                            Array.Copy(buffer, 0, encryptedData, totalRead, bytesRead);
-                            totalRead += bytesRead;
-                        }
+                        // Parse base64 data directly from response (same as ApiService)
+                        byte[] encryptedData = Convert.FromBase64String(parts[1]);
                         
                         // Decrypt and save file
                         CryptoHelper.DecryptFileToLocal(encryptedData, Session.UserPassword, savePath);
+                    }
+                    else if (parts[0] == "404")
+                    {
+                        throw new Exception("File not found on server or no access");
+                    }
+                    else if (parts[0] == "413")
+                    {
+                        throw new Exception("File too large for download");
                     }
                     else
                     {
@@ -243,11 +261,11 @@ namespace FileSharingClient
 
         private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            DialogResult result = MessageBox.Show($"B?n c� ch?c mu?n x�a file {FileName}?", "X�c nh?n", MessageBoxButtons.YesNo);
+            DialogResult result = MessageBox.Show($"Bạn có chắc muốn xóa file {FileName}?", "Xác nhận", MessageBoxButtons.YesNo);
             if (result == DialogResult.Yes)
             {
                 FileDeleted?.Invoke(FilePath);
-                this.Dispose(); // X�a FileItemControl kh?i giao di?n
+                this.Dispose(); // X�a FileItemControl kh?i giao di?n
             }
         }
        

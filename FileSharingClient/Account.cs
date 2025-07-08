@@ -41,7 +41,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"L?i khi t?i th�ng tin t�i kho?n: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi tải thông tin tài khoản: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 SetAccountInfo(Session.LoggedInUser, "0 B", "1 GB", 0);
             }
         }
@@ -107,15 +107,15 @@ namespace FileSharingClient
 
         public void SetAccountInfo(string username, string storageUsed, string totalStorage)
         {
-            lblUsername.Text = $"T�n dang nh?p: {username}";
-            lblStorage.Text = $"Dung lu?ng: {storageUsed} / {totalStorage}";
+            lblUsername.Text = $"Tên đăng nhập: {username}";
+            lblStorage.Text = $"Dung lượng: {storageUsed} / {totalStorage}";
         }
 
         // Overload with progress bar support
         public void SetAccountInfo(string username, string storageUsed, string totalStorage, double usagePercentage)
         {
-            lblUsername.Text = $"T�n dang nh?p: {username}";
-            lblStorage.Text = $"Dung lu?ng: {storageUsed} / {totalStorage} ({usagePercentage:F1}%)";
+            lblUsername.Text = $"Tên đăng nhập: {username}";
+            lblStorage.Text = $"Dung lượng: {storageUsed} / {totalStorage} ({usagePercentage:F1}%)";
             
             // Update progress bar
             progressBar1.Minimum = 0;
@@ -149,48 +149,48 @@ namespace FileSharingClient
         // Backward compatibility overload - calls LoadAccountInfo to get real data
         public void SetAccountInfo(string username, string storageUsed)
         {
-            lblUsername.Text = $"T�n dang nh?p: {username}";
+            lblUsername.Text = $"Tên đăng nhập: {username}";
             // Trigger reload to get accurate data from server
             LoadAccountInfo();
         }
 
         private async void btnChangePassword_Click(object sender, EventArgs e)
         {
-            // Y�u c?u nh?p m?t kh?u cu
-            string oldPassword = Prompt.ShowDialog("Nh?p m?t kh?u cu:", "X�c nh?n m?t kh?u");
+            // Yêu cầu nhập mật khẩu cũ
+            string oldPassword = Prompt.ShowDialog("Nhập mật khẩu cũ:", "Xác nhận mật khẩu");
             if (string.IsNullOrWhiteSpace(oldPassword))
             {
-                MessageBox.Show("Vui l�ng nh?p m?t kh?u cu!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui lòng nhập mật khẩu cũ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Y�u c?u nh?p m?t kh?u m?i
-            string newPassword = Prompt.ShowDialog("Nh?p m?t kh?u m?i:", "�?i m?t kh?u");
+            // Yêu cầu nhập mật khẩu mới
+            string newPassword = Prompt.ShowDialog("Nhập mật khẩu mới:", "Đổi mật khẩu");
             if (string.IsNullOrWhiteSpace(newPassword))
             {
-                MessageBox.Show("Vui l�ng nh?p m?t kh?u m?i!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui lòng nhập mật khẩu mới!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // G?i y�u c?u d?i m?t kh?u d?n server
+            // Gọi yêu cầu đổi mật khẩu đến server
             string response = await ChangePassword(Session.LoggedInUser, oldPassword, newPassword);
             this.Invoke(new Action(() =>
             {
                 switch (response)
                 {
                     case "200":
-                        MessageBox.Show("�?i m?t kh?u th�nh c�ng!", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         // Update stored password for encryption
                         Session.UserPassword = newPassword;
                         break;
                     case "401":
-                        MessageBox.Show("M?t kh?u cu kh�ng d�ng!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Mật khẩu cũ không đúng!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     case "500":
-                        MessageBox.Show("L?i server. Vui l�ng th? l?i sau!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Lỗi server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     default:
-                        MessageBox.Show($"Ph?n h?i kh�ng x�c d?nh t? server: {response}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"Phản hồi không xác định từ server: {response}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                 }
             }));
@@ -205,11 +205,11 @@ namespace FileSharingClient
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 {
-                    // G?i y�u c?u d?i m?t kh?u
+                    // Gọi yêu cầu đổi mật khẩu
                     string message = $"CHANGE_PASSWORD|{username}|{oldPassword}|{newPassword}";
                     await writer.WriteLineAsync(message);
 
-                    // Nh?n ph?n h?i t? server
+                    // Nhận phản hồi từ server
                     string response = await reader.ReadLineAsync();
                     return response?.Trim() ?? "500";
                 }
@@ -218,13 +218,13 @@ namespace FileSharingClient
             {
                 this.Invoke(new Action(() =>
                 {
-                    MessageBox.Show($"L?i k?t n?i server: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Lỗi kết nối server: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }));
                 return "500";
             }
         }
 
-        // Class d? hi?n th? h?p tho?i nh?p li?u
+        // Class dể hiển thị hộp thoại nhập liệu
         public static class Prompt
         {
             public static string ShowDialog(string text, string caption)
@@ -251,7 +251,7 @@ namespace FileSharingClient
 
         private void btnLogout_Click(object sender, EventArgs e)
         {
-            var result = MessageBox.Show("B?n c� ch?c ch?n mu?n dang xu?t?", "X�c nh?n dang xu?t",
+            var result = MessageBox.Show("Bạn có chắc chắn muốn đăng xuất?", "Xác nhận đăng xuất",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (result == DialogResult.Yes)
@@ -261,7 +261,7 @@ namespace FileSharingClient
                 Session.LoggedInUserId = -1;
                 Session.UserPassword = "";
 
-                // Close current form and show login
+                // Close current form and Main form
                 this.Hide();
 
                 // Find and close Main form
@@ -274,9 +274,8 @@ namespace FileSharingClient
                     }
                 }
 
-                // Show login form
-                Login loginForm = new Login();
-                loginForm.Show();
+                // Restart application to restore proper navigation flow
+                Application.Restart();
             }
         }
 
