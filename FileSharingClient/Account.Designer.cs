@@ -31,6 +31,8 @@
             this.lblUsername = new System.Windows.Forms.Label();
             this.lblStorage = new System.Windows.Forms.Label();
             this.btnChangePassword = new System.Windows.Forms.Button();
+            this.btnLogout = new System.Windows.Forms.Button();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.SuspendLayout();
             // 
             // lblUsername
@@ -56,8 +58,8 @@
             // 
             // btnChangePassword
             // 
-            this.btnChangePassword.Location = new System.Drawing.Point(13, 52);
-            this.btnChangePassword.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btnChangePassword.Location = new System.Drawing.Point(11, 108);
+            this.btnChangePassword.Margin = new System.Windows.Forms.Padding(2);
             this.btnChangePassword.Name = "btnChangePassword";
             this.btnChangePassword.Size = new System.Drawing.Size(133, 37);
             this.btnChangePassword.TabIndex = 2;
@@ -65,16 +67,35 @@
             this.btnChangePassword.UseVisualStyleBackColor = true;
             this.btnChangePassword.Click += new System.EventHandler(this.btnChangePassword_Click);
             // 
+            // btnLogout
+            // 
+            this.btnLogout.Location = new System.Drawing.Point(351, 109);
+            this.btnLogout.Name = "btnLogout";
+            this.btnLogout.Size = new System.Drawing.Size(130, 36);
+            this.btnLogout.TabIndex = 3;
+            this.btnLogout.Text = "Log out";
+            this.btnLogout.UseVisualStyleBackColor = true;
+            this.btnLogout.Click += new System.EventHandler(this.btnLogout_Click);
+            // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(16, 59);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(465, 20);
+            this.progressBar1.TabIndex = 4;
+            // 
             // Account
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.AntiqueWhite;
             this.ClientSize = new System.Drawing.Size(533, 292);
+            this.Controls.Add(this.progressBar1);
+            this.Controls.Add(this.btnLogout);
             this.Controls.Add(this.btnChangePassword);
             this.Controls.Add(this.lblStorage);
             this.Controls.Add(this.lblUsername);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Account";
             this.Text = "Account";
             this.ResumeLayout(false);
@@ -87,5 +108,7 @@
         private System.Windows.Forms.Label lblUsername;
         private System.Windows.Forms.Label lblStorage;
         private System.Windows.Forms.Button btnChangePassword;
+        private System.Windows.Forms.Button btnLogout;
+        private System.Windows.Forms.ProgressBar progressBar1;
     }
 }

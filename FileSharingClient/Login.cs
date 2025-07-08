@@ -9,10 +9,11 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Data.SQLite;
+using FileSharingClient.Services;
 
 namespace FileSharingClient
 {
@@ -22,11 +23,8 @@ namespace FileSharingClient
         private bool isForgotPasswordOpen = false;
         private string username = "Tên đăng nhập";
         private string password = "Mật khẩu";
-        private const string SERVER_IP = "127.0.0.1";
+        private const string SERVER_IP = "localhost";
         private const int SERVER_PORT = 5000;
-        private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-        private static string dbPath = Path.Combine(projectRoot, "test.db");
-        private static string connectionString = $"Data Source={dbPath};Version=3;";
         public Login()
         {
             InitializeComponent();
@@ -39,20 +37,6 @@ namespace FileSharingClient
             passtxtBox.ForeColor = Color.Gray;
             passtxtBox.Enter += passtxtBox_Enter;
             passtxtBox.Leave += passtxtBox_Leave;
-            SetWALModeAsync();
-        }
-
-        private async Task SetWALModeAsync()
-        {
-            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
-            {
-                await conn.OpenAsync();
-                string query = "PRAGMA journal_mode = WAL;";
-                using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
-                {
-                    await cmd.ExecuteNonQueryAsync();  // Apply WAL mode to improve concurrency
-                }
-            }
         }
 
 
@@ -82,44 +66,78 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient(SERVER_IP, SERVER_PORT))
-                using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
                     // Lấy thông tin từ TextBox và cắt khoảng trắng
-                    string username = usernametxtBox.Text;
+                    string username = usernametxtBox.Text.Trim();
                     string password = passtxtBox.Text;
-
-                    if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                    // Kiểm tra placeholder text
+                    if (username == this.username || string.IsNullOrWhiteSpace(username))
                     {
                         this.Invoke(new Action(() =>
                         {
-                            MessageBox.Show("Vui lòng nhập đầy đủ thông tin", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("Vui lòng nhập tên đăng nhập", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }));
                         return;
                     }
-
-                    // Gửi dữ liệu đăng nhập theo định dạng: LOGIN|username|password\n
-                    string message = $"LOGIN|{username}|{password}\n";
+                    if (password == this.password || string.IsNullOrWhiteSpace(password))
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            MessageBox.Show("Vui lòng nhập mật khẩu", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+                        return;
+                    }
+                    // Hash password bằng SHA256 trước khi gửi
+                    string hashedPassword;
+                    using (SHA256 sha256Hash = SHA256.Create())
+                    {
+                        byte[] data = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+                        StringBuilder sb = new StringBuilder();
+                        foreach (byte b in data)
+                        {
+                            sb.Append(b.ToString("x2"));
+                        }
+                        hashedPassword = sb.ToString();
+                    }
+                    // Gửi dữ liệu đăng nhập theo định dạng: LOGIN|username|hashedPassword
+                    string message = $"LOGIN|{username}|{hashedPassword}";
                     await writer.WriteLineAsync(message);
-
                     // Nhận phản hồi từ server (status code dạng số)
                     string response = await reader.ReadLineAsync();
                     response = response?.Trim();
                     int statusCode;
-
                     // Cập nhật giao diện theo status code nhận được
                     if (int.TryParse(response, out statusCode))
                     {
-                        this.Invoke(new Action(async () =>
+                        int userId = -1;
+                        if (statusCode == 200)
+                        {
+                            // Lấy userId ngay sau khi đăng nhập thành công
+                            userId = await ApiService.GetUserIdAsync(username);
+                            
+                            // Debug: Check if userId is valid
+                            if (userId == -1)
+                            {
+                                Console.WriteLine($"[ERROR] Failed to get userId for user: {username}");
+                                MessageBox.Show($"Không thể lấy thông tin user. Vui lòng kiểm tra server.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return; // Don't proceed with login
+                            }
+                            Console.WriteLine($"[DEBUG] Login successful - userId: {userId}");
+                        }
+
+                        this.Invoke(new Action(() =>
                         {
                             switch (statusCode)
                             {
                                 case 200:
                                     Session.LoggedInUser = username;
-                                    Session.LoggedInUserId = await GetUserIdFromLocalAsync(username);
-                                    MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    Session.LoggedInUserId = userId;
+                                    Session.UserPassword = password; // Store original password for encryption
+                                    System.Windows.Forms.MessageBox.Show("Đăng nhập thành công!", "Thông báo", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
                                     this.Hide();
                                     // Mở giao diện chính
                                     Main mainform = new Main();
@@ -161,16 +179,29 @@ namespace FileSharingClient
         {
             try
             {
-                using (var conn = new SQLiteConnection(connectionString))
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    await conn.OpenAsync();
-                    string query = "SELECT user_id FROM users WHERE username = @username";
-                    using (var cmd = new SQLiteCommand(query, conn))
+                    // Gửi request GET_USER_ID
+                    string message = $"GET_USER_ID|{username}";
+                    await writer.WriteLineAsync(message);
+                    // Nhận response từ server
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    if (response != null)
                     {
-                        cmd.Parameters.AddWithValue("@username", username);
-                        object result = await cmd.ExecuteScalarAsync();
-                        return result != null ? Convert.ToInt32(result) : -1;
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            if (int.TryParse(parts[1], out int userId))
+                            {
+                                return userId;
+                            }
+                        }
                     }
+                    return -1;
                 }
             }
             catch
@@ -239,5 +270,6 @@ namespace FileSharingClient
     {
         public static string LoggedInUser { get; set; } = "Anonymous";
         public static int LoggedInUserId { get; set; } = -1;
+        public static string UserPassword { get; set; } = ""; // Store original password for encryption
     }
 }

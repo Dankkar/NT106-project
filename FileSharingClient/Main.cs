@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -38,32 +38,26 @@ namespace FileSharingClient
         {
             try
             {
-                using (TcpClient client = new TcpClient())
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                using (sslStream)
+                using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
                 {
-                    await client.ConnectAsync("172.20.10.3", 5000);
-                    using (NetworkStream stream = client.GetStream())
-                    using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
+                    long totalBytes = fileStream.Length;
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+                    long totalSent = 0;
+                    while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
-                        long totalBytes = fileStream.Length;
-                        byte[] buffer = new byte[4096];
-                        int bytesRead;
-                        long totalSent = 0;
-                        while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                        {
-                            await stream.WriteAsync(buffer, 0, bytesRead);
-                            totalSent += bytesRead;
+                        await sslStream.WriteAsync(buffer, 0, bytesRead);
+                        totalSent += bytesRead;
 
-                            //Cap nhat tien trinh
-                            int progress = (int)((totalSent * 100) / totalBytes);
-                        }
-                        totalStorageUsed += totalSent;
-                        MessageBox.Show("File đã gửi xong!");
+                        //Cap nhat tien trinh
+                        int progress = (int)((totalSent * 100) / totalBytes);
                     }
-
+                    totalStorageUsed += totalSent;
+                    MessageBox.Show("File d� g?i xong!");
                 }
             }
-
-
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
@@ -104,9 +98,9 @@ namespace FileSharingClient
         {
             Account accountForm = new Account();
             string username = Session.LoggedInUser ?? "Unknown";
-            string storageUsed = GetTotalStorageUsed(); // Hàm đã định nghĩa trước
+            string storageUsed = GetTotalStorageUsed(); // H�m d� d?nh nghia tru?c
             accountForm.SetAccountInfo(username, storageUsed);
-            accountForm.ShowDialog(); // Hiển thị form Account và chờ người dùng thao tác
+            accountForm.ShowDialog(); // Hi?n th? form Account v� ch? ngu?i d�ng thao t�c
         }
 
         private List<Control> dashboardButtons;

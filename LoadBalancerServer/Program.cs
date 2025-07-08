@@ -1,88 +1,308 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace LoadBalancerServer
 {
+    // Backend server status tracking
+    public class BackendServer
+    {
+        public IPEndPoint EndPoint { get; set; }
+        public bool IsHealthy { get; set; } = false;
+        public int ActiveConnections = 0; // Changed to field for Interlocked operations
+        public DateTime LastHealthCheck { get; set; } = DateTime.MinValue;
+        public int FailedChecks { get; set; } = 0;
+        public double ResponseTime { get; set; } = 0; // milliseconds
+
+        public override string ToString()
+        {
+            return $"{EndPoint} - Healthy: {IsHealthy}, Connections: {ActiveConnections}, ResponseTime: {ResponseTime:F1}ms";
+        }
+    }
+
     class Program
     {
-        // Port on which the load-balancer itself listens (keep identical to the current client target so no client changes are needed)
+        // Port on which the load-balancer itself listens
         private const int LISTEN_PORT = 5000;
+        private const int HEALTH_CHECK_INTERVAL_MS = 10000; // 10 seconds
+        private const int MAX_FAILED_CHECKS = 3;
+        private const string CERTIFICATE_PATH = "LoadBalancerServer/cert/lb_certificate.pfx";
+        private const string CERTIFICATE_PASSWORD = "kha123456789";
 
-        // Configure backend FileSharingServer nodes here. Each server must run FileSharingServer on the given host:port.
-        // NOTE: You can freely add/remove nodes; round-robin selection always works with the current list length.
-        private static readonly List<IPEndPoint> _backends = new List<IPEndPoint>
+        // Backend servers configuration
+        private static readonly List<BackendServer> _backends = new List<BackendServer>
         {
-            new IPEndPoint(IPAddress.Loopback, 5100), // first backend
-            new IPEndPoint(IPAddress.Loopback, 5101), // second backend
-            // new IPEndPoint(IPAddress.Parse("192.168.1.100"), 5000), // another machine, for example
+            new BackendServer { EndPoint = new IPEndPoint(IPAddress.Loopback, 5100) },
+            new BackendServer { EndPoint = new IPEndPoint(IPAddress.Loopback, 5101) },
+            // Add more backends as needed
         };
 
-        private static int _nextBackendIndex = 0; // round-robin pointer
+        private static int _nextBackendIndex = 0;
         private static readonly object _lock = new object();
+        private static readonly Timer _healthCheckTimer;
+
+        static Program()
+        {
+            // Initialize health check timer
+            _healthCheckTimer = new Timer(PerformHealthChecks, null, 
+                TimeSpan.Zero, TimeSpan.FromMilliseconds(HEALTH_CHECK_INTERVAL_MS));
+        }
 
         static async Task Main(string[] args)
         {
-            Console.Title = "FileSharing Load-Balancer";
-            Console.WriteLine("Starting load-balancer on port " + LISTEN_PORT);
+            Console.Title = "FileSharing Smart Load-Balancer";
+            Console.WriteLine("Starting smart load-balancer on port " + LISTEN_PORT);
+            Console.WriteLine($"Backend servers: {_backends.Count}");
+            
+            // Initial health check
+            await CheckAllBackendsHealth();
+            
             TcpListener listener = new TcpListener(IPAddress.Any, LISTEN_PORT);
             listener.Start();
 
+            // Start status monitoring
+            _ = Task.Run(StatusMonitorAsync);
+
+            Console.WriteLine("Load balancer ready. Press Ctrl+C to stop.");
+
             while (true)
             {
-                TcpClient client = await listener.AcceptTcpClientAsync();
-                _ = HandleClientAsync(client); // fire-and-forget
+                try
+                {
+                    TcpClient client = await listener.AcceptTcpClientAsync();
+                    _ = HandleClientAsync(client); // fire-and-forget
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERROR] Accepting client: {ex.Message}");
+                }
             }
         }
 
-        // --- Core logic ------------------------------------------------------------
-        private static IPEndPoint GetNextBackend()
+        // --- Health Check System ---------------------------------------------------
+        private static async void PerformHealthChecks(object state)
         {
-            lock (_lock)
+            await CheckAllBackendsHealth();
+        }
+
+        private static async Task CheckAllBackendsHealth()
+        {
+            var tasks = _backends.Select(CheckBackendHealth).ToArray();
+            await Task.WhenAll(tasks);
+            
+            int healthyCount = _backends.Count(b => b.IsHealthy);
+            if (healthyCount == 0)
             {
-                var ep = _backends[_nextBackendIndex];
-                _nextBackendIndex = (_nextBackendIndex + 1) % _backends.Count;
-                return ep;
+                Console.WriteLine("[CRITICAL] No healthy backends available!");
             }
         }
 
-        private static async Task HandleClientAsync(TcpClient client)
+        private static async Task CheckBackendHealth(BackendServer backend)
         {
-            IPEndPoint backend = GetNextBackend();
-            TcpClient server = new TcpClient();
-
+            var startTime = DateTime.UtcNow;
+            bool wasHealthy = backend.IsHealthy;
+            
             try
             {
-                await server.ConnectAsync(backend.Address, backend.Port);
+                using (var client = new TcpClient())
+                {
+                    // Set timeout for health check
+                    client.ReceiveTimeout = 5000;
+                    client.SendTimeout = 5000;
+                    
+                    await client.ConnectAsync(backend.EndPoint.Address, backend.EndPoint.Port);
+                    
+                    using (var stream = client.GetStream())
+                    using (var writer = new StreamWriter(stream) { AutoFlush = true })
+                    using (var reader = new StreamReader(stream))
+                    {
+                        // Simple health check - try to get server status
+                        await writer.WriteLineAsync("HEALTH_CHECK\n");
+                        
+                        // Wait for any response (even error is better than no response)
+                        var response = await reader.ReadLineAsync();
+                        
+                        // Calculate response time
+                        backend.ResponseTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                        
+                        // Mark as healthy if we got any response
+                        backend.IsHealthy = true;
+                        backend.FailedChecks = 0;
+                        backend.LastHealthCheck = DateTime.UtcNow;
+                        
+                        if (!wasHealthy)
+                        {
+                            Console.WriteLine($"[RECOVERY] Backend {backend.EndPoint} is back online!");
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Could not connect to backend {backend}: {ex.Message}");
+                backend.FailedChecks++;
+                backend.ResponseTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                
+                if (backend.FailedChecks >= MAX_FAILED_CHECKS && backend.IsHealthy)
+                {
+                    backend.IsHealthy = false;
+                    Console.WriteLine($"[FAILURE] Backend {backend.EndPoint} marked as unhealthy after {backend.FailedChecks} failed checks. Error: {ex.Message}");
+                }
+                else if (!backend.IsHealthy)
+                {
+                    // Still down, don't spam logs
+                }
+                else
+                {
+                    Console.WriteLine($"[WARNING] Health check failed for {backend.EndPoint} (attempt {backend.FailedChecks}/{MAX_FAILED_CHECKS}): {ex.Message}");
+                }
+            }
+        }
+
+        // --- Smart Backend Selection -----------------------------------------------
+        private static BackendServer GetNextBackend()
+        {
+            lock (_lock)
+            {
+                var healthyBackends = _backends.Where(b => b.IsHealthy).ToList();
+                
+                if (healthyBackends.Count == 0)
+                {
+                    Console.WriteLine("[ERROR] No healthy backends available for request!");
+                    return null;
+                }
+
+                // Round robin among healthy backends
+                var backend = healthyBackends[_nextBackendIndex % healthyBackends.Count];
+                _nextBackendIndex = (_nextBackendIndex + 1) % healthyBackends.Count;
+                
+                return backend;
+            }
+        }
+
+        // Alternative: Least connections algorithm
+        private static BackendServer GetLeastConnectionsBackend()
+        {
+            lock (_lock)
+            {
+                var healthyBackends = _backends.Where(b => b.IsHealthy).ToList();
+                
+                if (healthyBackends.Count == 0)
+                    return null;
+
+                return healthyBackends.OrderBy(b => b.ActiveConnections)
+                                    .ThenBy(b => b.ResponseTime)
+                                    .First();
+            }
+        }
+
+        // --- Connection Handling ---------------------------------------------------
+        private static async Task HandleClientAsync(TcpClient client)
+        {
+            BackendServer backend = GetNextBackend(); // Or use GetLeastConnectionsBackend()
+            
+            if (backend == null)
+            {
+                Console.WriteLine("[ERROR] No available backend for client request");
                 client.Close();
                 return;
             }
 
-            Console.WriteLine($"Proxying {client.Client.RemoteEndPoint} -> {backend}");
+            TcpClient server = new TcpClient();
+            
+            // Track connection
+            Interlocked.Increment(ref backend.ActiveConnections);
 
-            NetworkStream clientStream = client.GetStream();
-            NetworkStream serverStream = server.GetStream();
+            SslStream sslStream = null;
+            NetworkStream clientStream = null;
+            try
+            {
+                Console.WriteLine($"[DEBUG] Attempting to connect to backend {backend.EndPoint}...");
+                await server.ConnectAsync(backend.EndPoint.Address, backend.EndPoint.Port);
+                Console.WriteLine($"[DEBUG] Successfully connected to backend {backend.EndPoint}");
+                Console.WriteLine($"[PROXY] {client.Client.RemoteEndPoint} -> {backend.EndPoint} (Active: {backend.ActiveConnections})");
 
-            // Pump data bidirectionally until one side closes.
-            Task t1 = PumpAsync(clientStream, serverStream);
-            Task t2 = PumpAsync(serverStream, clientStream);
+                // TLS termination: wrap client stream with SslStream
+                clientStream = client.GetStream();
+                sslStream = new SslStream(clientStream, false);
+                
+                X509Certificate2 certificate = null;
+                try
+                {
+                    Console.WriteLine($"[DEBUG] Loading certificate from: {CERTIFICATE_PATH}");
+                    certificate = new X509Certificate2(CERTIFICATE_PATH, CERTIFICATE_PASSWORD);
+                    Console.WriteLine($"[DEBUG] Certificate loaded successfully. Subject: {certificate.Subject}");
+                    Console.WriteLine($"[DEBUG] Certificate valid from: {certificate.NotBefore} to: {certificate.NotAfter}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[CERT ERROR] Failed to load certificate: {ex.Message}");
+                    Console.WriteLine($"[CERT ERROR] Certificate path: {Path.GetFullPath(CERTIFICATE_PATH)}");
+                    Console.WriteLine($"[CERT ERROR] File exists: {File.Exists(CERTIFICATE_PATH)}");
+                    client.Close();
+                    server.Close();
+                    Interlocked.Decrement(ref backend.ActiveConnections);
+                    return;
+                }
+                
+                try
+                {
+                    Console.WriteLine($"[DEBUG] Starting TLS handshake with client...");
+                    await Task.Factory.FromAsync(
+                        (callback, state) => sslStream.BeginAuthenticateAsServer(certificate, false, false, callback, state),
+                        sslStream.EndAuthenticateAsServer,
+                        null);
+                    Console.WriteLine($"[DEBUG] TLS handshake completed successfully");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[TLS ERROR] Handshake failed: {ex.Message}");
+                    Console.WriteLine($"[TLS ERROR] Inner exception: {ex.InnerException?.Message}");
+                    Console.WriteLine($"[TLS ERROR] Stack trace: {ex.StackTrace}");
+                    client.Close();
+                    server.Close();
+                    Interlocked.Decrement(ref backend.ActiveConnections);
+                    return;
+                }
 
-            await Task.WhenAny(t1, t2);
+                NetworkStream serverStream = server.GetStream();
 
-            client.Close();
-            server.Close();
-            Console.WriteLine($"Connection {client.Client.RemoteEndPoint} closed");
+                // Pump data bidirectionally until one side closes
+                Task t1 = PumpAsync(sslStream, serverStream, $"Client(TLS)->Server({backend.EndPoint})");
+                Task t2 = PumpAsync(serverStream, sslStream, $"Server({backend.EndPoint})->Client(TLS)");
+
+                await Task.WhenAny(t1, t2);
+
+                // Cleanup
+                client.Close();
+                server.Close();
+                Interlocked.Decrement(ref backend.ActiveConnections);
+                Console.WriteLine($"[CLOSED] Connection to {backend.EndPoint} closed (Active: {backend.ActiveConnections})");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Could not connect to backend {backend.EndPoint}: {ex.Message}");
+                Console.WriteLine($"[DEBUG] Exception type: {ex.GetType().Name}");
+                Console.WriteLine($"[DEBUG] Backend health status: {backend.IsHealthy}, Last check: {backend.LastHealthCheck}");
+                backend.FailedChecks++;
+                client.Close();
+                server.Close();
+                if (sslStream != null) sslStream.Dispose();
+                if (clientStream != null) clientStream.Dispose();
+                Interlocked.Decrement(ref backend.ActiveConnections);
+                return;
+            }
         }
 
-        // Forward bytes from src to dst until EOF or exception.
-        private static async Task PumpAsync(Stream src, Stream dst)
+        // --- Data Pumping -----------------------------------------------------------
+        private static async Task PumpAsync(Stream src, Stream dst, string direction)
         {
             byte[] buffer = new byte[8192];
             try
@@ -94,9 +314,32 @@ namespace LoadBalancerServer
                     await dst.WriteAsync(buffer, 0, read);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // swallow – either side closed or network error; outer method handles cleanup
+                // Connection closed or network error
+                Console.WriteLine($"[PUMP] {direction} stream closed: {ex.Message}");
+            }
+        }
+
+        // --- Status Monitoring ------------------------------------------------------
+        private static async Task StatusMonitorAsync()
+        {
+            while (true)
+            {
+                await Task.Delay(30000); // Print status every 30 seconds
+                
+                Console.WriteLine("\n=== LOAD BALANCER STATUS ===");
+                foreach (var backend in _backends)
+                {
+                    Console.WriteLine($"  {backend}");
+                }
+                
+                int totalConnections = _backends.Sum(b => b.ActiveConnections);
+                int healthyServers = _backends.Count(b => b.IsHealthy);
+                
+                Console.WriteLine($"  Total Active Connections: {totalConnections}");
+                Console.WriteLine($"  Healthy Servers: {healthyServers}/{_backends.Count}");
+                Console.WriteLine("=============================\n");
             }
         }
     }
