@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -19,15 +19,17 @@ namespace FileSharingClient
         public event Action<String> FileDeleted;
         public event Action<String> FilePreviewRequested;
         public event Action<String> FileDownloadRequested;
+        public event Action<String> FileShareRequested;
         
         public string FileName { get; set; }
         public string CreateAt { get; set; }
         public string Owner { get; set; }
         public string FileSize { get; set; }
+        public int FileId { get; set; }
         
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
 
-        public FileItemControl(string filename, string createAt, string owner, string filesize, string filepath)
+        public FileItemControl(string filename, string createAt, string owner, string filesize, string filepath, int fileId = -1)
         {
             InitializeComponent();
 
@@ -42,6 +44,9 @@ namespace FileSharingClient
             CreateAt = createAt;
             Owner = owner;
             FileSize = filesize;
+            FileId = fileId;
+
+            Console.WriteLine($"[DEBUG][FileItemControl] Setting owner: '{owner}' for file: '{filename}'");
 
             // Set file type
             string fileExtension = Path.GetExtension(filename).ToLower();
@@ -51,7 +56,7 @@ namespace FileSharingClient
             // Set file icon based on type
             lblFileIcon.Text = GetFileIcon(fileExtension);
 
-            // Ẩn các thông tin không cần thiết - chỉ hiển thị Tên file, Người sở hữu, Kích thước, Type
+            // ?n c�c th�ng tin kh�ng c?n thi?t - ch? hi?n th? T�n file, Ngu?i s? h?u, K�ch thu?c, Type
             lblCreateAt.Visible = false;
             lblFilePath.Visible = false;
 
@@ -86,151 +91,56 @@ namespace FileSharingClient
             PreviewFile();
         }
 
-        private void PreviewFile()
+        private async void PreviewFile()
         {
             try
             {
-                string fullPath = Path.Combine(projectRoot ?? Environment.CurrentDirectory, FilePath);
-                
-                if (!File.Exists(fullPath))
+                string extension = Path.GetExtension(FileName).ToLower();
+                if (FileId > 0)
                 {
-                    MessageBox.Show("File not found!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                // Check if we have user password for decryption
-                if (string.IsNullOrEmpty(Session.UserPassword))
-                {
-                    MessageBox.Show("Cannot preview encrypted file: User password not available.\nPlease re-login to preview encrypted files.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                // Read and decrypt the file
-                byte[] encryptedData = File.ReadAllBytes(fullPath);
-                byte[] decryptedData = null;
-
-                try
-                {
-                    decryptedData = CryptoHelper.DecryptFile(encryptedData, Session.UserPassword);
-                }
-                catch (Exception decryptEx)
-                {
-                    // If decryption fails, the file might not be encrypted yet (legacy files)
-                    // Try to open as is
-                    MessageBox.Show($"Decryption failed: {decryptEx.Message}\n\nThis file may not be encrypted yet. Opening as-is.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    
-                    // Try to open original file
-                    try
+                    var (fileBytes, error) = await Services.ApiService.DownloadFileForPreviewAsync(FileId);
+                    if (error == "FILE_TOO_LARGE")
                     {
-                        System.Diagnostics.Process.Start(fullPath);
+                        MessageBox.Show("File qu� l?n, vui l�ng t?i v? d? xem.", "File qu� l?n", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
+                        return;
                     }
-                    catch
+                    if (fileBytes == null)
                     {
-                        MessageBox.Show("Cannot preview this file type. Please download to view.", 
-                            "Preview Not Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(error ?? "Kh�ng th? t?i file t? server.", "L?i", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                        return;
                     }
-                    return;
-                }
-
-                // Create temporary file with decrypted content
-                string originalExtension = Path.GetExtension(FileName);
-                string tempDir = Path.Combine(Path.GetTempPath(), "FileSharingPreview");
-                
-                // Create temp directory if it doesn't exist
-                if (!Directory.Exists(tempDir))
-                {
-                    Directory.CreateDirectory(tempDir);
-                }
-                
-                // Create temporary file with proper name and extension
-                string tempFileName = $"preview_{DateTime.Now:yyyyMMdd_HHmmss}_{Path.GetRandomFileName()}{originalExtension}";
-                string tempFileWithExtension = Path.Combine(tempDir, tempFileName);
-                
-                // Write decrypted data to temporary file
-                File.WriteAllBytes(tempFileWithExtension, decryptedData);
-
-                // Determine file type and open appropriate preview
-                string extension = originalExtension.ToLower();
-                
-                if (extension == ".txt" || extension == ".md" || extension == ".log")
-                {
-                    // Open text files in notepad
-                    System.Diagnostics.Process.Start("notepad.exe", tempFileWithExtension);
-                }
-                else if (extension == ".pdf")
-                {
-                    // For PDF, set file attributes to normal to avoid signature issues
-                    File.SetAttributes(tempFileWithExtension, FileAttributes.Normal);
-                    
-                    // Open PDF with default application
-                    var psi = new System.Diagnostics.ProcessStartInfo()
+                    if (extension == ".jpg" || extension == ".jpeg" || extension == ".png" || extension == ".gif" || extension == ".bmp")
                     {
-                        FileName = tempFileWithExtension,
-                        UseShellExecute = true,
-                        Verb = "open"
-                    };
-                    System.Diagnostics.Process.Start(psi);
-                }
-                else if (extension == ".jpg" || extension == ".jpeg" || extension == ".png" || 
-                         extension == ".gif" || extension == ".bmp")
-                {
-                    // Open images with default application
-                    System.Diagnostics.Process.Start(tempFileWithExtension);
-                }
-                else if (extension == ".mp4" || extension == ".avi" || extension == ".mov" || 
-                         extension == ".wmv" || extension == ".mkv")
-                {
-                    // Open videos with default application
-                    System.Diagnostics.Process.Start(tempFileWithExtension);
-                }
-                else if (extension == ".docx" || extension == ".doc")
-                {
-                    // Open Word documents
-                    System.Diagnostics.Process.Start(tempFileWithExtension);
-                }
-                else if (extension == ".xlsx" || extension == ".xls")
-                {
-                    // Open Excel files
-                    System.Diagnostics.Process.Start(tempFileWithExtension);
-                }
-                else if (extension == ".pptx" || extension == ".ppt")
-                {
-                    // Open PowerPoint files
-                    System.Diagnostics.Process.Start(tempFileWithExtension);
+                        using (var ms = new MemoryStream(fileBytes))
+                        {
+                            var img = Image.FromStream(ms);
+                            Form frm = new Form { Width = img.Width + 40, Height = img.Height + 60, Text = FileName };
+                            var pb = new PictureBox { Image = img, Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom };
+                            frm.Controls.Add(pb);
+                            frm.ShowDialog();
+                        }
+                    }
+                    else if (extension == ".txt" || extension == ".md" || extension == ".log")
+                    {
+                        string text = Encoding.UTF8.GetString(fileBytes);
+                        Form frm = new Form { Width = 800, Height = 600, Text = FileName };
+                        var rtb = new RichTextBox { Text = text, Dock = DockStyle.Fill, ReadOnly = true, Font = new Font("Consolas", 11) };
+                        frm.Controls.Add(rtb);
+                        frm.ShowDialog();
+                    }
+                    else
+                    {
+                        // C�c lo?i kh�c: luu file t?m r?i m? b?ng app m?c d?nh
+                        string tempPath = Path.Combine(Path.GetTempPath(), FileName);
+                        File.WriteAllBytes(tempPath, fileBytes);
+                        System.Diagnostics.Process.Start(tempPath);
+                    }
                 }
                 else
                 {
-                    // For other files, try to open with default application
-                    try
-                    {
-                        System.Diagnostics.Process.Start(tempFileWithExtension);
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Cannot preview this file type. Please download to view.", 
-                            "Preview Not Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
+                    MessageBox.Show("Kh�ng x�c d?nh du?c fileId d? preview!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
-
-                // Clean up temporary file after a longer delay for PDF (30 seconds)
-                int cleanupDelay = extension == ".pdf" ? 30000 : 10000;
-                Task.Delay(cleanupDelay).ContinueWith(_ => 
-                {
-                    try 
-                    { 
-                        File.Delete(tempFileWithExtension);
-                        
-                        // Also clean up temp directory if empty
-                        if (Directory.Exists(tempDir) && !Directory.EnumerateFileSystemEntries(tempDir).Any())
-                        {
-                            Directory.Delete(tempDir);
-                        }
-                    } 
-                    catch 
-                    { 
-                        // Ignore cleanup errors
-                    }
-                });
             }
             catch (Exception ex)
             {
@@ -240,7 +150,16 @@ namespace FileSharingClient
 
         private void shareToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show($"Chia sẻ file {FileName}");
+            // Query current share password from server
+            try
+            {
+                // Trigger the share event to get current share password
+                FileShareRequested?.Invoke(FileId.ToString());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting share password: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private async void downloadToolStripMenuItem_Click(object sender, EventArgs e)
@@ -273,7 +192,7 @@ namespace FileSharingClient
 
         private async Task DownloadEncryptedFile(string fileName, string savePath)
         {
-            var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+            var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
             using (sslStream)
             using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
             using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -324,11 +243,11 @@ namespace FileSharingClient
 
         private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            DialogResult result = MessageBox.Show($"Bạn có chắc muốn xóa file {FileName}?", "Xác nhận", MessageBoxButtons.YesNo);
+            DialogResult result = MessageBox.Show($"B?n c� ch?c mu?n x�a file {FileName}?", "X�c nh?n", MessageBoxButtons.YesNo);
             if (result == DialogResult.Yes)
             {
                 FileDeleted?.Invoke(FilePath);
-                this.Dispose(); // Xóa FileItemControl khỏi giao diện
+                this.Dispose(); // X�a FileItemControl kh?i giao di?n
             }
         }
        
@@ -383,40 +302,40 @@ namespace FileSharingClient
                 case ".txt":
                 case ".md":
                 case ".log":
-                    return "📝";
+                    return "??";
                 case ".pdf":
-                    return "📕";
+                    return "??";
                 case ".jpg":
                 case ".jpeg":
                 case ".png":
                 case ".gif":
                 case ".bmp":
-                    return "🖼️";
+                    return "???";
                 case ".mp4":
                 case ".avi":
                 case ".mov":
                 case ".wmv":
                 case ".mkv":
-                    return "🎥";
+                    return "??";
                 case ".mp3":
                 case ".wav":
                 case ".flac":
-                    return "🎵";
+                    return "??";
                 case ".docx":
                 case ".doc":
-                    return "📄";
+                    return "??";
                 case ".xlsx":
                 case ".xls":
-                    return "📊";
+                    return "??";
                 case ".pptx":
                 case ".ppt":
-                    return "📋";
+                    return "??";
                 case ".zip":
                 case ".rar":
                 case ".7z":
-                    return "📦";
+                    return "??";
                 default:
-                    return "📄";
+                    return "??";
             }
         }
 

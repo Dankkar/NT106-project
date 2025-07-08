@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -27,7 +27,7 @@ namespace FileSharingClient
 
         private void InitializeControls()
         {
-            // Ban đầu chỉ hiển thị ô nhập email và nút gửi OTP
+            // Ban d?u ch? hi?n th? � nh?p email v� n�t g?i OTP
             lblOTP.Visible = false;
             txtOTP.Visible = false;
             btnVerifyOTP.Visible = false;
@@ -43,13 +43,13 @@ namespace FileSharingClient
             string email = txtEmail.Text.Trim();
             if (string.IsNullOrWhiteSpace(email))
             {
-                MessageBox.Show("Vui lòng nhập email!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui l�ng nh?p email!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             if (!IsValidEmail(email))
             {
-                MessageBox.Show("Vui lòng nhập email hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui l�ng nh?p email h?p l?!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -59,24 +59,24 @@ namespace FileSharingClient
                 switch (response)
                 {
                     case "200":
-                        MessageBox.Show("Mã OTP đã được gửi đến email của bạn!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        // Hiển thị ô nhập OTP và nút xác nhận
+                        MessageBox.Show("M� OTP d� du?c g?i d?n email c?a b?n!", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        // Hi?n th? � nh?p OTP v� n�t x�c nh?n
                         lblOTP.Visible = true;
                         txtOTP.Visible = true;
                         btnVerifyOTP.Visible = true;
-                        // Ẩn ô email và nút gửi OTP
+                        // ?n � email v� n�t g?i OTP
                         lblEmail.Visible = false;
                         txtEmail.Visible = false;
                         btnSendOTP.Visible = false;
                         break;
                     case "404":
-                        MessageBox.Show("Email không tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Email kh�ng t?n t?i!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     case "500":
-                        MessageBox.Show("Lỗi server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("L?i server. Vui l�ng th? l?i sau!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     default:
-                        MessageBox.Show($"Phản hồi không xác định từ server: {response}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"Ph?n h?i kh�ng x�c d?nh t? server: {response}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                 }
             }));
@@ -88,7 +88,7 @@ namespace FileSharingClient
             string otp = txtOTP.Text.Trim();
             if (string.IsNullOrWhiteSpace(otp))
             {
-                MessageBox.Show("Vui lòng nhập mã OTP!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui l�ng nh?p m� OTP!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -98,26 +98,26 @@ namespace FileSharingClient
                 switch (response)
                 {
                     case "200":
-                        MessageBox.Show("Xác nhận OTP thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        // Hiển thị ô nhập mật khẩu mới và xác nhận
+                        MessageBox.Show("X�c nh?n OTP th�nh c�ng!", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        // Hi?n th? � nh?p m?t kh?u m?i v� x�c nh?n
                         lblNewPassword.Visible = true;
                         txtNewPassword.Visible = true;
                         lblConfirmPassword.Visible = true;
                         txtConfirmPassword.Visible = true;
                         btnResetPassword.Visible = true;
-                        // Ẩn ô OTP và nút xác nhận
+                        // ?n � OTP v� n�t x�c nh?n
                         lblOTP.Visible = false;
                         txtOTP.Visible = false;
                         btnVerifyOTP.Visible = false;
                         break;
                     case "401":
-                        MessageBox.Show("Mã OTP không đúng hoặc đã hết hạn!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("M� OTP kh�ng d�ng ho?c d� h?t h?n!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     case "500":
-                        MessageBox.Show("Lỗi server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("L?i server. Vui l�ng th? l?i sau!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     default:
-                        MessageBox.Show($"Phản hồi không xác định từ server: {response}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"Ph?n h?i kh�ng x�c d?nh t? server: {response}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                 }
             }));
@@ -131,13 +131,13 @@ namespace FileSharingClient
 
             if (string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
             {
-                MessageBox.Show("Vui lòng nhập mật khẩu mới và xác nhận mật khẩu!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui l�ng nh?p m?t kh?u m?i v� x�c nh?n m?t kh?u!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             if (newPassword != confirmPassword)
             {
-                MessageBox.Show("Mật khẩu mới và xác nhận mật khẩu không khớp!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("M?t kh?u m?i v� x�c nh?n m?t kh?u kh�ng kh?p!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -147,14 +147,14 @@ namespace FileSharingClient
                 switch (response)
                 {
                     case "200":
-                        MessageBox.Show("Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("�?t l?i m?t kh?u th�nh c�ng! Vui l�ng dang nh?p l?i.", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         this.Close();
                         break;
                     case "500":
-                        MessageBox.Show("Lỗi server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("L?i server. Vui l�ng th? l?i sau!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     default:
-                        MessageBox.Show($"Phản hồi không xác định từ server: {response}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"Ph?n h?i kh�ng x�c d?nh t? server: {response}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                 }
             }));
@@ -164,7 +164,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 using (sslStream)
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -179,7 +179,7 @@ namespace FileSharingClient
             {
                 this.Invoke(new Action(() =>
                 {
-                    MessageBox.Show($"Lỗi kết nối server: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"L?i k?t n?i server: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }));
                 return "500";
             }
@@ -189,7 +189,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 using (sslStream)
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -204,7 +204,7 @@ namespace FileSharingClient
             {
                 this.Invoke(new Action(() =>
                 {
-                    MessageBox.Show($"Lỗi kết nối server: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"L?i k?t n?i server: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }));
                 return "500";
             }
@@ -214,12 +214,12 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 using (sslStream)
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 {
-                    // Hash password bằng SHA256 trước khi gửi
+                    // Hash password b?ng SHA256 tru?c khi g?i
                     string hashedPassword;
                     using (SHA256 sha256Hash = SHA256.Create())
                     {
@@ -242,7 +242,7 @@ namespace FileSharingClient
             {
                 this.Invoke(new Action(() =>
                 {
-                    MessageBox.Show($"Lỗi kết nối server: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"L?i k?t n?i server: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }));
                 return "500";
             }

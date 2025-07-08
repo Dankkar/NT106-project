@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -38,7 +38,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
                 using (sslStream)
                 using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
                 {
@@ -55,7 +55,7 @@ namespace FileSharingClient
                         int progress = (int)((totalSent * 100) / totalBytes);
                     }
                     totalStorageUsed += totalSent;
-                    MessageBox.Show("File đã gửi xong!");
+                    MessageBox.Show("File d� g?i xong!");
                 }
             }
             catch (Exception ex)
@@ -98,9 +98,9 @@ namespace FileSharingClient
         {
             Account accountForm = new Account();
             string username = Session.LoggedInUser ?? "Unknown";
-            string storageUsed = GetTotalStorageUsed(); // Hàm đã định nghĩa trước
+            string storageUsed = GetTotalStorageUsed(); // H�m d� d?nh nghia tru?c
             accountForm.SetAccountInfo(username, storageUsed);
-            accountForm.ShowDialog(); // Hiển thị form Account và chờ người dùng thao tác
+            accountForm.ShowDialog(); // Hi?n th? form Account v� ch? ngu?i d�ng thao t�c
         }
 
         private List<Control> dashboardButtons;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -74,7 +74,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -126,7 +126,7 @@ namespace FileSharingClient
                                 int folderId = Convert.ToInt32(reader["folder_id"]);
                                 string folderName = reader["folder_name"].ToString();
                                 
-                                TreeNode folderNode = new TreeNode($"📁 {folderName}");
+                                TreeNode folderNode = new TreeNode($"?? {folderName}");
                                 folderNode.Tag = new NodeTag 
                                 { 
                                     IsFolder = true, 
@@ -186,7 +186,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -236,7 +236,7 @@ namespace FileSharingClient
                                 int folderId = Convert.ToInt32(reader["folder_id"]);
                                 string folderName = reader["folder_name"].ToString();
                                 
-                                TreeNode folderNode = new TreeNode($"📁 {folderName} (Shared)");
+                                TreeNode folderNode = new TreeNode($"?? {folderName} (Shared)");
                                 folderNode.Tag = new NodeTag 
                                 { 
                                     IsFolder = true, 
@@ -341,48 +341,48 @@ namespace FileSharingClient
                 case ".txt":
                 case ".md":
                 case ".log":
-                    return "📝";
+                    return "??";
                 case "pdf":
                 case ".pdf":
-                    return "📕";
+                    return "??";
                 case "image":
                 case ".jpg":
                 case ".jpeg":
                 case ".png":
                 case ".gif":
                 case ".bmp":
-                    return "🖼️";
+                    return "???";
                 case "video":
                 case ".mp4":
                 case ".avi":
                 case ".mov":
                 case ".wmv":
                 case ".mkv":
-                    return "🎥";
+                    return "??";
                 case "audio":
                 case ".mp3":
                 case ".wav":
                 case ".flac":
-                    return "🎵";
+                    return "??";
                 case "document":
                 case ".docx":
                 case ".doc":
-                    return "📄";
+                    return "??";
                 case "spreadsheet":
                 case ".xlsx":
                 case ".xls":
-                    return "📊";
+                    return "??";
                 case "presentation":
                 case ".pptx":
                 case ".ppt":
-                    return "📋";
+                    return "??";
                 case "archive":
                 case ".zip":
                 case ".rar":
                 case ".7z":
-                    return "📦";
+                    return "??";
                 default:
-                    return "📄";
+                    return "??";
             }
         }
 
@@ -399,7 +399,7 @@ namespace FileSharingClient
             try
             {
                 // Get file info via API
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -553,7 +553,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })

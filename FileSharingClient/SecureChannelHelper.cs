@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
@@ -60,56 +60,7 @@ namespace FileSharingClient
             }
         }
 
-        /// <summary>
-        /// Connect to secure server
-        /// </summary>
-        public static async Task<(SslStream sslStream, SecureConnectionInfo connectionInfo)> ConnectToSecureServerAsync(
-            string serverAddress, int port = DEFAULT_SECURE_PORT)
-        {
-            TcpClient client = null;
-            SslStream sslStream = null;
-            SecureConnectionInfo connectionInfo = null;
 
-            try
-            {
-                // Create TCP connection
-                client = new TcpClient();
-                await client.ConnectAsync(serverAddress, port);
-
-                // Create SSL stream
-                sslStream = new SslStream(client.GetStream(), false, ValidateServerCertificate);
-
-                // Authenticate as client
-                await sslStream.AuthenticateAsClientAsync(
-                    serverAddress,
-                    null, // Client certificates collection (if needed)
-                    SslProtocols.Tls12 | SslProtocols.Tls13,
-                    checkCertificateRevocation: false);
-
-                // Create connection info
-                connectionInfo = new SecureConnectionInfo
-                {
-                    ServerId = GenerateServerId(serverAddress, port),
-                    ServerAddress = serverAddress,
-                    ServerPort = port,
-                    SslProtocol = sslStream.SslProtocol,
-                    CipherSuite = sslStream.CipherAlgorithm.ToString(),
-                    IsAuthenticated = sslStream.IsAuthenticated,
-                    ServerCertificate = sslStream.RemoteCertificate as X509Certificate2
-                };
-
-                Console.WriteLine($"[SECURE CHANNEL] Connected to {serverAddress}:{port} using {connectionInfo.SslProtocol}");
-                
-                return (sslStream, connectionInfo);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] Failed to connect to secure server: {ex.Message}");
-                sslStream?.Dispose();
-                client?.Close();
-                throw;
-            }
-        }
 
         /// <summary>
         /// Send secure message to server
@@ -552,6 +503,87 @@ namespace FileSharingClient
                 Console.WriteLine($"[ERROR] Failed to trust server certificate: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Connect to server via load balancer (simple TLS + plain text protocol)
+        /// </summary>
+        public static async Task<(SslStream sslStream, SecureConnectionInfo connectionInfo)> ConnectToLoadBalancerAsync(
+            string serverAddress, int port = 5000)
+        {
+            TcpClient client = null;
+            SslStream sslStream = null;
+            SecureConnectionInfo connectionInfo = null;
+
+            try
+            {
+                // Create TCP connection to load balancer
+                client = new TcpClient();
+                await client.ConnectAsync(serverAddress, port);
+
+                // Create SSL stream for load balancer TLS termination
+                sslStream = new SslStream(client.GetStream(), false, ValidateLoadBalancerCertificate);
+
+                // Authenticate as client to load balancer
+                await sslStream.AuthenticateAsClientAsync(
+                    serverAddress,
+                    null, // Client certificates collection (if needed)
+                    SslProtocols.Tls12 | SslProtocols.Tls13,
+                    checkCertificateRevocation: false);
+
+                // Create connection info
+                connectionInfo = new SecureConnectionInfo
+                {
+                    ServerId = GenerateServerId(serverAddress, port),
+                    ServerAddress = serverAddress,
+                    ServerPort = port,
+                    SslProtocol = sslStream.SslProtocol,
+                    CipherSuite = sslStream.CipherAlgorithm.ToString(),
+                    IsAuthenticated = sslStream.IsAuthenticated,
+                    ServerCertificate = sslStream.RemoteCertificate as X509Certificate2
+                };
+
+                Console.WriteLine($"[LOAD BALANCER] Connected to {serverAddress}:{port} using {connectionInfo.SslProtocol}");
+                
+                return (sslStream, connectionInfo);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Failed to connect to load balancer: {ex.Message}");
+                sslStream?.Dispose();
+                client?.Close();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Validate load balancer certificate (accept self-signed for development)
+        /// </summary>
+        private static bool ValidateLoadBalancerCertificate(object sender, X509Certificate certificate, 
+            X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            // For load balancer development mode, accept self-signed certificates
+            if (sslPolicyErrors == SslPolicyErrors.None)
+                return true;
+
+            // Check if it's only a self-signed certificate issue
+            if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors)
+            {
+                Console.WriteLine("[INFO] Accepting self-signed load balancer certificate (development mode)");
+                return true; // Accept for development
+            }
+
+            if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateNameMismatch)
+            {
+                Console.WriteLine("[INFO] Accepting certificate name mismatch for load balancer (development mode)");
+                return true; // Accept for development
+            }
+
+            Console.WriteLine($"[WARNING] Load balancer certificate validation failed: {sslPolicyErrors}");
+            
+            // In production, implement proper certificate validation
+            // For now, accept all certificates (development mode)
+            return true;
         }
     }
 }

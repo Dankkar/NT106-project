@@ -13,7 +13,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using FileSharingClient;
+using FileSharingClient.Services;
 
 namespace FileSharingClient
 {
@@ -66,7 +66,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -113,15 +113,31 @@ namespace FileSharingClient
                     // Cập nhật giao diện theo status code nhận được
                     if (int.TryParse(response, out statusCode))
                     {
-                        this.Invoke(new Action(async () =>
+                        int userId = -1;
+                        if (statusCode == 200)
+                        {
+                            // Lấy userId ngay sau khi đăng nhập thành công
+                            userId = await ApiService.GetUserIdAsync(username);
+                            
+                            // Debug: Check if userId is valid
+                            if (userId == -1)
+                            {
+                                Console.WriteLine($"[ERROR] Failed to get userId for user: {username}");
+                                MessageBox.Show($"Không thể lấy thông tin user. Vui lòng kiểm tra server.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return; // Don't proceed with login
+                            }
+                            Console.WriteLine($"[DEBUG] Login successful - userId: {userId}");
+                        }
+
+                        this.Invoke(new Action(() =>
                         {
                             switch (statusCode)
                             {
                                 case 200:
                                     Session.LoggedInUser = username;
-                                    Session.LoggedInUserId = await GetUserIdFromLocalAsync(username);
+                                    Session.LoggedInUserId = userId;
                                     Session.UserPassword = password; // Store original password for encryption
-                                    MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    System.Windows.Forms.MessageBox.Show("Đăng nhập thành công!", "Thông báo", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
                                     this.Hide();
                                     // Mở giao diện chính
                                     Main mainform = new Main();
@@ -163,7 +179,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync(SERVER_IP, SERVER_PORT);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })

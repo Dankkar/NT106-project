@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -41,7 +41,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khi tải thông tin tài khoản: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"L?i khi t?i th�ng tin t�i kho?n: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 SetAccountInfo(Session.LoggedInUser, "0 B", "1 GB", 0);
             }
         }
@@ -50,7 +50,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -107,15 +107,15 @@ namespace FileSharingClient
 
         public void SetAccountInfo(string username, string storageUsed, string totalStorage)
         {
-            lblUsername.Text = $"Tên đăng nhập: {username}";
-            lblStorage.Text = $"Dung lượng: {storageUsed} / {totalStorage}";
+            lblUsername.Text = $"T�n dang nh?p: {username}";
+            lblStorage.Text = $"Dung lu?ng: {storageUsed} / {totalStorage}";
         }
 
         // Overload with progress bar support
         public void SetAccountInfo(string username, string storageUsed, string totalStorage, double usagePercentage)
         {
-            lblUsername.Text = $"Tên đăng nhập: {username}";
-            lblStorage.Text = $"Dung lượng: {storageUsed} / {totalStorage} ({usagePercentage:F1}%)";
+            lblUsername.Text = $"T�n dang nh?p: {username}";
+            lblStorage.Text = $"Dung lu?ng: {storageUsed} / {totalStorage} ({usagePercentage:F1}%)";
             
             // Update progress bar
             progressBar1.Minimum = 0;
@@ -149,48 +149,48 @@ namespace FileSharingClient
         // Backward compatibility overload - calls LoadAccountInfo to get real data
         public void SetAccountInfo(string username, string storageUsed)
         {
-            lblUsername.Text = $"Tên đăng nhập: {username}";
+            lblUsername.Text = $"T�n dang nh?p: {username}";
             // Trigger reload to get accurate data from server
             LoadAccountInfo();
         }
 
         private async void btnChangePassword_Click(object sender, EventArgs e)
         {
-            // Yêu cầu nhập mật khẩu cũ
-            string oldPassword = Prompt.ShowDialog("Nhập mật khẩu cũ:", "Xác nhận mật khẩu");
+            // Y�u c?u nh?p m?t kh?u cu
+            string oldPassword = Prompt.ShowDialog("Nh?p m?t kh?u cu:", "X�c nh?n m?t kh?u");
             if (string.IsNullOrWhiteSpace(oldPassword))
             {
-                MessageBox.Show("Vui lòng nhập mật khẩu cũ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui l�ng nh?p m?t kh?u cu!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Yêu cầu nhập mật khẩu mới
-            string newPassword = Prompt.ShowDialog("Nhập mật khẩu mới:", "Đổi mật khẩu");
+            // Y�u c?u nh?p m?t kh?u m?i
+            string newPassword = Prompt.ShowDialog("Nh?p m?t kh?u m?i:", "�?i m?t kh?u");
             if (string.IsNullOrWhiteSpace(newPassword))
             {
-                MessageBox.Show("Vui lòng nhập mật khẩu mới!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui l�ng nh?p m?t kh?u m?i!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Gửi yêu cầu đổi mật khẩu đến server
+            // G?i y�u c?u d?i m?t kh?u d?n server
             string response = await ChangePassword(Session.LoggedInUser, oldPassword, newPassword);
             this.Invoke(new Action(() =>
             {
                 switch (response)
                 {
                     case "200":
-                        MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("�?i m?t kh?u th�nh c�ng!", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         // Update stored password for encryption
                         Session.UserPassword = newPassword;
                         break;
                     case "401":
-                        MessageBox.Show("Mật khẩu cũ không đúng!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("M?t kh?u cu kh�ng d�ng!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     case "500":
-                        MessageBox.Show("Lỗi server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("L?i server. Vui l�ng th? l?i sau!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     default:
-                        MessageBox.Show($"Phản hồi không xác định từ server: {response}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"Ph?n h?i kh�ng x�c d?nh t? server: {response}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                 }
             }));
@@ -200,16 +200,16 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
                 using (sslStream)
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 {
-                    // Gửi yêu cầu đổi mật khẩu
+                    // G?i y�u c?u d?i m?t kh?u
                     string message = $"CHANGE_PASSWORD|{username}|{oldPassword}|{newPassword}";
                     await writer.WriteLineAsync(message);
 
-                    // Nhận phản hồi từ server
+                    // Nh?n ph?n h?i t? server
                     string response = await reader.ReadLineAsync();
                     return response?.Trim() ?? "500";
                 }
@@ -218,13 +218,13 @@ namespace FileSharingClient
             {
                 this.Invoke(new Action(() =>
                 {
-                    MessageBox.Show($"Lỗi kết nối server: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"L?i k?t n?i server: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }));
                 return "500";
             }
         }
 
-        // Class để hiển thị hộp thoại nhập liệu
+        // Class d? hi?n th? h?p tho?i nh?p li?u
         public static class Prompt
         {
             public static string ShowDialog(string text, string caption)
@@ -251,7 +251,7 @@ namespace FileSharingClient
 
         private void btnLogout_Click(object sender, EventArgs e)
         {
-            var result = MessageBox.Show("Bạn có chắc chắn muốn đăng xuất?", "Xác nhận đăng xuất",
+            var result = MessageBox.Show("B?n c� ch?c ch?n mu?n dang xu?t?", "X�c nh?n dang xu?t",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (result == DialogResult.Yes)

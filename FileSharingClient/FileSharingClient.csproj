@@ -160,6 +160,7 @@
       <DependentUpon>MyFileView.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
+    <Compile Include="Services\ApiService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Register.cs">
       <SubType>Form</SubType>
@@ -180,6 +181,18 @@
     </Compile>
     <Compile Include="TrashBinView.Designer.cs">
       <DependentUpon>TrashBinView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TrashFileItemControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TrashFileItemControl.Designer.cs">
+      <DependentUpon>TrashFileItemControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TrashFolderItemControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TrashFolderItemControl.Designer.cs">
+      <DependentUpon>TrashFolderItemControl.cs</DependentUpon>
     </Compile>
     <Compile Include="UploadView.cs">
       <SubType>UserControl</SubType>
@@ -232,6 +245,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="TrashBinView.resx">
       <DependentUpon>TrashBinView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TrashFileItemControl.resx">
+      <DependentUpon>TrashFileItemControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TrashFolderItemControl.resx">
+      <DependentUpon>TrashFolderItemControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UploadView.resx">
       <DependentUpon>UploadView.cs</DependentUpon>

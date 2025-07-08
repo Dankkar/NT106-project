@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -84,7 +84,7 @@ namespace FileSharingClient
                     string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                     string command = $"UPLOAD_FILE_IN_FOLDER|{folderName}|{pf.RelativePath}|{fi.Name}|{encryptedData.Length}|{ownerId}|{uploadAt}";
                     byte[] commandBytes = Encoding.UTF8.GetBytes(command + "\n");
-                    var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                    var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
                     using (sslStream)
                     {
                         await sslStream.WriteAsync(commandBytes, 0, commandBytes.Length);
@@ -95,11 +95,11 @@ namespace FileSharingClient
                         {
                             string response = await reader.ReadLineAsync();
                             if (response.Trim() != "200")
-                                MessageBox.Show($"Lỗi upload file {pf.FilePath}: {response}");
+                                MessageBox.Show($"L?i upload file {pf.FilePath}: {response}");
                         }
                     }
                 }
-                MessageBox.Show("Upload folder thành công!");
+                MessageBox.Show("Upload folder th�nh c�ng!");
                 pendingFiles.Clear();
                 totalSizeBytes = 0;
                 pendingFolder = null;
@@ -111,7 +111,7 @@ namespace FileSharingClient
             }
             else
             {
-                await UploadFiles(); // Xử lý upload file lẻ như cũ
+                await UploadFiles(); // X? l� upload file l? nhu cu
             }
         }
 
@@ -128,7 +128,7 @@ namespace FileSharingClient
             {
                 try
                 {
-                    var (sslStream, _) = await SecureChannelHelper.ConnectToSecureServerAsync("localhost", 5000);
+                    var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
                     using (sslStream)
                     {
                         // Encrypt file before uploading
@@ -140,30 +140,30 @@ namespace FileSharingClient
                         byte[] commandBytes = Encoding.UTF8.GetBytes(command + "\n");
                         await sslStream.WriteAsync(commandBytes, 0, commandBytes.Length);
                         await sslStream.FlushAsync();
-                        Console.WriteLine($"Đã gửi lệnh: {command.Trim()}");
+                        Console.WriteLine($"�� g?i l?nh: {command.Trim()}");
                         // Send encrypted file data
                         await sslStream.WriteAsync(encryptedData, 0, encryptedData.Length);
                         await sslStream.FlushAsync();
                         using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                         {
                             string response = await reader.ReadLineAsync();
-                            Console.WriteLine($"Server trả về: {response}");
+                            Console.WriteLine($"Server tr? v?: {response}");
                             if (response.Trim() == "413")
-                                MessageBox.Show("File quá lớn. Vui lòng thử lại với file nhỏ hơn.");
+                                MessageBox.Show("File qu� l?n. Vui l�ng th? l?i v?i file nh? hon.");
                             else if (response.Trim() == "200")
                             {
-                                MessageBox.Show("Tải lên thành công");
+                                MessageBox.Show("T?i l�n th�nh c�ng");
                                 if (FileUploaded != null)
                                     await FileUploaded.Invoke();
                             }
                             else
-                                MessageBox.Show($"Lỗi: {response.Trim()}");
+                                MessageBox.Show($"L?i: {response.Trim()}");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Lỗi upload file {filePath}: {ex.Message}");
+                    MessageBox.Show($"L?i upload file {filePath}: {ex.Message}");
                 }
             }
             pendingFiles.Clear();
@@ -186,7 +186,7 @@ namespace FileSharingClient
         private void btnBrowseFolder_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog dialog = new FolderBrowserDialog();
-            dialog.Description = "Chọn folder để upload";
+            dialog.Description = "Ch?n folder d? upload";
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 ProcessLocalFolder(dialog.SelectedPath);
@@ -206,7 +206,7 @@ namespace FileSharingClient
             
             if(totalSizeBytes + fileSizeBytes > MAX_TOTAL_SIZE)
             {
-                MessageBox.Show($"Không thể thêm '{fileName}' vì tổng dung lượng vượt quá 10MB.");
+                MessageBox.Show($"Kh�ng th? th�m '{fileName}' v� t?ng dung lu?ng vu?t qu� 10MB.");
                 return;
             }
             totalSizeBytes += fileSizeBytes;
@@ -252,7 +252,7 @@ namespace FileSharingClient
         }
         private void UpdateFileSizeLabel()
         {
-            TotalSizelbl.Text = $"Tổng kích thước: {FormatFileSize(totalSizeBytes)}";
+            TotalSizelbl.Text = $"T?ng k�ch thu?c: {FormatFileSize(totalSizeBytes)}";
         }
         private void OnFileDeleted(string filePath)
         {
@@ -298,7 +298,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi nén folder: {ex.Message}");
+                MessageBox.Show($"L?i n�n folder: {ex.Message}");
                 throw;
             }
             
@@ -316,7 +316,7 @@ namespace FileSharingClient
 
             Label lblFileName = new Label()
             {
-                Text = "Tên file",
+                Text = "T�n file",
                 Location = new Point(39, 5),
                 Width = 180,
                 Font = headerFont
@@ -324,7 +324,7 @@ namespace FileSharingClient
 
             Label lblOwner = new Label()
             {
-                Text = "Chủ sở hữu",
+                Text = "Ch? s? h?u",
                 Location = new Point(248, 5),
                 Width = 140,
                 Font = headerFont
@@ -332,7 +332,7 @@ namespace FileSharingClient
 
             Label lblCreateAt = new Label()
             {
-                Text = "Ngày upload",
+                Text = "Ng�y upload",
                 Location = new Point(420, 5),
                 Width = 120,
                 Font = headerFont
@@ -340,7 +340,7 @@ namespace FileSharingClient
 
             Label lblFileSize = new Label()
             {
-                Text = "Dung lượng",
+                Text = "Dung lu?ng",
                 Location = new Point(565, 5),
                 Width = 130,
                 Font = headerFont
@@ -348,7 +348,7 @@ namespace FileSharingClient
 
             Label lblFilePath = new Label()
             {
-                Text = "Đường dẫn",
+                Text = "�u?ng d?n",
                 Location = new Point(733, 5),
                 Width = 400,
                 Font = headerFont,
@@ -357,13 +357,13 @@ namespace FileSharingClient
 
             Label lblOption = new Label()
             {
-                Text = "Tuỳ chọn",
-                Location = new Point(1253, 5), // Khớp với btnMore
+                Text = "Tu? ch?n",
+                Location = new Point(1253, 5), // Kh?p v?i btnMore
                 Width = 80,
                 Font = headerFont
             };
 
-            // Thêm các label vào header panel
+            // Th�m c�c label v�o header panel
             headerPanel.Controls.Add(lblFileName);
             headerPanel.Controls.Add(lblOwner);
             headerPanel.Controls.Add(lblCreateAt);
@@ -371,9 +371,9 @@ namespace FileSharingClient
             headerPanel.Controls.Add(lblFilePath);
             headerPanel.Controls.Add(lblOption);
 
-            // Thêm headerPanel vào đầu danh sách
+            // Th�m headerPanel v�o d?u danh s�ch
             UploadFilePanel.Controls.Add(headerPanel);
-            UploadFilePanel.Controls.SetChildIndex(headerPanel, 0); // Đảm bảo nó nằm trên đầu
+            UploadFilePanel.Controls.SetChildIndex(headerPanel, 0); // �?m b?o n� n?m tr�n d?u
         }
     }
 }
