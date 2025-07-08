@@ -32,8 +32,8 @@ namespace LoadBalancerServer
     {
         // Port on which the load-balancer itself listens
         private const int LISTEN_PORT = 5000;
-        private const int HEALTH_CHECK_INTERVAL_MS = 10000; // 10 seconds
-        private const int MAX_FAILED_CHECKS = 3;
+        private const int HEALTH_CHECK_INTERVAL_MS = 3000; // 3 seconds for faster detection
+        private const int MAX_FAILED_CHECKS = 2; // Reduced to 2 for faster failover
         private const string CERTIFICATE_PATH = "LoadBalancerServer/cert/lb_certificate.pfx";
         private const string CERTIFICATE_PASSWORD = "kha123456789";
 
@@ -114,11 +114,16 @@ namespace LoadBalancerServer
             {
                 using (var client = new TcpClient())
                 {
-                    // Set timeout for health check
-                    client.ReceiveTimeout = 5000;
-                    client.SendTimeout = 5000;
+                    // Set timeout for health check - shorter timeout for faster detection
+                    client.ReceiveTimeout = 2000; // 2 seconds
+                    client.SendTimeout = 2000;   // 2 seconds
                     
-                    await client.ConnectAsync(backend.EndPoint.Address, backend.EndPoint.Port);
+                    // Use timeout for connection attempt
+                    var connectTask = client.ConnectAsync(backend.EndPoint.Address, backend.EndPoint.Port);
+                    if (await Task.WhenAny(connectTask, Task.Delay(2000)) != connectTask)
+                    {
+                        throw new TimeoutException("Connection timeout");
+                    }
                     
                     using (var stream = client.GetStream())
                     using (var writer = new StreamWriter(stream) { AutoFlush = true })
@@ -127,8 +132,14 @@ namespace LoadBalancerServer
                         // Simple health check - try to get server status
                         await writer.WriteLineAsync("HEALTH_CHECK\n");
                         
-                        // Wait for any response (even error is better than no response)
-                        var response = await reader.ReadLineAsync();
+                        // Wait for any response with timeout
+                        var readTask = reader.ReadLineAsync();
+                        if (await Task.WhenAny(readTask, Task.Delay(2000)) != readTask)
+                        {
+                            throw new TimeoutException("Response timeout");
+                        }
+                        
+                        var response = await readTask;
                         
                         // Calculate response time
                         backend.ResponseTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
@@ -140,7 +151,7 @@ namespace LoadBalancerServer
                         
                         if (!wasHealthy)
                         {
-                            Console.WriteLine($"[RECOVERY] Backend {backend.EndPoint} is back online!");
+                            Console.WriteLine($"[RECOVERY] Backend {backend.EndPoint} is back online! (Response time: {backend.ResponseTime:F1}ms)");
                         }
                     }
                 }
@@ -157,7 +168,12 @@ namespace LoadBalancerServer
                 }
                 else if (!backend.IsHealthy)
                 {
-                    // Still down, don't spam logs
+                    // Still down, don't spam logs unless it's been a while
+                    if ((DateTime.UtcNow - backend.LastHealthCheck).TotalMinutes > 1)
+                    {
+                        Console.WriteLine($"[STATUS] Backend {backend.EndPoint} still unhealthy (down for {(DateTime.UtcNow - backend.LastHealthCheck).TotalMinutes:F1} minutes)");
+                        backend.LastHealthCheck = DateTime.UtcNow; // Update to prevent spam
+                    }
                 }
                 else
                 {
@@ -206,99 +222,137 @@ namespace LoadBalancerServer
         // --- Connection Handling ---------------------------------------------------
         private static async Task HandleClientAsync(TcpClient client)
         {
-            BackendServer backend = GetNextBackend(); // Or use GetLeastConnectionsBackend()
-            
-            if (backend == null)
-            {
-                Console.WriteLine("[ERROR] No available backend for client request");
-                client.Close();
-                return;
-            }
-
-            TcpClient server = new TcpClient();
-            
-            // Track connection
-            Interlocked.Increment(ref backend.ActiveConnections);
-
+            const int MAX_RETRY_ATTEMPTS = 3;
+            BackendServer backend = null;
+            TcpClient server = null;
             SslStream sslStream = null;
             NetworkStream clientStream = null;
-            try
-            {
-                Console.WriteLine($"[DEBUG] Attempting to connect to backend {backend.EndPoint}...");
-                await server.ConnectAsync(backend.EndPoint.Address, backend.EndPoint.Port);
-                Console.WriteLine($"[DEBUG] Successfully connected to backend {backend.EndPoint}");
-                Console.WriteLine($"[PROXY] {client.Client.RemoteEndPoint} -> {backend.EndPoint} (Active: {backend.ActiveConnections})");
 
-                // TLS termination: wrap client stream with SslStream
-                clientStream = client.GetStream();
-                sslStream = new SslStream(clientStream, false);
-                
-                X509Certificate2 certificate = null;
+            for (int attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++)
+            {
                 try
                 {
-                    Console.WriteLine($"[DEBUG] Loading certificate from: {CERTIFICATE_PATH}");
-                    certificate = new X509Certificate2(CERTIFICATE_PATH, CERTIFICATE_PASSWORD);
-                    Console.WriteLine($"[DEBUG] Certificate loaded successfully. Subject: {certificate.Subject}");
-                    Console.WriteLine($"[DEBUG] Certificate valid from: {certificate.NotBefore} to: {certificate.NotAfter}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[CERT ERROR] Failed to load certificate: {ex.Message}");
-                    Console.WriteLine($"[CERT ERROR] Certificate path: {Path.GetFullPath(CERTIFICATE_PATH)}");
-                    Console.WriteLine($"[CERT ERROR] File exists: {File.Exists(CERTIFICATE_PATH)}");
+                    backend = GetNextBackend();
+                    
+                    if (backend == null)
+                    {
+                        Console.WriteLine("[ERROR] No available backend for client request");
+                        break;
+                    }
+
+                    server = new TcpClient();
+                    
+                    // Track connection
+                    Interlocked.Increment(ref backend.ActiveConnections);
+
+                    Console.WriteLine($"[DEBUG] Attempt {attempt + 1}/{MAX_RETRY_ATTEMPTS}: Connecting to backend {backend.EndPoint}...");
+                    await server.ConnectAsync(backend.EndPoint.Address, backend.EndPoint.Port);
+                    Console.WriteLine($"[DEBUG] Successfully connected to backend {backend.EndPoint}");
+                    Console.WriteLine($"[PROXY] {client.Client.RemoteEndPoint} -> {backend.EndPoint} (Active: {backend.ActiveConnections})");
+
+                    // TLS termination: wrap client stream with SslStream
+                    clientStream = client.GetStream();
+                    sslStream = new SslStream(clientStream, false);
+                    
+                    X509Certificate2 certificate = null;
+                    try
+                    {
+                        Console.WriteLine($"[DEBUG] Loading certificate from: {CERTIFICATE_PATH}");
+                        certificate = new X509Certificate2(CERTIFICATE_PATH, CERTIFICATE_PASSWORD);
+                        Console.WriteLine($"[DEBUG] Certificate loaded successfully. Subject: {certificate.Subject}");
+                        Console.WriteLine($"[DEBUG] Certificate valid from: {certificate.NotBefore} to: {certificate.NotAfter}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[CERT ERROR] Failed to load certificate: {ex.Message}");
+                        Console.WriteLine($"[CERT ERROR] Certificate path: {Path.GetFullPath(CERTIFICATE_PATH)}");
+                        Console.WriteLine($"[CERT ERROR] File exists: {File.Exists(CERTIFICATE_PATH)}");
+                        client.Close();
+                        server.Close();
+                        Interlocked.Decrement(ref backend.ActiveConnections);
+                        return;
+                    }
+                    
+                    try
+                    {
+                        Console.WriteLine($"[DEBUG] Starting TLS handshake with client...");
+                        await Task.Factory.FromAsync(
+                            (callback, state) => sslStream.BeginAuthenticateAsServer(certificate, false, false, callback, state),
+                            sslStream.EndAuthenticateAsServer,
+                            null);
+                        Console.WriteLine($"[DEBUG] TLS handshake completed successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[TLS ERROR] Handshake failed: {ex.Message}");
+                        Console.WriteLine($"[TLS ERROR] Inner exception: {ex.InnerException?.Message}");
+                        Console.WriteLine($"[TLS ERROR] Stack trace: {ex.StackTrace}");
+                        client.Close();
+                        server.Close();
+                        Interlocked.Decrement(ref backend.ActiveConnections);
+                        return;
+                    }
+
+                    NetworkStream serverStream = server.GetStream();
+
+                    // Pump data bidirectionally until one side closes
+                    Task t1 = PumpAsync(sslStream, serverStream, $"Client(TLS)->Server({backend.EndPoint})");
+                    Task t2 = PumpAsync(serverStream, sslStream, $"Server({backend.EndPoint})->Client(TLS)");
+
+                    await Task.WhenAny(t1, t2);
+
+                    // Cleanup
                     client.Close();
                     server.Close();
                     Interlocked.Decrement(ref backend.ActiveConnections);
-                    return;
-                }
-                
-                try
-                {
-                    Console.WriteLine($"[DEBUG] Starting TLS handshake with client...");
-                    await Task.Factory.FromAsync(
-                        (callback, state) => sslStream.BeginAuthenticateAsServer(certificate, false, false, callback, state),
-                        sslStream.EndAuthenticateAsServer,
-                        null);
-                    Console.WriteLine($"[DEBUG] TLS handshake completed successfully");
+                    Console.WriteLine($"[CLOSED] Connection to {backend.EndPoint} closed (Active: {backend.ActiveConnections})");
+                    return; // Success - exit the retry loop
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[TLS ERROR] Handshake failed: {ex.Message}");
-                    Console.WriteLine($"[TLS ERROR] Inner exception: {ex.InnerException?.Message}");
-                    Console.WriteLine($"[TLS ERROR] Stack trace: {ex.StackTrace}");
-                    client.Close();
-                    server.Close();
-                    Interlocked.Decrement(ref backend.ActiveConnections);
-                    return;
+                    Console.WriteLine($"[ERROR] Attempt {attempt + 1}/{MAX_RETRY_ATTEMPTS} failed for backend {backend?.EndPoint}: {ex.Message}");
+                    Console.WriteLine($"[DEBUG] Exception type: {ex.GetType().Name}");
+                    
+                    if (backend != null)
+                    {
+                        Console.WriteLine($"[DEBUG] Backend health status: {backend.IsHealthy}, Last check: {backend.LastHealthCheck}");
+                        backend.FailedChecks++;
+                        
+                        // Mark as unhealthy immediately if connection fails
+                        if (backend.FailedChecks >= 2)
+                        {
+                            backend.IsHealthy = false;
+                            Console.WriteLine($"[IMMEDIATE FAILURE] Backend {backend.EndPoint} marked as unhealthy due to connection failure");
+                        }
+                        
+                        Interlocked.Decrement(ref backend.ActiveConnections);
+                    }
+
+                    // Cleanup current attempt
+                    try
+                    {
+                        server?.Close();
+                        if (sslStream != null) sslStream.Dispose();
+                        if (clientStream != null && attempt == MAX_RETRY_ATTEMPTS - 1) clientStream.Dispose();
+                    }
+                    catch { }
+
+                    // If this was the last attempt, close client connection
+                    if (attempt == MAX_RETRY_ATTEMPTS - 1)
+                    {
+                        Console.WriteLine($"[FINAL ERROR] All {MAX_RETRY_ATTEMPTS} attempts failed. Closing client connection.");
+                        client.Close();
+                        return;
+                    }
+
+                    // Wait a bit before retrying
+                    await Task.Delay(100);
                 }
-
-                NetworkStream serverStream = server.GetStream();
-
-                // Pump data bidirectionally until one side closes
-                Task t1 = PumpAsync(sslStream, serverStream, $"Client(TLS)->Server({backend.EndPoint})");
-                Task t2 = PumpAsync(serverStream, sslStream, $"Server({backend.EndPoint})->Client(TLS)");
-
-                await Task.WhenAny(t1, t2);
-
-                // Cleanup
-                client.Close();
-                server.Close();
-                Interlocked.Decrement(ref backend.ActiveConnections);
-                Console.WriteLine($"[CLOSED] Connection to {backend.EndPoint} closed (Active: {backend.ActiveConnections})");
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] Could not connect to backend {backend.EndPoint}: {ex.Message}");
-                Console.WriteLine($"[DEBUG] Exception type: {ex.GetType().Name}");
-                Console.WriteLine($"[DEBUG] Backend health status: {backend.IsHealthy}, Last check: {backend.LastHealthCheck}");
-                backend.FailedChecks++;
-                client.Close();
-                server.Close();
-                if (sslStream != null) sslStream.Dispose();
-                if (clientStream != null) clientStream.Dispose();
-                Interlocked.Decrement(ref backend.ActiveConnections);
-                return;
-            }
+            
+            // If we reach here, all attempts failed
+            Console.WriteLine("[ERROR] All backend connection attempts failed");
+            client.Close();
         }
 
         // --- Data Pumping -----------------------------------------------------------

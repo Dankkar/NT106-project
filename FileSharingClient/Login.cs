@@ -64,115 +64,152 @@ namespace FileSharingClient
 
         private async Task HandleLogin()
         {
-            try
+            const int MAX_LOGIN_ATTEMPTS = 3;
+            
+            // Lấy thông tin từ TextBox và cắt khoảng trắng - kiểm tra trước khi thử kết nối
+            string username = usernametxtBox.Text.Trim();
+            string password = passtxtBox.Text;
+            
+            // Kiểm tra placeholder text
+            if (username == this.username || string.IsNullOrWhiteSpace(username))
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
-                using (sslStream)
-                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                this.Invoke(new Action(() =>
                 {
-                    // Lấy thông tin từ TextBox và cắt khoảng trắng
-                    string username = usernametxtBox.Text.Trim();
-                    string password = passtxtBox.Text;
-                    // Kiểm tra placeholder text
-                    if (username == this.username || string.IsNullOrWhiteSpace(username))
+                    MessageBox.Show("Vui lòng nhập tên đăng nhập", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }));
+                return;
+            }
+            if (password == this.password || string.IsNullOrWhiteSpace(password))
+            {
+                this.Invoke(new Action(() =>
+                {
+                    MessageBox.Show("Vui lòng nhập mật khẩu", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }));
+                return;
+            }
+            
+            for (int attempt = 0; attempt < MAX_LOGIN_ATTEMPTS; attempt++)
+            {
+                try
+                {
+                    Console.WriteLine($"[LOGIN] Attempt {attempt + 1}/{MAX_LOGIN_ATTEMPTS}");
+                    var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                    using (sslStream)
+                    using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                    using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                     {
-                        this.Invoke(new Action(() =>
+                        // Hash password bằng SHA256 trước khi gửi
+                        string hashedPassword;
+                        using (SHA256 sha256Hash = SHA256.Create())
                         {
-                            MessageBox.Show("Vui lòng nhập tên đăng nhập", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }));
-                        return;
-                    }
-                    if (password == this.password || string.IsNullOrWhiteSpace(password))
-                    {
-                        this.Invoke(new Action(() =>
-                        {
-                            MessageBox.Show("Vui lòng nhập mật khẩu", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }));
-                        return;
-                    }
-                    // Hash password bằng SHA256 trước khi gửi
-                    string hashedPassword;
-                    using (SHA256 sha256Hash = SHA256.Create())
-                    {
-                        byte[] data = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
-                        StringBuilder sb = new StringBuilder();
-                        foreach (byte b in data)
-                        {
-                            sb.Append(b.ToString("x2"));
-                        }
-                        hashedPassword = sb.ToString();
-                    }
-                    // Gửi dữ liệu đăng nhập theo định dạng: LOGIN|username|hashedPassword
-                    string message = $"LOGIN|{username}|{hashedPassword}";
-                    await writer.WriteLineAsync(message);
-                    // Nhận phản hồi từ server (status code dạng số)
-                    string response = await reader.ReadLineAsync();
-                    response = response?.Trim();
-                    int statusCode;
-                    // Cập nhật giao diện theo status code nhận được
-                    if (int.TryParse(response, out statusCode))
-                    {
-                        int userId = -1;
-                        if (statusCode == 200)
-                        {
-                            // Lấy userId ngay sau khi đăng nhập thành công
-                            userId = await ApiService.GetUserIdAsync(username);
-                            
-                            // Debug: Check if userId is valid
-                            if (userId == -1)
+                            byte[] data = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+                            StringBuilder sb = new StringBuilder();
+                            foreach (byte b in data)
                             {
-                                Console.WriteLine($"[ERROR] Failed to get userId for user: {username}");
-                                MessageBox.Show($"Không thể lấy thông tin user. Vui lòng kiểm tra server.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                return; // Don't proceed with login
+                                sb.Append(b.ToString("x2"));
                             }
-                            Console.WriteLine($"[DEBUG] Login successful - userId: {userId}");
+                            hashedPassword = sb.ToString();
                         }
+                        // Gửi dữ liệu đăng nhập theo định dạng: LOGIN|username|hashedPassword
+                        string message = $"LOGIN|{username}|{hashedPassword}";
+                        await writer.WriteLineAsync(message);
+                        // Nhận phản hồi từ server (status code dạng số)
+                        string response = await reader.ReadLineAsync();
+                        response = response?.Trim();
+                        int statusCode;
+                        // Cập nhật giao diện theo status code nhận được
+                        if (int.TryParse(response, out statusCode))
+                        {
+                            int userId = -1;
+                            if (statusCode == 200)
+                            {
+                                // Lấy userId ngay sau khi đăng nhập thành công
+                                userId = await ApiService.GetUserIdAsync(username);
+                                
+                                // Debug: Check if userId is valid
+                                if (userId == -1)
+                                {
+                                    Console.WriteLine($"[ERROR] Failed to get userId for user: {username}");
+                                    // If getUserId fails, retry the whole login process
+                                    if (attempt < MAX_LOGIN_ATTEMPTS - 1)
+                                    {
+                                        Console.WriteLine($"[RETRY] Retrying login due to getUserId failure");
+                                        await Task.Delay(500);
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show($"Không thể lấy thông tin user sau {MAX_LOGIN_ATTEMPTS} lần thử. Vui lòng kiểm tra server.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        return;
+                                    }
+                                }
+                                Console.WriteLine($"[DEBUG] Login successful - userId: {userId}");
+                            }
 
+                            this.Invoke(new Action(() =>
+                            {
+                                switch (statusCode)
+                                {
+                                    case 200:
+                                        Session.LoggedInUser = username;
+                                        Session.LoggedInUserId = userId;
+                                        Session.UserPassword = password; // Store original password for encryption
+                                        System.Windows.Forms.MessageBox.Show("Đăng nhập thành công!", "Thông báo", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
+                                        this.Hide();
+                                        // Mở giao diện chính
+                                        Main mainform = new Main();
+                                        mainform.Show();
+                                        break;
+                                    case 401:
+                                        MessageBox.Show("Sai tài khoản hoặc mật khẩu!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        break;
+                                    case 400:
+                                        MessageBox.Show("Yêu cầu không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        break;
+                                    case 500:
+                                        MessageBox.Show("Lỗi từ server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        break;
+                                    default:
+                                        MessageBox.Show("Phản hồi không xác định từ server: " + statusCode, "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                        break;
+                                }
+                            }));
+                            
+                            // If login was successful (200) or failed due to auth issues (401), don't retry
+                            if (statusCode == 200 || statusCode == 401 || statusCode == 400)
+                            {
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            if (attempt == MAX_LOGIN_ATTEMPTS - 1)
+                            {
+                                this.Invoke(new Action(() =>
+                                {
+                                    MessageBox.Show("Phản hồi không hợp lệ từ server: " + response, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                }));
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[LOGIN ERROR] Attempt {attempt + 1}/{MAX_LOGIN_ATTEMPTS} failed: {ex.Message}");
+                    
+                    if (attempt == MAX_LOGIN_ATTEMPTS - 1)
+                    {
                         this.Invoke(new Action(() =>
                         {
-                            switch (statusCode)
-                            {
-                                case 200:
-                                    Session.LoggedInUser = username;
-                                    Session.LoggedInUserId = userId;
-                                    Session.UserPassword = password; // Store original password for encryption
-                                    System.Windows.Forms.MessageBox.Show("Đăng nhập thành công!", "Thông báo", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
-                                    this.Hide();
-                                    // Mở giao diện chính
-                                    Main mainform = new Main();
-                                    mainform.Show();
-                                    break;
-                                case 401:
-                                    MessageBox.Show("Sai tài khoản hoặc mật khẩu!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                    break;
-                                case 400:
-                                    MessageBox.Show("Yêu cầu không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                    break;
-                                case 500:
-                                    MessageBox.Show("Lỗi từ server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                    break;
-                                default:
-                                    MessageBox.Show("Phản hồi không xác định từ server: " + statusCode, "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                    break;
-                            }
+                            MessageBox.Show($"Lỗi kết nối đến server sau {MAX_LOGIN_ATTEMPTS} lần thử: {ex.Message}", "Lỗi kết nối", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }));
                     }
                     else
                     {
-                        this.Invoke(new Action(() =>
-                        {
-                            MessageBox.Show("Phản hồi không hợp lệ từ server: " + response, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }));
+                        // Wait before retrying
+                        await Task.Delay(500 * (attempt + 1));
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                this.Invoke(new Action(() =>
-                {
-                    MessageBox.Show("Lỗi kết nối đến server: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }));
             }
         }
         private async Task<int> GetUserIdFromLocalAsync(string username)
