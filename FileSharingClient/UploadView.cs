@@ -99,7 +99,7 @@ namespace FileSharingClient
                         }
                     }
                 }
-                MessageBox.Show("Upload folder thành công!");
+                MessageBox.Show("Upload folder thï¿½nh cï¿½ng!");
                 pendingFiles.Clear();
                 totalSizeBytes = 0;
                 pendingFolder = null;
@@ -111,7 +111,7 @@ namespace FileSharingClient
             }
             else
             {
-                await UploadFiles(); // X? lý upload file l? nhu cu
+                await UploadFiles(); // X? lï¿½ upload file l? nhu cu
             }
         }
 
@@ -140,7 +140,7 @@ namespace FileSharingClient
                         byte[] commandBytes = Encoding.UTF8.GetBytes(command + "\n");
                         await sslStream.WriteAsync(commandBytes, 0, commandBytes.Length);
                         await sslStream.FlushAsync();
-                        Console.WriteLine($"Ðã g?i l?nh: {command.Trim()}");
+                        Console.WriteLine($"ï¿½ï¿½ g?i l?nh: {command.Trim()}");
                         // Send encrypted file data
                         await sslStream.WriteAsync(encryptedData, 0, encryptedData.Length);
                         await sslStream.FlushAsync();
@@ -149,10 +149,10 @@ namespace FileSharingClient
                             string response = await reader.ReadLineAsync();
                             Console.WriteLine($"Server tr? v?: {response}");
                             if (response.Trim() == "413")
-                                MessageBox.Show("File quá l?n. Vui lòng th? l?i v?i file nh? hon.");
+                                MessageBox.Show("File quï¿½ l?n. Vui lï¿½ng th? l?i v?i file nh? hon.");
                             else if (response.Trim() == "200")
                             {
-                                MessageBox.Show("T?i lên thành công");
+                                MessageBox.Show("T?i lï¿½n thï¿½nh cï¿½ng");
                                 if (FileUploaded != null)
                                     await FileUploaded.Invoke();
                             }
@@ -206,7 +206,7 @@ namespace FileSharingClient
             
             if(totalSizeBytes + fileSizeBytes > MAX_TOTAL_SIZE)
             {
-                MessageBox.Show($"Không th? thêm '{fileName}' vì t?ng dung lu?ng vu?t quá 10MB.");
+                MessageBox.Show($"Khï¿½ng th? thï¿½m '{fileName}' vï¿½ t?ng dung lu?ng vu?t quï¿½ 10MB.");
                 return;
             }
             totalSizeBytes += fileSizeBytes;
@@ -252,9 +252,9 @@ namespace FileSharingClient
         }
         private void UpdateFileSizeLabel()
         {
-            TotalSizelbl.Text = $"T?ng kích thu?c: {FormatFileSize(totalSizeBytes)}";
+            TotalSizelbl.Text = $"T?ng kï¿½ch thu?c: {FormatFileSize(totalSizeBytes)}";
         }
-        private void OnFileDeleted(string filePath)
+        private async void OnFileDeleted(string filePath)
         {
             if(pendingFiles.Any(pf => pf.FilePath == filePath))
             {
@@ -263,6 +263,31 @@ namespace FileSharingClient
 
                 pendingFiles.RemoveAll(pf => pf.FilePath == filePath);
                 UpdateFileSizeLabel();
+                
+                // Refresh TrashBin to show the deleted file immediately
+                await RefreshTrashBinAsync();
+            }
+        }
+
+        private async Task RefreshTrashBinAsync()
+        {
+            try
+            {
+                // Find TrashBinView in the parent form and refresh it
+                var parentForm = this.FindForm();
+                if (parentForm != null)
+                {
+                    var trashBinView = parentForm.Controls.OfType<TrashBinView>().FirstOrDefault();
+                    if (trashBinView != null)
+                    {
+                        await trashBinView.RefreshTrashFiles();
+                        Console.WriteLine("[DEBUG] TrashBin refreshed after delete operation from UploadView");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Failed to refresh TrashBin from UploadView: {ex.Message}");
             }
         }
 
@@ -298,7 +323,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"L?i nén folder: {ex.Message}");
+                MessageBox.Show($"L?i nï¿½n folder: {ex.Message}");
                 throw;
             }
             
@@ -316,7 +341,7 @@ namespace FileSharingClient
 
             Label lblFileName = new Label()
             {
-                Text = "Tên file",
+                Text = "Tï¿½n file",
                 Location = new Point(39, 5),
                 Width = 180,
                 Font = headerFont
@@ -332,7 +357,7 @@ namespace FileSharingClient
 
             Label lblCreateAt = new Label()
             {
-                Text = "Ngày upload",
+                Text = "Ngï¿½y upload",
                 Location = new Point(420, 5),
                 Width = 120,
                 Font = headerFont
@@ -348,7 +373,7 @@ namespace FileSharingClient
 
             Label lblFilePath = new Label()
             {
-                Text = "Ðu?ng d?n",
+                Text = "ï¿½u?ng d?n",
                 Location = new Point(733, 5),
                 Width = 400,
                 Font = headerFont,
@@ -363,7 +388,7 @@ namespace FileSharingClient
                 Font = headerFont
             };
 
-            // Thêm các label vào header panel
+            // Thï¿½m cï¿½c label vï¿½o header panel
             headerPanel.Controls.Add(lblFileName);
             headerPanel.Controls.Add(lblOwner);
             headerPanel.Controls.Add(lblCreateAt);
@@ -371,9 +396,9 @@ namespace FileSharingClient
             headerPanel.Controls.Add(lblFilePath);
             headerPanel.Controls.Add(lblOption);
 
-            // Thêm headerPanel vào d?u danh sách
+            // Thï¿½m headerPanel vï¿½o d?u danh sï¿½ch
             UploadFilePanel.Controls.Add(headerPanel);
-            UploadFilePanel.Controls.SetChildIndex(headerPanel, 0); // Ð?m b?o nó n?m trên d?u
+            UploadFilePanel.Controls.SetChildIndex(headerPanel, 0); // ï¿½?m b?o nï¿½ n?m trï¿½n d?u
         }
     }
 }

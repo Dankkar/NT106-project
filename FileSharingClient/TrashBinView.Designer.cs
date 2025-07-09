@@ -57,12 +57,12 @@
             this.TrashFileLayoutPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.TrashFileLayoutPanel.AutoScroll = true;
             this.TrashFileLayoutPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.TrashFileLayoutPanel.Location = new System.Drawing.Point(0, 50);
             this.TrashFileLayoutPanel.Name = "TrashFileLayoutPanel";
             this.TrashFileLayoutPanel.Size = new System.Drawing.Size(800, 400);
             this.TrashFileLayoutPanel.TabIndex = 1;
-            this.TrashFileLayoutPanel.AutoScroll = true;
             this.TrashFileLayoutPanel.WrapContents = false;
             // 
             // lblFileName
@@ -91,7 +91,7 @@
             this.lblDeletedAt.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblDeletedAt.Location = new System.Drawing.Point(320, 32);
             this.lblDeletedAt.Name = "lblDeletedAt";
-            this.lblDeletedAt.Size = new System.Drawing.Size(60, 17);
+            this.lblDeletedAt.Size = new System.Drawing.Size(66, 17);
             this.lblDeletedAt.TabIndex = 4;
             this.lblDeletedAt.Text = "Ngày xóa";
             // 
@@ -111,7 +111,7 @@
             this.lblType.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblType.Location = new System.Drawing.Point(550, 32);
             this.lblType.Name = "lblType";
-            this.lblType.Size = new System.Drawing.Size(35, 17);
+            this.lblType.Size = new System.Drawing.Size(32, 17);
             this.lblType.TabIndex = 6;
             this.lblType.Text = "Loại";
             // 
@@ -146,7 +146,7 @@
             // 
             this.btnRestoreAll.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnRestoreAll.Name = "btnRestoreAll";
-            this.btnRestoreAll.Size = new System.Drawing.Size(71, 22);
+            this.btnRestoreAll.Size = new System.Drawing.Size(90, 22);
             this.btnRestoreAll.Text = "Phục hồi tất cả";
             this.btnRestoreAll.Click += new System.EventHandler(this.btnRestoreAll_Click);
             // 
@@ -154,7 +154,7 @@
             // 
             this.btnEmptyTrash.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnEmptyTrash.Name = "btnEmptyTrash";
-            this.btnEmptyTrash.Size = new System.Drawing.Size(71, 22);
+            this.btnEmptyTrash.Size = new System.Drawing.Size(87, 22);
             this.btnEmptyTrash.Text = "Dọn thùng rác";
             this.btnEmptyTrash.Click += new System.EventHandler(this.btnEmptyTrash_Click);
             // 
@@ -177,7 +177,7 @@
             // 
             this.btnSearch.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnSearch.Name = "btnSearch";
-            this.btnSearch.Size = new System.Drawing.Size(46, 22);
+            this.btnSearch.Size = new System.Drawing.Size(61, 22);
             this.btnSearch.Text = "Tìm kiếm";
             this.btnSearch.Click += new System.EventHandler(this.btnSearch_Click);
             // 
@@ -190,7 +190,7 @@
             // 
             this.btnRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnRefresh.Name = "btnRefresh";
-            this.btnRefresh.Size = new System.Drawing.Size(50, 22);
+            this.btnRefresh.Size = new System.Drawing.Size(58, 22);
             this.btnRefresh.Text = "Làm mới";
             this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
             // 

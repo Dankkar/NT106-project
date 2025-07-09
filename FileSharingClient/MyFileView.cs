@@ -21,8 +21,9 @@ namespace FileSharingClient
         private int? currentFolderId = null; // null = root level
         private Stack<FolderNavigationItem> navigationStack = new Stack<FolderNavigationItem>();
 
-        // Th�m event d? main form b?t chuy?n tab
+        // Thêm event để main form bắt chuyển tab
         public event Action RequestUploadTab;
+        public event Action<int> FolderDownloadRequested;
 
         public MyFileView()
         {
@@ -87,6 +88,7 @@ namespace FileSharingClient
                 folderControl.FolderClicked += async (folderId) => await NavigateToFolderById(folderId);
                 folderControl.FolderDeleted += async (folderId) => await OnFolderDeleted(folderId);
                 folderControl.FolderShareRequested += async (folderIdStr) => await OnFolderShareRequested(int.Parse(folderIdStr), folder.Name);
+                folderControl.FolderDownloadRequested += async (folderId) => await OnFolderDownloadRequested(folderId);
                 MyFileLayoutPanel.Controls.Add(folderControl);
             }
             // Add files
@@ -222,7 +224,7 @@ namespace FileSharingClient
                 
                 if (userId == -1)
                 {
-                    MessageBox.Show("Kh�ng th? x�c d?nh ngu?i d�ng hi?n t?i.", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Không thể xác định người dùng hiện tại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -231,19 +233,22 @@ namespace FileSharingClient
                 
                 if (success)
                 {
-                    MessageBox.Show("Folder d� du?c chuy?n v�o th�ng r�c.", "Th�nh c�ng", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Folder đã được chuyển vào thùng rác.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     
                     // Refresh the folder list after successful deletion
                     await LoadFoldersAndFilesAsync();
+                    
+                    // Refresh TrashBin to show the deleted folder immediately
+                    await RefreshTrashBinAsync();
                 }
                 else
                 {
-                    MessageBox.Show("Kh�ng th? x�a folder. Vui l�ng th? l?i.", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Không thể xóa folder. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"L?i khi x�a folder: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi xóa folder: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -273,29 +278,32 @@ namespace FileSharingClient
         {
             try
             {
-                // T�m fileId t? allFiles
+                // Tìm fileId từ allFiles
                 var file = allFiles.FirstOrDefault(f => f.FilePath == fileName || f.Name == fileName);
                 if (file == null)
                 {
-                    MessageBox.Show("Kh�ng t�m th?y file d? x�a.", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Không tìm thấy file để xóa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 int fileId = file.Id;
-                // G?i API x�a file
+                // Gọi API xóa file
                 bool success = await Services.ApiService.DeleteFileAsync(fileId);
                 if (success)
                 {
-                    MessageBox.Show("File d� du?c chuy?n v�o th�ng r�c.", "Th�nh c�ng", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("File đã được chuyển vào thùng rác.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     await LoadFoldersAndFilesAsync();
+                    
+                    // Refresh TrashBin to show the deleted file immediately
+                    await RefreshTrashBinAsync();
                 }
                 else
                 {
-                    MessageBox.Show("Kh�ng th? x�a file. Vui l�ng th? l?i.", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Không thể xóa file. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"L?i khi x�a file: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi xóa file: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -348,13 +356,13 @@ namespace FileSharingClient
                     string sharePassword = await GetFileSharePasswordAsync(fileName);
                     if (!string.IsNullOrEmpty(sharePassword))
                     {
-                        MessageBox.Show($"File '{fileName}' shared successfully with {permission} permission!\nShare password: {sharePassword}", 
-                            "Share Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"File '{fileName}' đã được chia sẻ thành công với quyền {permission}!\nMật khẩu chia sẻ: {sharePassword}", 
+                            "Thành công chia sẻ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        MessageBox.Show($"File '{fileName}' shared successfully with {permission} permission!", 
-                            "Share Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"File '{fileName}' đã được chia sẻ thành công với quyền {permission}!", 
+                            "Thành công chia sẻ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     
                     // Refresh the list to show updated share status
@@ -362,13 +370,13 @@ namespace FileSharingClient
                 }
                 else
                 {
-                    MessageBox.Show($"Failed to share file '{fileName}'.", 
-                        "Share Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Không thể chia sẻ file '{fileName}'.", 
+                        "Thất bại chia sẻ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error sharing file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi chia sẻ file: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -391,13 +399,13 @@ namespace FileSharingClient
                     string sharePassword = await GetFolderSharePasswordAsync(folderName);
                     if (!string.IsNullOrEmpty(sharePassword))
                     {
-                        MessageBox.Show($"Folder '{folderName}' shared successfully with {permission} permission!\nShare password: {sharePassword}", 
-                            "Share Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"Folder '{folderName}' đã được chia sẻ thành công với quyền {permission}!\nMật khẩu chia sẻ: {sharePassword}", 
+                            "Thành công chia sẻ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        MessageBox.Show($"Folder '{folderName}' shared successfully with {permission} permission!", 
-                            "Share Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"Folder '{folderName}' đã được chia sẻ thành công với quyền {permission}!", 
+                            "Thành công chia sẻ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     
                     // Refresh the list to show updated share status
@@ -405,13 +413,153 @@ namespace FileSharingClient
                 }
                 else
                 {
-                    MessageBox.Show($"Failed to share folder '{folderName}'.", 
-                        "Share Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Không thể chia sẻ folder '{folderName}'.", 
+                        "Thất bại chia sẻ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error sharing folder: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi chia sẻ folder: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task OnFolderDownloadRequested(int folderId)
+        {
+            try
+            {
+                // Find the folder in allFolders
+                var folder = allFolders.FirstOrDefault(f => f.Id == folderId);
+                if (folder == null)
+                {
+                    MessageBox.Show("Không tìm thấy folder để tải về.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                FolderBrowserDialog folderDialog = new FolderBrowserDialog();
+                folderDialog.Description = "Chọn thư mục để lưu folder";
+                folderDialog.ShowNewFolderButton = true;
+
+                if (folderDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string targetPath = Path.Combine(folderDialog.SelectedPath, folder.Name);
+                    
+                    // Tạo thư mục đích
+                    if (!Directory.Exists(targetPath))
+                    {
+                        Directory.CreateDirectory(targetPath);
+                    }
+
+                    // Download folder và tất cả files bên trong
+                    await DownloadFolderContentsAsync(folderId, targetPath);
+                    
+                    MessageBox.Show($"Folder '{folder.Name}' đã được tải về thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi tải folder: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task DownloadFolderContentsAsync(int folderId, string targetPath)
+        {
+            try
+            {
+                // Kết nối đến server để lấy danh sách files trong folder
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Lấy danh sách files trong folder
+                    string message = $"GET_FOLDER_CONTENTS|{folderId}";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    Console.WriteLine($"[DEBUG] DownloadFolderContentsAsync response: '{response}'");
+
+                    if (response != null && response.StartsWith("200|"))
+                    {
+                        string data = response.Substring(4);
+                        if (data != "NO_FILES_IN_FOLDER")
+                        {
+                            // Sử dụng ParseFileItems method đã được cập nhật
+                            var files = ParseFileItems(response);
+                            
+                            foreach (var file in files)
+                            {
+                                if (file == null) continue;
+
+                                // Tạo thư mục con nếu cần (dựa trên filename structure)
+                                string fileName = file.Name;
+                                string fileDir = Path.GetDirectoryName(fileName);
+                                if (!string.IsNullOrEmpty(fileDir))
+                                {
+                                    string fullDir = Path.Combine(targetPath, fileDir);
+                                    if (!Directory.Exists(fullDir))
+                                    {
+                                        Directory.CreateDirectory(fullDir);
+                                    }
+                                }
+
+                                // Download file
+                                string filePath = Path.Combine(targetPath, fileName);
+                                await DownloadFileAsync(file.Id, filePath);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi khi tải folder: {ex.Message}");
+            }
+        }
+
+        private async Task DownloadFileAsync(int fileId, string savePath)
+        {
+            try
+            {
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send download request
+                    string message = $"DOWNLOAD_FILE|{fileId}|{Session.LoggedInUserId}";
+                    await writer.WriteLineAsync(message);
+
+                    // Read response header
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            // Parse base64 data
+                            byte[] encryptedData = Convert.FromBase64String(parts[1]);
+                            
+                            // Decrypt and save file
+                            CryptoHelper.DecryptFileToLocal(encryptedData, Session.UserPassword, savePath);
+                        }
+                        else
+                        {
+                            throw new Exception($"Server error: {response}");
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("No response from server");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi khi tải file {Path.GetFileName(savePath)}: {ex.Message}");
             }
         }
 
@@ -458,7 +606,7 @@ namespace FileSharingClient
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Error sharing file: {ex.Message}");
-                System.Windows.Forms.MessageBox.Show($"Error sharing file: {ex.Message}", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                System.Windows.Forms.MessageBox.Show($"Lỗi chia sẻ file: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                 return false;
             }
         }
@@ -506,7 +654,7 @@ namespace FileSharingClient
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Error sharing folder: {ex.Message}");
-                MessageBox.Show($"Error sharing folder: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi chia sẻ folder: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
         }
@@ -514,70 +662,48 @@ namespace FileSharingClient
         private List<Services.FileItem> ParseFileItems(string data)
         {
             var files = new List<Services.FileItem>();
-            if (data == "NO_FILES" || data == "NO_SHARED_FILES" || data == "NO_FILES_IN_FOLDER") return files;
-            
+            if (string.IsNullOrWhiteSpace(data) || data == "NO_FILES" || data == "NO_SHARED_FILES" || data == "NO_FILES_IN_FOLDER" || data == "NO_CONTENTS") return files;
+
             Console.WriteLine($"[DEBUG][ParseFileItems] Raw data: {data}");
-            
-            string[] fileStrings = data.Split(';');
-            foreach (string fileString in fileStrings)
+
+            // Nếu có prefix 200| thì bỏ đi
+            if (data.StartsWith("200|"))
+                data = data.Substring(4);
+
+            string[] items = data.Split('|');
+            foreach (string item in items)
             {
-                if (string.IsNullOrEmpty(fileString)) continue;
-                
-                Console.WriteLine($"[DEBUG][ParseFileItems] FileString: {fileString}");
-                
-                // Format: id:name:type:size:upload_at:owner_name:path
-                // upload_at format: "yyyy-MM-dd HH:mm:ss" (contains colons)
-                string[] parts = fileString.Split(':');
-                Console.WriteLine($"[DEBUG][ParseFileItems] Total parts: {parts.Length}");
-                for (int i = 0; i < parts.Length; i++)
+                if (string.IsNullOrWhiteSpace(item)) continue;
+                if (item.StartsWith("file:"))
                 {
-                    Console.WriteLine($"[DEBUG][ParseFileItems] parts[{i}]: {parts[i]}");
-                }
-                
-                if (parts.Length >= 7)
-                {
-                    string id = parts[0];
-                    string name = parts[1];
-                    string type = parts[2];
-                    string size = parts[3];
-                    
-                    // Handle upload_at which contains colons: "yyyy-MM-dd HH:mm:ss"
-                    string uploadAt;
-                    string owner;
-                    string path;
-                    
-                    if (parts.Length == 7)
+                    // New format: file:<file_id>:<file_name>:<file_path>:<relative_path>
+                    var parts = item.Split(':');
+                    if (parts.Length >= 5)
                     {
-                        // Simple case: id:name:type:size:datetime:owner:path
-                        uploadAt = parts[4];
-                        owner = parts[5];
-                        path = parts[6];
+                        if (int.TryParse(parts[1], out int fileId))
+                        {
+                            string name = parts[2];
+                            string filePath = parts[3];
+                            string relativePath = parts[4];
+                            files.Add(new Services.FileItem
+                            {
+                                Id = fileId,
+                                Name = name,
+                                FilePath = filePath,
+                                // Có thể bổ sung các trường khác nếu cần
+                            });
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[ERROR] Failed to parse file_id from: {item}");
+                        }
                     }
                     else
                     {
-                        // Complex case: id:name:type:size:yyyy-MM-dd:HH:mm:ss:owner:path
-                        // Reconstruct datetime from parts[4], parts[5], parts[6]
-                        uploadAt = $"{parts[4]}:{parts[5]}:{parts[6]}";
-                        owner = parts[7];
-                        path = parts[8];
+                        Console.WriteLine($"[ERROR] Invalid file format: {item}");
                     }
-                    
-                    Console.WriteLine($"[DEBUG][ParseFileItems] Parsed file: {name}, Owner: {owner}");
-                    
-                    long sizeBytes = 0;
-                    long.TryParse(size, out sizeBytes);
-                    
-                    files.Add(new Services.FileItem
-                    {
-                        Id = int.Parse(id),
-                        Name = name,
-                        Type = type,
-                        Size = FormatFileSize(sizeBytes),
-                        CreatedAt = uploadAt,
-                        Owner = owner,
-                        FilePath = path
-                    });
                 }
+                // Nếu cần parse folder thì thêm else if (item.StartsWith("folder:"))
             }
             return files;
         }
@@ -610,7 +736,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error getting user_id: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi lấy user_id: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return -1;
             }
         }
@@ -642,7 +768,7 @@ namespace FileSharingClient
                         
                         if (!success)
                         {
-                            MessageBox.Show($"Server response: {response}", "Debug Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show($"Server response: {response}", "Thông tin debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                         
                         return success;
@@ -653,7 +779,7 @@ namespace FileSharingClient
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Error deleting file on server: {ex.Message}");
-                MessageBox.Show($"Connection error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi kết nối: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
         }
@@ -685,7 +811,7 @@ namespace FileSharingClient
                         
                         if (!success)
                         {
-                            MessageBox.Show($"Server response: {response}", "Debug Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show($"Server response: {response}", "Thông tin debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                         
                         return success;
@@ -696,7 +822,7 @@ namespace FileSharingClient
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Error deleting folder on server: {ex.Message}");
-                MessageBox.Show($"Connection error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi kết nối: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
         }
@@ -705,7 +831,7 @@ namespace FileSharingClient
         private async void btnNewFolder_Click(object sender, EventArgs e)
         {
             // Simple input dialog using InputDialog
-            string folderName = ShowInputDialog("Enter folder name:", "New Folder", "New Folder");
+            string folderName = ShowInputDialog("Nhập tên thư mục:", "Thư mục mới", "Thư mục mới");
 
             if (!string.IsNullOrWhiteSpace(folderName))
             {
@@ -715,17 +841,17 @@ namespace FileSharingClient
                     
                     if (success)
                     {
-                        MessageBox.Show("Folder created successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Thư mục đã được tạo thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         await LoadFoldersAndFilesAsync();
                     }
                     else
                     {
-                        MessageBox.Show("Failed to create folder. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Không thể tạo thư mục. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error creating folder: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Lỗi khi tạo thư mục: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -771,7 +897,7 @@ namespace FileSharingClient
                 {
                     Console.WriteLine($"[ERROR] Exception in btnGetFile_Click: {ex.Message}");
                     Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
-                    MessageBox.Show($"Error getting files: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Lỗi khi lấy file: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             else
@@ -787,7 +913,7 @@ namespace FileSharingClient
 
         private void txtSearch_Enter(object sender, EventArgs e)
         {
-            if (txtSearch.Text == "T�m ki?m file...")
+            if (txtSearch.Text == "Tìm kiếm file...")
             {
                 txtSearch.Text = "";
                 txtSearch.ForeColor = Color.Black;
@@ -798,7 +924,7 @@ namespace FileSharingClient
         {
             if (string.IsNullOrWhiteSpace(txtSearch.Text))
             {
-                txtSearch.Text = "T�m ki?m file...";
+                txtSearch.Text = "Tìm kiếm file...";
                 txtSearch.ForeColor = Color.Gray;
             }
         }
@@ -868,16 +994,16 @@ namespace FileSharingClient
                 Width = 400,
                 Height = 200,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
-                Text = "Get File from Other User",
+                Text = "Lấy file từ người dùng khác",
                 StartPosition = FormStartPosition.CenterScreen,
                 MaximizeBox = false,
                 MinimizeBox = false
             };
             
-            Label textLabel = new Label() { Left = 20, Top = 20, Width = 350, Text = "Enter password to get files from other users:" };
+            Label textLabel = new Label() { Left = 20, Top = 20, Width = 350, Text = "Nhập mật khẩu để lấy file từ người dùng khác:" };
             TextBox passwordBox = new TextBox() { Left = 20, Top = 50, Width = 350, UseSystemPasswordChar = true };
-            Button confirmation = new Button() { Text = "Get Files", Left = 200, Width = 80, Top = 100, DialogResult = DialogResult.OK };
-            Button cancel = new Button() { Text = "Cancel", Left = 290, Width = 80, Top = 100, DialogResult = DialogResult.Cancel };
+            Button confirmation = new Button() { Text = "Lấy file", Left = 200, Width = 80, Top = 100, DialogResult = DialogResult.OK };
+            Button cancel = new Button() { Text = "Hủy", Left = 290, Width = 80, Top = 100, DialogResult = DialogResult.Cancel };
             
             confirmation.Click += (sender, e) => { prompt.Close(); };
             cancel.Click += (sender, e) => { prompt.Close(); };
@@ -899,7 +1025,7 @@ namespace FileSharingClient
                 Width = 450,
                 Height = 220,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
-                Text = $"Share {itemType}",
+                Text = $"Chia sẻ {itemType}",
                 StartPosition = FormStartPosition.CenterScreen,
                 MaximizeBox = false,
                 MinimizeBox = false
@@ -910,7 +1036,7 @@ namespace FileSharingClient
                 Left = 20, 
                 Top = 20, 
                 Width = 400, 
-                Text = $"Select permission for sharing '{itemName}':" 
+                Text = $"Chọn quyền chia sẻ '{itemName}':" 
             };
             
             ComboBox permissionCombo = new ComboBox() 
@@ -921,28 +1047,28 @@ namespace FileSharingClient
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             
-            if (itemType == "file")
-            {
-                permissionCombo.Items.AddRange(new string[] { "read", "write" });
-            }
-            else // folder
-            {
-                permissionCombo.Items.AddRange(new string[] { "read", "write", "admin" });
-            }
+                         if (itemType == "file")
+             {
+                 permissionCombo.Items.AddRange(new string[] { "read", "write" });
+             }
+             else // folder
+             {
+                 permissionCombo.Items.AddRange(new string[] { "read", "write", "admin" });
+             }
             permissionCombo.SelectedIndex = 0; // Default to "read"
             
-            Label descLabel = new Label() 
-            { 
-                Left = 20, 
-                Top = 80, 
-                Width = 400, 
-                Height = 40,
-                Text = "� read: View only\n� write: View and edit\n� admin: Full control (folders only)"
-            };
+                         Label descLabel = new Label() 
+             { 
+                 Left = 20, 
+                 Top = 80, 
+                 Width = 400, 
+                 Height = 40,
+                 Text = "• read: View only\n• write: View and edit\n• admin: Full control (folders only)"
+             };
             
             Button confirmation = new Button() 
             { 
-                Text = "Share", 
+                Text = "Chia sẻ", 
                 Left = 200, 
                 Width = 80, 
                 Top = 130, 
@@ -951,7 +1077,7 @@ namespace FileSharingClient
             
             Button cancel = new Button() 
             { 
-                Text = "Cancel", 
+                Text = "Hủy", 
                 Left = 290, 
                 Width = 80, 
                 Top = 130, 
@@ -1010,7 +1136,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error getting file share password: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi lấy mật khẩu chia sẻ file: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return null;
             }
         }
@@ -1044,7 +1170,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error getting folder share password: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi lấy mật khẩu chia sẻ thư mục: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return null;
             }
         }
@@ -1066,7 +1192,7 @@ namespace FileSharingClient
                     if (currentUserId == ownerId)
                     {
                         Console.WriteLine($"[DEBUG] Current user is the owner, no need to share");
-                        MessageBox.Show("B?n l� ch? s? h?u c?a file n�y. Kh�ng c?n chia s? l?i.", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Bạn là chủ sở hữu của file này. Không cần chia sẻ lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return (null, null, false);
                     }
                     
@@ -1077,13 +1203,13 @@ namespace FileSharingClient
                     if (shareResult)
                     {
                         Console.WriteLine($"[DEBUG] File reference added successfully");
-                        MessageBox.Show("B?n d� c� quy?n truy c?p v�o file n�y!", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Bạn đã có quyền truy cập vào file này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return (new List<Services.FileItem>(), new List<Services.FolderItem>(), true);
                     }
                     else
                     {
                         Console.WriteLine($"[DEBUG] Failed to add file reference");
-                        MessageBox.Show("L?i khi th�m quy?n truy c?p file!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Lỗi khi thêm quyền truy cập file!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return (null, null, false);
                     }
                 }
@@ -1102,7 +1228,7 @@ namespace FileSharingClient
                     if (currentUserId == folderOwnerId)
                     {
                         Console.WriteLine($"[DEBUG] Current user is the folder owner, no need to share");
-                        MessageBox.Show("B?n l� ch? s? h?u c?a thu m?c n�y. Kh�ng c?n chia s? l?i.", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Bạn là chủ sở hữu của thư mục này. Không cần chia sẻ lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return (null, null, false);
                     }
                     
@@ -1113,26 +1239,26 @@ namespace FileSharingClient
                     if (shareResult)
                     {
                         Console.WriteLine($"[DEBUG] Folder reference added successfully");
-                        MessageBox.Show("B?n d� c� quy?n truy c?p v�o thu m?c n�y!", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Bạn đã có quyền truy cập vào thư mục này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return (new List<Services.FileItem>(), new List<Services.FolderItem>(), true);
                     }
                     else
                     {
                         Console.WriteLine($"[DEBUG] Failed to add folder reference");
-                        MessageBox.Show("L?i khi th�m quy?n truy c?p thu m?c!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Lỗi khi thêm quyền truy cập thư mục!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return (null, null, false);
                     }
                 }
                 
                 Console.WriteLine($"[DEBUG] Invalid password, no file or folder found");
-                MessageBox.Show("M?t kh?u kh�ng h?p l?!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Mật khẩu không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, false);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Exception in GetItemsByPasswordAsync: {ex.Message}");
                 Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
-                MessageBox.Show($"Error getting items by password: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi lấy mục theo mật khẩu: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, false);
             }
         }
@@ -1163,7 +1289,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error adding file reference: {ex.Message}");
+                Console.WriteLine($"Lỗi khi thêm quyền truy cập file: {ex.Message}");
                 return false;
             }
         }
@@ -1202,7 +1328,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error adding folder reference: {ex.Message}");
+                Console.WriteLine($"Lỗi khi thêm quyền truy cập thư mục: {ex.Message}");
                 return false;
             }
         }
@@ -1229,7 +1355,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error adding files in folder to share: {ex.Message}");
+                Console.WriteLine($"Lỗi khi thêm file trong thư mục vào chia sẻ: {ex.Message}");
                 return false;
             }
         }
@@ -1258,14 +1384,14 @@ namespace FileSharingClient
                             return parts[1]; // Return the permission
                         }
                     }
-                    return "read"; // Default to read permission
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error getting permission from share pass: {ex.Message}");
-                return "read"; // Default to read permission
-            }
+                                         return "read"; // Default to read permission
+                 }
+             }
+             catch (Exception ex)
+             {
+                 Console.WriteLine($"Lỗi khi lấy quyền từ mật khẩu chia sẻ: {ex.Message}");
+                 return "read"; // Default to read permission
+             }
         }
 
         private async Task<(int, int)> GetFolderInfoFromSharePassAsync(string sharePass)
@@ -1337,7 +1463,7 @@ namespace FileSharingClient
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Error getting folder info from share pass: {ex.Message}");
+                Console.WriteLine($"Lỗi khi lấy thông tin thư mục từ mật khẩu chia sẻ: {ex.Message}");
                 return (-1, -1);
             }
         }
@@ -1373,7 +1499,7 @@ namespace FileSharingClient
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Error getting user ID from username: {ex.Message}");
+                Console.WriteLine($"Lỗi khi lấy ID người dùng từ tên người dùng: {ex.Message}");
                 return -1;
             }
         }
@@ -1410,7 +1536,7 @@ namespace FileSharingClient
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Error getting file info from share pass: {ex.Message}");
+                Console.WriteLine($"Lỗi khi lấy thông tin file từ mật khẩu chia sẻ: {ex.Message}");
                 return (-1, -1);
             }
         }
@@ -1487,7 +1613,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error parsing folder list: {ex.Message}");
+                Console.WriteLine($"Lỗi khi phân tích danh sách thư mục: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
             
@@ -1497,7 +1623,7 @@ namespace FileSharingClient
         private async Task PerformSearch()
         {
             string searchTerm = txtSearch.Text;
-            if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm == "T�m ki?m file...")
+            if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm == "Tìm kiếm file...")
             {
                 DisplayFoldersAndFiles();
                 return;
@@ -1531,6 +1657,29 @@ namespace FileSharingClient
                 MyFileLayoutPanel.Controls.Add(fileItemControl);
             }
         }
+
+        private async Task RefreshTrashBinAsync()
+        {
+            try
+            {
+                // Find TrashBinView in the parent form and refresh it
+                var parentForm = this.FindForm();
+                if (parentForm != null)
+                {
+                    var trashBinView = parentForm.Controls.OfType<TrashBinView>().FirstOrDefault();
+                    if (trashBinView != null)
+                    {
+                        await trashBinView.RefreshTrashFiles();
+                        Console.WriteLine("[DEBUG] TrashBin refreshed after delete operation");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Failed to refresh TrashBin: {ex.Message}");
+            }
+        }
     }
 }
+
 

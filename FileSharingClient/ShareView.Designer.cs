@@ -52,7 +52,7 @@
             this.SharedFileLayoutPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.SharedFileLayoutPanel.Location = new System.Drawing.Point(0, 50);
             this.SharedFileLayoutPanel.Name = "SharedFileLayoutPanel";
-            this.SharedFileLayoutPanel.Size = new System.Drawing.Size(601, 342);
+            this.SharedFileLayoutPanel.Size = new System.Drawing.Size(686, 325);
             this.SharedFileLayoutPanel.TabIndex = 1;
             // 
             // lblFileName
@@ -102,7 +102,7 @@
             this.lblType.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblType.Location = new System.Drawing.Point(650, 32);
             this.lblType.Name = "lblType";
-            this.lblType.Size = new System.Drawing.Size(35, 17);
+            this.lblType.Size = new System.Drawing.Size(36, 17);
             this.lblType.TabIndex = 7;
             this.lblType.Text = "Type";
             // 
@@ -118,7 +118,7 @@
             this.btnRefresh});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(601, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(686, 25);
             this.toolStrip1.TabIndex = 6;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -126,7 +126,7 @@
             // 
             this.btnGetFile.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnGetFile.Name = "btnGetFile";
-            this.btnGetFile.Size = new System.Drawing.Size(60, 22);
+            this.btnGetFile.Size = new System.Drawing.Size(50, 22);
             this.btnGetFile.Text = "Get File";
             this.btnGetFile.Click += new System.EventHandler(this.btnGetFile_Click);
             // 
@@ -178,9 +178,9 @@
             this.Controls.Add(this.lblOwner);
             this.Controls.Add(this.lblFileName);
             this.Controls.Add(this.SharedFileLayoutPanel);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "ShareView";
-            this.Size = new System.Drawing.Size(601, 392);
+            this.Size = new System.Drawing.Size(601, 375);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
             this.ResumeLayout(false);
