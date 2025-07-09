@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Bài giảng\\Năm hai\\HK2\\NT106. Lập Trình Mạng\\test\\NT106-project\\LoadBalancerServer\\LoadBalancerServer.csproj": {}
+    "D:\\NT106_Project\\NT106-project\\LoadBalancerServer\\LoadBalancerServer.csproj": {}
   },
   "projects": {
-    "D:\\Bài giảng\\Năm hai\\HK2\\NT106. Lập Trình Mạng\\test\\NT106-project\\LoadBalancerServer\\LoadBalancerServer.csproj": {
+    "D:\\NT106_Project\\NT106-project\\LoadBalancerServer\\LoadBalancerServer.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Bài giảng\\Năm hai\\HK2\\NT106. Lập Trình Mạng\\test\\NT106-project\\LoadBalancerServer\\LoadBalancerServer.csproj",
+        "projectUniqueName": "D:\\NT106_Project\\NT106-project\\LoadBalancerServer\\LoadBalancerServer.csproj",
         "projectName": "LoadBalancerServer",
-        "projectPath": "D:\\Bài giảng\\Năm hai\\HK2\\NT106. Lập Trình Mạng\\test\\NT106-project\\LoadBalancerServer\\LoadBalancerServer.csproj",
-        "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
-        "outputPath": "D:\\Bài giảng\\Năm hai\\HK2\\NT106. Lập Trình Mạng\\test\\NT106-project\\LoadBalancerServer\\obj\\",
+        "projectPath": "D:\\NT106_Project\\NT106-project\\LoadBalancerServer\\LoadBalancerServer.csproj",
+        "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
+        "outputPath": "D:\\NT106_Project\\NT106-project\\LoadBalancerServer\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\ADMIN\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\ASUS\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -44,12 +44,12 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "9.0.200"
       },
       "frameworks": {
         "net48": {
           "targetAlias": "net48",
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.300\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.200\\RuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {

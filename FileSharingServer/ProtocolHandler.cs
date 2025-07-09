@@ -352,6 +352,15 @@ namespace FileSharingServer
                     if (parts.Length != 3) return "400\n";
                     return await DeleteFile(parts[1]);
                     
+                // NEW: Remove shared items commands
+                case "REMOVE_SHARED_FILE":
+                    if (parts.Length != 3) return "400\n";
+                    return await RemoveSharedFile(parts[1], parts[2]);
+                    
+                case "REMOVE_SHARED_FOLDER":
+                    if (parts.Length != 3) return "400\n";
+                    return await RemoveSharedFolder(parts[1], parts[2]);
+                    
                 default:
                     return "400\n";
             }
@@ -452,25 +461,36 @@ namespace FileSharingServer
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await conn.OpenAsync();
-                    string query = "SELECT f.file_name FROM files_share fs JOIN files f ON fs.file_id = f.file_id WHERE fs.user_id = @user_id AND f.status = 'ACTIVE'";
+                    string query = @"
+                        SELECT f.file_id, f.file_name, f.file_type, f.file_size, f.upload_at, u.username as owner_name, f.file_path
+                        FROM files_share fs
+                        JOIN files f ON fs.file_id = f.file_id
+                        JOIN users u ON f.owner_id = u.user_id
+                        WHERE fs.user_id = @user_id 
+                        AND f.status = 'ACTIVE'
+                        AND f.folder_id IS NULL";
                     using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@user_id", int.Parse(userId));
-                        
                         var files = new List<string>();
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
                             while (await reader.ReadAsync())
                             {
-                                files.Add(reader["file_name"].ToString());
+                                string id = reader["file_id"].ToString();
+                                string name = reader["file_name"].ToString();
+                                string type = reader["file_type"].ToString();
+                                string size = reader["file_size"].ToString();
+                                string uploadAt = reader["upload_at"].ToString();
+                                string owner = reader["owner_name"].ToString();
+                                string path = reader["file_path"].ToString();
+                                files.Add($"{id}:{name}:{type}:{size}:{uploadAt}:{owner}:{path}");
                             }
                         }
-                        
                         if (files.Count == 0)
                         {
                             return "200|NO_SHARED_FILES\n";
                         }
-                        
                         return $"200|{string.Join(";", files)}\n";
                     }
                 }
@@ -605,18 +625,19 @@ namespace FileSharingServer
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await conn.OpenAsync();
-                    string query = "SELECT file_id, owner_id FROM files WHERE share_pass = @share_pass";
+                    string query = "SELECT file_path, file_type FROM files WHERE share_pass = @share_pass AND is_shared = 1";
                     using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@share_pass", sharePass);
-                        
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
                             if (await reader.ReadAsync())
                             {
-                                int fileId = Convert.ToInt32(reader["file_id"]);
-                                int ownerId = Convert.ToInt32(reader["owner_id"]);
-                                return $"200|{fileId}|{ownerId}\n";
+                                string filePath = reader["file_path"]?.ToString() ?? "";
+                                string fileType = reader["file_type"]?.ToString() ?? "";
+                                filePath = CleanFilePath(filePath);
+                                fileType = CleanString(fileType);
+                                return $"200|{filePath}|{fileType}\n";
                             }
                             else
                             {
@@ -1148,9 +1169,59 @@ namespace FileSharingServer
                 {
                     await conn.OpenAsync();
                     
-                    // Generate folder path
-                    string folderPath = $"uploads/{userId}/{folderName}";
+                    // Generate folder path based on parent folder
+                    string folderPath;
+                    string physicalFolderPath;
                     
+                    if (parentFolderId == "null" || string.IsNullOrEmpty(parentFolderId))
+                    {
+                        // Root level folder
+                        folderPath = $"uploads\\{userId}\\{folderName}";
+                        physicalFolderPath = Path.Combine(GetSharedUploadsPath(), userId, folderName);
+                    }
+                    else
+                    {
+                        // Get parent folder path from database
+                        string parentQuery = "SELECT folder_path FROM folders WHERE folder_id = @parentId";
+                        using (var parentCmd = new System.Data.SQLite.SQLiteCommand(parentQuery, conn))
+                        {
+                            parentCmd.Parameters.AddWithValue("@parentId", int.Parse(parentFolderId));
+                            var parentPath = await parentCmd.ExecuteScalarAsync() as string;
+                            
+                            if (string.IsNullOrEmpty(parentPath))
+                            {
+                                Console.WriteLine($"[ERROR] Parent folder not found: {parentFolderId}");
+                                return "404|PARENT_FOLDER_NOT_FOUND\n";
+                            }
+                            
+                            folderPath = Path.Combine(parentPath, folderName).Replace('/', '\\');
+                            physicalFolderPath = Path.Combine(GetSharedUploadsPath(), parentPath.Replace("uploads\\", ""), folderName);
+                        }
+                    }
+                    
+                    Console.WriteLine($"[DEBUG] Generated folder_path: {folderPath}");
+                    Console.WriteLine($"[DEBUG] Physical folder path: {physicalFolderPath}");
+                    
+                    // Create physical directory
+                    try
+                    {
+                        if (!Directory.Exists(physicalFolderPath))
+                        {
+                            Directory.CreateDirectory(physicalFolderPath);
+                            Console.WriteLine($"[DEBUG] Physical directory created: {physicalFolderPath}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] Physical directory already exists: {physicalFolderPath}");
+                        }
+                    }
+                    catch (Exception dirEx)
+                    {
+                        Console.WriteLine($"[ERROR] Failed to create physical directory: {dirEx.Message}");
+                        return "500|FAILED_TO_CREATE_DIRECTORY\n";
+                    }
+                    
+                    // Insert into database
                     string query = @"
                         INSERT INTO folders (folder_name, owner_id, parent_folder_id, folder_path, created_at, status) 
                         VALUES (@folderName, @ownerId, @parentFolderId, @folderPath, datetime('now'), 'ACTIVE')";
@@ -2227,8 +2298,8 @@ namespace FileSharingServer
                             SELECT DISTINCT f.file_id, f.file_name, f.file_type, f.file_size, f.upload_at, f.file_path, u.username as owner_name
                             FROM files f
                             JOIN users u ON f.owner_id = u.user_id
-                            WHERE (f.share_pass = @password AND f.is_shared = 1)
-                               OR f.folder_id IN (" + string.Join(",", allFolderIds) + ")";
+                            WHERE f.folder_id IN (" + string.Join(",", allFolderIds) + @") 
+                               OR (f.share_pass = @password AND f.is_shared = 1 AND f.folder_id IS NULL)";
                         
                         using (var command = new System.Data.SQLite.SQLiteCommand(fileQuery, connection))
                         {
@@ -2635,7 +2706,7 @@ namespace FileSharingServer
                     
                     if (allFolderIdsWithRoot.Count > 0)
                     {
-                        string fileQuery = "SELECT file_name, file_path, folder_id FROM files WHERE folder_id IN (" + string.Join(",", allFolderIdsWithRoot) + ") AND status = 'ACTIVE'";
+                        string fileQuery = "SELECT file_id, file_name, file_path, folder_id FROM files WHERE folder_id IN (" + string.Join(",", allFolderIdsWithRoot) + ") AND status = 'ACTIVE'";
                         
                         using (var cmd = new System.Data.SQLite.SQLiteCommand(fileQuery, conn))
                         {
@@ -2645,7 +2716,7 @@ namespace FileSharingServer
                                 {
                                     string filePath = reader["file_path"].ToString();
                                     string relativePath = GetRelativePath(filePath, reader["folder_id"].ToString());
-                                    items.Add($"file:{reader["file_name"]}:{filePath}:{relativePath}");
+                                    items.Add($"file:{reader["file_id"]}:{reader["file_name"]}:{filePath}:{relativePath}");
                                 }
                             }
                         }
@@ -3363,6 +3434,109 @@ namespace FileSharingServer
             
             // Fallback: use original logic
             return Path.Combine(DatabaseHelper.projectRoot ?? Environment.CurrentDirectory, "uploads");
+        }
+
+        // NEW: Remove shared items methods
+        private static async Task<string> RemoveSharedFile(string fileId, string userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] RemoveSharedFile called with: fileId={fileId}, userId={userId}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Remove entry from files_share table
+                    string deleteQuery = @"
+                        DELETE FROM files_share 
+                        WHERE file_id = @fileId AND user_id = @userId";
+                    
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(deleteQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@fileId", int.Parse(fileId));
+                        cmd.Parameters.AddWithValue("@userId", int.Parse(userId));
+                        
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine($"[DEBUG] Successfully removed shared file: fileId={fileId}, userId={userId}");
+                            return "200|SHARED_FILE_REMOVED\n";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] No shared file entry found: fileId={fileId}, userId={userId}");
+                            return "404|SHARED_FILE_NOT_FOUND\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in RemoveSharedFile: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> RemoveSharedFolder(string folderId, string userId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] RemoveSharedFolder called with: folderId={folderId}, userId={userId}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Remove entry from folder_shares table
+                    string deleteQuery = @"
+                        DELETE FROM folder_shares 
+                        WHERE folder_id = @folderId AND shared_with_user_id = @userId";
+                    
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(deleteQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@folderId", int.Parse(folderId));
+                        cmd.Parameters.AddWithValue("@userId", int.Parse(userId));
+                        
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        
+                        if (rowsAffected > 0)
+                        {
+                            // Also remove all files in this folder from files_share table
+                            string deleteFilesQuery = @"
+                                DELETE FROM files_share 
+                                WHERE file_id IN (
+                                    SELECT f.file_id 
+                                    FROM files f 
+                                    WHERE f.folder_id = @folderId
+                                ) AND user_id = @userId";
+                            
+                            using (var filesCmd = new System.Data.SQLite.SQLiteCommand(deleteFilesQuery, conn))
+                            {
+                                filesCmd.Parameters.AddWithValue("@folderId", int.Parse(folderId));
+                                filesCmd.Parameters.AddWithValue("@userId", int.Parse(userId));
+                                await filesCmd.ExecuteNonQueryAsync();
+                            }
+                            
+                            Console.WriteLine($"[DEBUG] Successfully removed shared folder: folderId={folderId}, userId={userId}");
+                            return "200|SHARED_FOLDER_REMOVED\n";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] No shared folder entry found: folderId={folderId}, userId={userId}");
+                            return "404|SHARED_FOLDER_NOT_FOUND\n";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in RemoveSharedFolder: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
         }
     }
 }

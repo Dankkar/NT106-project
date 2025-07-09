@@ -158,6 +158,12 @@ namespace FileSharingServer
                 case "GET_FILE_INFO":
                     if (parts.Length != 3) return "400\n";
                     return await GetFileInfo(parts[1], parts[2]);
+                case "REMOVE_SHARED_FILE":
+                    if (parts.Length != 3) return "400\n";
+                    return await RemoveSharedFile(parts[1], parts[2]);
+                case "REMOVE_SHARED_FOLDER":
+                    if (parts.Length != 3) return "400\n";
+                    return await RemoveSharedFolder(parts[1], parts[2]);
                 default:
                     return "400\n";
             }

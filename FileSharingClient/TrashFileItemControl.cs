@@ -46,19 +46,19 @@ namespace FileSharingClient
 
             // Configure buttons
             btnRestore.Text = "Phục hồi";
-            btnDelete.Text = "Xóa vĩnh viễn";
-            
+            btnDelete.Text = "Xóa";
             btnRestore.BackColor = Color.LightGreen;
             btnDelete.BackColor = Color.LightCoral;
 
             // Add hover effects
-            this.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
-            this.MouseLeave += (s, e) => this.BackColor = SystemColors.Control;
+            this.MouseEnter += (s, e) => this.BackColor = Color.LightBlue;
+            this.MouseLeave += (s, e) => this.BackColor = Color.LightGray;
 
-            // Set layout
-            this.Height = 40;
-            this.Width = 750;
+            // Set layout giống folder
+            this.Height = 45;
+            this.Width = 790;
             this.BorderStyle = BorderStyle.FixedSingle;
+            this.BackColor = Color.LightGray;
         }
 
         private void btnRestore_Click(object sender, EventArgs e)
@@ -133,6 +133,11 @@ namespace FileSharingClient
                 default:
                     return "📄";
             }
+        }
+
+        private void TrashFileItemControl_Load(object sender, EventArgs e)
+        {
+
         }
     }
 } 

@@ -29,10 +29,23 @@ namespace FileSharingClient
             lblOwner.Text = owner;
             lblDeletedAt.Text = deletedAt;
             lblType.Text = "Folder";
-            
-            // Set folder icon background color
-            this.BackColor = Color.LightBlue;
-            
+            lblFolderIcon.Text = "📁";
+
+            // Set button text and color
+            btnRestore.Text = "Phục hồi";
+            btnPermanentDelete.Text = "Xóa";
+            btnRestore.BackColor = Color.LightGreen;
+            btnPermanentDelete.BackColor = Color.LightCoral;
+
+            // Add hover effects
+            this.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
+            this.MouseLeave += (s, e) => this.BackColor = Color.LightBlue;
+
+            // Set layout
+            this.Height = 45;
+            this.Width = 790;
+            this.BorderStyle = BorderStyle.FixedSingle;
+
             // Configure event handlers
             btnRestore.Click += BtnRestore_Click;
             btnPermanentDelete.Click += BtnPermanentDelete_Click;

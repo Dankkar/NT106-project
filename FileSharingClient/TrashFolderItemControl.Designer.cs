@@ -34,15 +34,16 @@ namespace FileSharingClient
             this.lblType = new System.Windows.Forms.Label();
             this.btnRestore = new System.Windows.Forms.Button();
             this.btnPermanentDelete = new System.Windows.Forms.Button();
+            this.lblFolderIcon = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lblFolderName
             // 
             this.lblFolderName.AutoSize = true;
-            this.lblFolderName.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFolderName.Location = new System.Drawing.Point(32, 15);
+            this.lblFolderName.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblFolderName.Location = new System.Drawing.Point(35, 15);
             this.lblFolderName.Name = "lblFolderName";
-            this.lblFolderName.Size = new System.Drawing.Size(88, 17);
+            this.lblFolderName.Size = new System.Drawing.Size(78, 15);
             this.lblFolderName.TabIndex = 0;
             this.lblFolderName.Text = "Folder Name";
             // 
@@ -62,7 +63,7 @@ namespace FileSharingClient
             this.lblDeletedAt.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblDeletedAt.Location = new System.Drawing.Point(320, 15);
             this.lblDeletedAt.Name = "lblDeletedAt";
-            this.lblDeletedAt.Size = new System.Drawing.Size(61, 15);
+            this.lblDeletedAt.Size = new System.Drawing.Size(62, 15);
             this.lblDeletedAt.TabIndex = 2;
             this.lblDeletedAt.Text = "Deleted At";
             // 
@@ -72,18 +73,18 @@ namespace FileSharingClient
             this.lblType.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblType.Location = new System.Drawing.Point(550, 15);
             this.lblType.Name = "lblType";
-            this.lblType.Size = new System.Drawing.Size(31, 15);
+            this.lblType.Size = new System.Drawing.Size(40, 15);
             this.lblType.TabIndex = 3;
-            this.lblType.Text = "Type";
+            this.lblType.Text = "Folder";
             // 
             // btnRestore
             // 
             this.btnRestore.BackColor = System.Drawing.Color.LightGreen;
             this.btnRestore.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnRestore.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRestore.Location = new System.Drawing.Point(650, 10);
+            this.btnRestore.Location = new System.Drawing.Point(630, 8);
             this.btnRestore.Name = "btnRestore";
-            this.btnRestore.Size = new System.Drawing.Size(60, 25);
+            this.btnRestore.Size = new System.Drawing.Size(71, 25);
             this.btnRestore.TabIndex = 4;
             this.btnRestore.Text = "Phục hồi";
             this.btnRestore.UseVisualStyleBackColor = false;
@@ -93,12 +94,22 @@ namespace FileSharingClient
             this.btnPermanentDelete.BackColor = System.Drawing.Color.LightCoral;
             this.btnPermanentDelete.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPermanentDelete.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnPermanentDelete.Location = new System.Drawing.Point(720, 10);
+            this.btnPermanentDelete.Location = new System.Drawing.Point(715, 8);
             this.btnPermanentDelete.Name = "btnPermanentDelete";
             this.btnPermanentDelete.Size = new System.Drawing.Size(60, 25);
             this.btnPermanentDelete.TabIndex = 5;
-            this.btnPermanentDelete.Text = "Xóa VV";
+            this.btnPermanentDelete.Text = "Xóa";
             this.btnPermanentDelete.UseVisualStyleBackColor = false;
+            // 
+            // lblFolderIcon
+            // 
+            this.lblFolderIcon.AutoSize = true;
+            this.lblFolderIcon.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblFolderIcon.Location = new System.Drawing.Point(5, 12);
+            this.lblFolderIcon.Name = "lblFolderIcon";
+            this.lblFolderIcon.Size = new System.Drawing.Size(32, 21);
+            this.lblFolderIcon.TabIndex = 10;
+            this.lblFolderIcon.Text = "📁";
             // 
             // TrashFolderItemControl
             // 
@@ -112,6 +123,7 @@ namespace FileSharingClient
             this.Controls.Add(this.lblDeletedAt);
             this.Controls.Add(this.lblOwner);
             this.Controls.Add(this.lblFolderName);
+            this.Controls.Add(this.lblFolderIcon);
             this.Name = "TrashFolderItemControl";
             this.Size = new System.Drawing.Size(790, 45);
             this.ResumeLayout(false);
@@ -127,5 +139,6 @@ namespace FileSharingClient
         private System.Windows.Forms.Label lblType;
         private System.Windows.Forms.Button btnRestore;
         private System.Windows.Forms.Button btnPermanentDelete;
+        private System.Windows.Forms.Label lblFolderIcon;
     }
 } 

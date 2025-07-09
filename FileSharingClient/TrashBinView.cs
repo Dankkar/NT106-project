@@ -111,71 +111,72 @@ namespace FileSharingClient
                     if (filesData == "NO_TRASH_FILES")
                     {
                         Console.WriteLine("[DEBUG] TrashBinView - No trash files found");
-                        ShowNoFilesMessage();
-                        return;
+                        // Don't show message here, wait for folders result
                     }
-                    
-                    // Parse files data: fileName:deletedAt;fileName:deletedAt;...
-                    string[] files = filesData.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                    
-                    Console.WriteLine($"[DEBUG] TrashBinView - Found {files.Length} files");
-                    Console.WriteLine($"[DEBUG] TrashBinView - Files array: [{string.Join(", ", files)}]");
-                    
-                    foreach (string file in files)
+                    else
                     {
-                        if (string.IsNullOrEmpty(file)) continue;
+                        // Parse files data: fileName:deletedAt;fileName:deletedAt;...
+                        string[] files = filesData.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
                         
-                        try
+                        Console.WriteLine($"[DEBUG] TrashBinView - Found {files.Length} files");
+                        Console.WriteLine($"[DEBUG] TrashBinView - Files array: [{string.Join(", ", files)}]");
+                        
+                        foreach (string file in files)
                         {
-                            string[] parts = file.Split(':');
-                            if (parts.Length >= 2)
+                            if (string.IsNullOrEmpty(file)) continue;
+                            
+                            try
                             {
-                                string fileName = parts[0];
-                                string deletedAt = parts[1];
-                                
-                                Console.WriteLine($"[DEBUG] TrashBinView - Processing file: {fileName}");
-                                
-                                // Validate fileName
-                                if (string.IsNullOrWhiteSpace(fileName))
+                                string[] parts = file.Split(':');
+                                if (parts.Length >= 2)
                                 {
-                                    Console.WriteLine("[DEBUG] TrashBinView - Skipping invalid fileName");
-                                    continue;
+                                    string fileName = parts[0];
+                                    string deletedAt = parts[1];
+                                    
+                                    Console.WriteLine($"[DEBUG] TrashBinView - Processing file: {fileName}");
+                                    
+                                    // Validate fileName
+                                    if (string.IsNullOrWhiteSpace(fileName))
+                                    {
+                                        Console.WriteLine("[DEBUG] TrashBinView - Skipping invalid fileName");
+                                        continue;
+                                    }
+                                    
+                                    // Get file info for size and extension
+                                    var fileInfo = await GetFileInfoFromServer(fileName);
+                                    
+                                    // Parse deleted date safely
+                                    string formattedDeletedAt = "N/A";
+                                    try
+                                    {
+                                        formattedDeletedAt = DateTime.Parse(deletedAt).ToString("dd/MM/yyyy HH:mm");
+                                    }
+                                    catch
+                                    {
+                                        formattedDeletedAt = deletedAt; // Use raw date if parsing fails
+                                    }
+                                    
+                                    var trashFile = new TrashFileItem
+                                    {
+                                        FileName = fileName,
+                                        DeletedAt = formattedDeletedAt,
+                                        Owner = "Me",
+                                        FileSize = fileInfo.Size,
+                                        FileType = fileInfo.Extension
+                                    };
+                                    
+                                    allTrashFiles.Add(trashFile);
                                 }
-                                
-                                // Get file info for size and extension
-                                var fileInfo = await GetFileInfoFromServer(fileName);
-                                
-                                // Parse deleted date safely
-                                string formattedDeletedAt = "N/A";
-                                try
-                                {
-                                    formattedDeletedAt = DateTime.Parse(deletedAt).ToString("dd/MM/yyyy HH:mm");
-                                }
-                                catch
-                                {
-                                    formattedDeletedAt = deletedAt; // Use raw date if parsing fails
-                                }
-                                
-                                var trashFile = new TrashFileItem
-                                {
-                                    FileName = fileName,
-                                    DeletedAt = formattedDeletedAt,
-                                    Owner = "Me",
-                                    FileSize = fileInfo.Size,
-                                    FileType = fileInfo.Extension
-                                };
-                                
-                                allTrashFiles.Add(trashFile);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"[ERROR] TrashBinView - Error processing file '{file}': {ex.Message}");
+                                // Continue with next file instead of crashing
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"[ERROR] TrashBinView - Error processing file '{file}': {ex.Message}");
-                            // Continue with next file instead of crashing
-                        }
+                        
+                        Console.WriteLine($"[DEBUG] TrashBinView - Successfully loaded {allTrashFiles.Count} files");
                     }
-                    
-                    Console.WriteLine($"[DEBUG] TrashBinView - Successfully loaded {allTrashFiles.Count} files");
                 }
                 else if (response.StartsWith("404|"))
                 {
@@ -699,23 +700,40 @@ namespace FileSharingClient
 
         public async Task RefreshTrashFiles()
         {
-            await LoadTrashFilesAsync();
+            Console.WriteLine("[DEBUG] TrashBinView - RefreshTrashFiles called");
+            try
+            {
+                // Clear current data and reload completely
+                allTrashFiles.Clear();
+                allTrashFolders.Clear();
+                TrashFileLayoutPanel.Controls.Clear();
+                
+                // Reload all data
+                await LoadTrashFilesAsync();
+                Console.WriteLine("[DEBUG] TrashBinView - RefreshTrashFiles completed successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] TrashBinView - Error in RefreshTrashFiles: {ex.Message}");
+                MessageBox.Show($"Lỗi khi làm mới thùng rác: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private async void OnVisibilityChanged(object sender, EventArgs e)
         {
-            try
+            if (this.Visible)
             {
-                // Only refresh if we're becoming visible and have been initialized
-                if (this.Visible && currentUserId != -1)
+                Console.WriteLine("[DEBUG] TrashBinView - Became visible, refreshing data...");
+                try
                 {
-                    Console.WriteLine("[DEBUG] TrashBinView - Becoming visible, refreshing trash files");
+                    // Refresh data when view becomes visible
                     await LoadTrashFilesAsync();
+                    Console.WriteLine("[DEBUG] TrashBinView - Data refreshed successfully");
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] TrashBinView - Error in OnVisibilityChanged: {ex.Message}");
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERROR] TrashBinView - Failed to refresh data: {ex.Message}");
+                }
             }
         }
 

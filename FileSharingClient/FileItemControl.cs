@@ -35,7 +35,7 @@ namespace FileSharingClient
 
             //Set thong tin file vao control
             FileName = filename;
-            lblFileName.Text = filename;
+            lblFileName.Text = TruncateFileName(filename, 25); // Giới hạn tên file 25 ký tự
             lblFileSize.Text = filesize;
             lblOwner.Text = owner;
             lblCreateAt.Text = createAt;
@@ -56,9 +56,19 @@ namespace FileSharingClient
             // Set file icon based on type
             lblFileIcon.Text = GetFileIcon(fileExtension);
 
-            // ?n c�c th�ng tin kh�ng c?n thi?t - ch? hi?n th? T�n file, Ngu?i s? h?u, K�ch thu?c, Type
+            // Ẩn các thông tin không cần thiết - chỉ hiển thị Tên file, Người sở hữu, Kích thước, Type
             lblCreateAt.Visible = false;
             lblFilePath.Visible = false;
+
+            // Thêm tooltip cho tên file nếu bị cắt ngắn
+            if (filename.Length > 25)
+            {
+                ToolTip tooltip = new ToolTip();
+                tooltip.SetToolTip(lblFileName, filename);
+            }
+
+            // Assign context menu to the control
+            this.ContextMenuStrip = contextMenuStrip1;
 
             btnMore.Click += (s, e) => contextMenuStrip1.Show(btnMore, new Point(0, btnMore.Height));
             
@@ -83,11 +93,47 @@ namespace FileSharingClient
             lblOwner.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
             lblFileSize.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
             lblFileSize.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
+
+            // Double click để preview
+            this.DoubleClick += FileItemControl_DoubleClick;
+            lblFileName.DoubleClick += FileItemControl_DoubleClick;
+            lblOwner.DoubleClick += FileItemControl_DoubleClick;
+            lblFileSize.DoubleClick += FileItemControl_DoubleClick;
+        }
+
+        /// <summary>
+        /// Cắt ngắn tên file nếu quá dài và thêm dấu "..."
+        /// </summary>
+        /// <param name="fileName">Tên file gốc</param>
+        /// <param name="maxLength">Độ dài tối đa</param>
+        /// <returns>Tên file đã được cắt ngắn</returns>
+        private string TruncateFileName(string fileName, int maxLength)
+        {
+            if (string.IsNullOrEmpty(fileName) || fileName.Length <= maxLength)
+                return fileName;
+
+            string extension = Path.GetExtension(fileName);
+            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            
+            // Nếu extension quá dài, cắt cả extension
+            if (extension.Length > maxLength / 2)
+            {
+                return fileName.Substring(0, maxLength - 3) + "...";
+            }
+            
+            // Cắt phần tên file, giữ lại extension
+            int availableLength = maxLength - extension.Length - 3; // 3 cho "..."
+            if (availableLength <= 0)
+            {
+                return "..." + extension;
+            }
+            
+            return nameWithoutExtension.Substring(0, availableLength) + "..." + extension;
         }
 
         private void FileItemControl_Click(object sender, EventArgs e)
         {
-            // When clicked, automatically preview the file
+            // Preview file on single click
             PreviewFile();
         }
 
@@ -265,7 +311,7 @@ namespace FileSharingClient
             if (result == DialogResult.Yes)
             {
                 FileDeleted?.Invoke(FilePath);
-                this.Dispose(); // X�a FileItemControl kh?i giao di?n
+                this.Dispose(); // Xa FileItemControl kh?i giao di?n
             }
         }
        
@@ -320,46 +366,76 @@ namespace FileSharingClient
                 case ".txt":
                 case ".md":
                 case ".log":
-                    return "??";
+                    return "📄";
                 case ".pdf":
-                    return "??";
+                    return "📕";
                 case ".jpg":
                 case ".jpeg":
                 case ".png":
                 case ".gif":
                 case ".bmp":
-                    return "???";
+                    return "🖼️";
                 case ".mp4":
                 case ".avi":
                 case ".mov":
                 case ".wmv":
                 case ".mkv":
-                    return "??";
+                    return "🎬";
                 case ".mp3":
                 case ".wav":
                 case ".flac":
-                    return "??";
+                    return "🎵";
                 case ".docx":
                 case ".doc":
-                    return "??";
+                    return "📝";
                 case ".xlsx":
                 case ".xls":
-                    return "??";
+                    return "📊";
                 case ".pptx":
                 case ".ppt":
-                    return "??";
+                    return "📋";
                 case ".zip":
                 case ".rar":
                 case ".7z":
-                    return "??";
+                    return "📦";
                 default:
-                    return "??";
+                    return "📄";
             }
         }
 
         private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
         {
 
+        }
+
+        private void FileItemControl_DoubleClick(object sender, EventArgs e)
+        {
+            // Double click also previews file
+            PreviewFile();
+        }
+
+        public async Task DownloadFileAsync(string savePath)
+        {
+            try
+            {
+                await DownloadEncryptedFile(FileName, savePath);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi khi tải file {FileName}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Override context menu for shared files (used in ShareView)
+        /// </summary>
+        /// <param name="customContextMenu">Custom context menu to use</param>
+        public void OverrideContextMenu(ContextMenuStrip customContextMenu)
+        {
+            this.ContextMenuStrip = customContextMenu;
+            // Override btnMore to show custom context menu
+            btnMore.Click -= (s, e) => contextMenuStrip1.Show(btnMore, new Point(0, btnMore.Height));
+            btnMore.Click += (s, e) => customContextMenu.Show(btnMore, new Point(0, btnMore.Height));
         }
     }
 }

@@ -23,6 +23,7 @@ namespace FileSharingClient
         public event Action<int> FolderDeleted;
         public event Action<int> FolderShared;
         public event Action<string> FolderShareRequested;
+        public event Action<int> FolderDownloadRequested;
 
         public FolderItemControl(string folderName, string createdAt, string owner, bool isShared, int folderId)
         {
@@ -37,13 +38,23 @@ namespace FileSharingClient
 
             Console.WriteLine($"[DEBUG][FolderItemControl] Setting owner: '{owner}' for folder: '{folderName}'");
 
-            lblFolderName.Text = folderName;
+            lblFolderName.Text = TruncateFolderName(folderName, 25); // Giới hạn tên folder 25 ký tự
             lblOwner.Text = owner;
             lblType.Text = "Folder";
             lblCreatedAt.Text = createdAt;
 
             // Ẩn các thông tin không cần thiết - chỉ hiển thị Tên folder, Người sở hữu, Type
             lblCreatedAt.Visible = false;
+
+            // Thêm tooltip cho tên folder nếu bị cắt ngắn
+            if (folderName.Length > 25)
+            {
+                ToolTip tooltip = new ToolTip();
+                tooltip.SetToolTip(lblFolderName, folderName);
+            }
+
+            // Assign context menu to the control
+            this.ContextMenuStrip = contextMenuStrip1;
 
             btnMore.Click += (s, e) => contextMenuStrip1.Show(btnMore, new Point(0, btnMore.Height));
             
@@ -68,11 +79,37 @@ namespace FileSharingClient
             lblOwner.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
             lblType.MouseEnter += (s, e) => this.BackColor = Color.LightBlue;
             lblType.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
+
+            // Double click để mở folder
+            this.DoubleClick += FolderItemControl_DoubleClick;
+            lblFolderName.DoubleClick += FolderItemControl_DoubleClick;
+            lblOwner.DoubleClick += FolderItemControl_DoubleClick;
+            lblType.DoubleClick += FolderItemControl_DoubleClick;
+        }
+
+        /// <summary>
+        /// Cắt ngắn tên folder nếu quá dài và thêm dấu "..."
+        /// </summary>
+        /// <param name="folderName">Tên folder gốc</param>
+        /// <param name="maxLength">Độ dài tối đa</param>
+        /// <returns>Tên folder đã được cắt ngắn</returns>
+        private string TruncateFolderName(string folderName, int maxLength)
+        {
+            if (string.IsNullOrEmpty(folderName) || folderName.Length <= maxLength)
+                return folderName;
+
+            return folderName.Substring(0, maxLength - 3) + "...";
         }
 
         private void FolderItemControl_Click(object sender, EventArgs e)
         {
-            // When clicked, navigate into folder
+            // Navigate vào folder khi click
+            FolderClicked?.Invoke(FolderId);
+        }
+
+        private void FolderItemControl_DoubleClick(object sender, EventArgs e)
+        {
+            // Double click cũng navigate vào folder
             FolderClicked?.Invoke(FolderId);
         }
 
@@ -100,9 +137,133 @@ namespace FileSharingClient
             }
         }
 
+        private void downloadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Trigger the download event
+            FolderDownloadRequested?.Invoke(FolderId);
+        }
+
+        private async Task DownloadFolderAsync(string targetPath)
+        {
+            try
+            {
+                // Kết nối đến server để lấy danh sách files trong folder
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Lấy danh sách files trong folder
+                    string message = $"GET_FOLDER_CONTENTS|{FolderId}";
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null && response.StartsWith("200|"))
+                    {
+                        string data = response.Substring(4);
+                        if (data != "NO_FILES_IN_FOLDER")
+                        {
+                            // Parse danh sách files
+                            string[] fileStrings = data.Split(';');
+                            foreach (string fileString in fileStrings)
+                            {
+                                if (string.IsNullOrEmpty(fileString)) continue;
+
+                                string[] parts = fileString.Split(':');
+                                if (parts.Length >= 7)
+                                {
+                                    int fileId = int.Parse(parts[0]);
+                                    string fileName = parts[1];
+                                    string relativePath = parts[6]; // file_path chứa đường dẫn tương đối
+
+                                    // Tạo thư mục con nếu cần
+                                    string fileDir = Path.GetDirectoryName(relativePath);
+                                    if (!string.IsNullOrEmpty(fileDir))
+                                    {
+                                        string fullDir = Path.Combine(targetPath, fileDir);
+                                        if (!Directory.Exists(fullDir))
+                                        {
+                                            Directory.CreateDirectory(fullDir);
+                                        }
+                                    }
+
+                                    // Download file
+                                    string filePath = Path.Combine(targetPath, relativePath);
+                                    await DownloadFileAsync(fileId, filePath);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi khi tải folder: {ex.Message}");
+            }
+        }
+
+        private async Task DownloadFileAsync(int fileId, string savePath)
+        {
+            try
+            {
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                using (sslStream)
+                using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send download request
+                    string message = $"DOWNLOAD_FILE|{fileId}|{Session.LoggedInUserId}";
+                    await writer.WriteLineAsync(message);
+
+                    // Read response header
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            // Parse base64 data
+                            byte[] encryptedData = Convert.FromBase64String(parts[1]);
+                            
+                            // Decrypt and save file
+                            CryptoHelper.DecryptFileToLocal(encryptedData, Session.UserPassword, savePath);
+                        }
+                        else
+                        {
+                            throw new Exception($"Server error: {response}");
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("No response from server");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi khi tải file {Path.GetFileName(savePath)}: {ex.Message}");
+            }
+        }
+
         private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
         {
 
+        }
+
+        /// <summary>
+        /// Override context menu for shared folders (used in ShareView)
+        /// </summary>
+        /// <param name="customContextMenu">Custom context menu to use</param>
+        public void OverrideContextMenu(ContextMenuStrip customContextMenu)
+        {
+            this.ContextMenuStrip = customContextMenu;
+            // Override btnMore to show custom context menu
+            btnMore.Click -= (s, e) => contextMenuStrip1.Show(btnMore, new Point(0, btnMore.Height));
+            btnMore.Click += (s, e) => customContextMenu.Show(btnMore, new Point(0, btnMore.Height));
         }
     }
 } 
