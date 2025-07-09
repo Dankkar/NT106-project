@@ -240,6 +240,9 @@ namespace FileSharingServer
                 case "ADD_FILES_IN_FOLDER_TO_SHARE":
                     if (parts.Length != 5) return "400\n";
                     return await AddFilesInFolderToShare(parts[1], parts[2], parts[3], parts[4]);
+                case "ADD_FOLDER_AND_FILES_SHARE":
+                    if (parts.Length != 5) return "400\n";
+                    return await AddFolderAndFilesShare(parts[1], parts[2], parts[3], parts[4]);
                 case "DOWNLOAD_FILE":
                     if (parts.Length != 3) return "400\n";
                     return await DownloadFile(parts[1], parts[2]);
@@ -574,7 +577,7 @@ namespace FileSharingServer
                 {
                     await conn.OpenAsync();
                     string query = @"
-                        SELECT f.file_path, f.file_type
+                        SELECT f.file_path, f.file_type, f.file_size
                         FROM files f
                         WHERE f.file_name = @fileName
                         AND (
@@ -596,12 +599,13 @@ namespace FileSharingServer
                             {
                                 string filePath = reader["file_path"]?.ToString() ?? "";
                                 string fileType = reader["file_type"]?.ToString() ?? "";
+                                long fileSize = Convert.ToInt64(reader["file_size"] ?? 0);
                                 
                                 // Clean file path - ensure it's safe
                                 filePath = CleanFilePath(filePath);
                                 fileType = CleanString(fileType);
                                 
-                                return $"200|{filePath}|{fileType}\n";
+                                return $"200|{filePath}|{fileType}|{fileSize}\n";
                             }
                             else
                             {
@@ -625,7 +629,7 @@ namespace FileSharingServer
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await conn.OpenAsync();
-                    string query = "SELECT file_path, file_type FROM files WHERE share_pass = @share_pass AND is_shared = 1";
+                    string query = "SELECT file_path, file_type, file_size FROM files WHERE share_pass = @share_pass AND is_shared = 1";
                     using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@share_pass", sharePass);
@@ -635,9 +639,10 @@ namespace FileSharingServer
                             {
                                 string filePath = reader["file_path"]?.ToString() ?? "";
                                 string fileType = reader["file_type"]?.ToString() ?? "";
+                                long fileSize = Convert.ToInt64(reader["file_size"] ?? 0);
                                 filePath = CleanFilePath(filePath);
                                 fileType = CleanString(fileType);
-                                return $"200|{filePath}|{fileType}\n";
+                                return $"200|{filePath}|{fileType}|{fileSize}\n";
                             }
                             else
                             {
@@ -3282,15 +3287,15 @@ namespace FileSharingServer
                         INSERT OR REPLACE INTO files_share (file_id, user_id, share_pass, permission, shared_at) 
                         VALUES (@fileId, @userId, @sharePass, @permission, datetime('now'))";
                     
-                    using (var insertCmd = new System.Data.SQLite.SQLiteCommand(insertQuery, conn))
+                    foreach (int fileId in fileIds)
                     {
-                        insertCmd.Parameters.AddWithValue("@userId", int.Parse(userId));
-                        insertCmd.Parameters.AddWithValue("@sharePass", sharePass);
-                        insertCmd.Parameters.AddWithValue("@permission", permission);
-                        
-                        foreach (int fileId in fileIds)
+                        using (var insertCmd = new System.Data.SQLite.SQLiteCommand(insertQuery, conn))
                         {
                             insertCmd.Parameters.AddWithValue("@fileId", fileId);
+                            insertCmd.Parameters.AddWithValue("@userId", int.Parse(userId));
+                            insertCmd.Parameters.AddWithValue("@sharePass", sharePass);
+                            insertCmd.Parameters.AddWithValue("@permission", permission);
+                            
                             await insertCmd.ExecuteNonQueryAsync();
                         }
                     }
@@ -3365,7 +3370,9 @@ namespace FileSharingServer
                                     var files = new List<string>();
                                     while (await filesReader.ReadAsync())
                                     {
-                                        string fileInfo = $"{filesReader["file_id"]}:{filesReader["file_name"]}:{filesReader["file_type"]}:{filesReader["file_size"]}:{filesReader["upload_at"]}:{filesReader["owner_name"]}:{filesReader["file_path"]}";
+                                        // Format expected by client: file:<file_id>:<file_name>:<file_path>:<relative_path>
+                                        string relativePath = GetRelativePath(filesReader["file_path"].ToString(), folderId);
+                                        string fileInfo = $"file:{filesReader["file_id"]}:{filesReader["file_name"]}:{filesReader["file_path"]}:{relativePath}";
                                         files.Add(fileInfo);
                                     }
                                     
@@ -3374,7 +3381,7 @@ namespace FileSharingServer
                                         return "200|NO_FILES_IN_FOLDER\n";
                                     }
                                     
-                                    return $"200|{string.Join(";", files)}\n";
+                                    return $"200|{string.Join("|", files)}\n";
                                 }
                             }
                         }
@@ -3475,6 +3482,111 @@ namespace FileSharingServer
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Error in RemoveSharedFile: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> AddFolderAndFilesShare(string folderId, string userId, string sharePass, string permission)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] AddFolderAndFilesShare called with: folderId={folderId}, userId={userId}, sharePass={sharePass}, permission={permission}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Start transaction to ensure atomicity
+                    using (var transaction = conn.BeginTransaction())
+                    {
+                        try
+                        {
+                            // 1. Add folder to folder_shares table
+                            string checkQuery = "SELECT COUNT(*) FROM folder_shares WHERE folder_id = @folder_id AND shared_with_user_id = @user_id";
+                            using (var checkCmd = new System.Data.SQLite.SQLiteCommand(checkQuery, conn, transaction))
+                            {
+                                checkCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                                checkCmd.Parameters.AddWithValue("@user_id", int.Parse(userId));
+                                
+                                long count = (long)await checkCmd.ExecuteScalarAsync();
+                                if (count > 0)
+                                {
+                                    Console.WriteLine($"[DEBUG] Folder share entry already exists");
+                                    transaction.Rollback();
+                                    return "200|ALREADY_SHARED\n";
+                                }
+                            }
+                            
+                            string insertFolderQuery = "INSERT INTO folder_shares (folder_id, shared_with_user_id, share_pass, permission, shared_at) VALUES (@folder_id, @user_id, @share_pass, @permission, datetime('now'))";
+                            using (var folderCmd = new System.Data.SQLite.SQLiteCommand(insertFolderQuery, conn, transaction))
+                            {
+                                folderCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                                folderCmd.Parameters.AddWithValue("@user_id", int.Parse(userId));
+                                folderCmd.Parameters.AddWithValue("@share_pass", sharePass);
+                                folderCmd.Parameters.AddWithValue("@permission", permission);
+                                
+                                await folderCmd.ExecuteNonQueryAsync();
+                                Console.WriteLine($"[DEBUG] Folder share entry added successfully");
+                            }
+                            
+                            // 2. Get all files in the folder
+                            string getFilesQuery = @"
+                                SELECT file_id 
+                                FROM files 
+                                WHERE folder_id = @folderId AND status = 'ACTIVE'";
+                            
+                            var fileIds = new List<int>();
+                            using (var getFilesCmd = new System.Data.SQLite.SQLiteCommand(getFilesQuery, conn, transaction))
+                            {
+                                getFilesCmd.Parameters.AddWithValue("@folderId", int.Parse(folderId));
+                                
+                                using (var reader = await getFilesCmd.ExecuteReaderAsync())
+                                {
+                                    while (await reader.ReadAsync())
+                                    {
+                                        fileIds.Add(Convert.ToInt32(reader["file_id"]));
+                                    }
+                                }
+                            }
+                            
+                            Console.WriteLine($"[DEBUG] Found {fileIds.Count} files in folder {folderId}");
+                            
+                            // 3. Add each file to files_share table
+                            string insertFileQuery = @"
+                                INSERT OR REPLACE INTO files_share (file_id, user_id, share_pass, permission, shared_at) 
+                                VALUES (@fileId, @userId, @sharePass, @permission, datetime('now'))";
+                            
+                            foreach (int fileId in fileIds)
+                            {
+                                using (var insertCmd = new System.Data.SQLite.SQLiteCommand(insertFileQuery, conn, transaction))
+                                {
+                                    insertCmd.Parameters.AddWithValue("@fileId", fileId);
+                                    insertCmd.Parameters.AddWithValue("@userId", int.Parse(userId));
+                                    insertCmd.Parameters.AddWithValue("@sharePass", sharePass);
+                                    insertCmd.Parameters.AddWithValue("@permission", permission);
+                                    
+                                    await insertCmd.ExecuteNonQueryAsync();
+                                }
+                            }
+                            
+                            Console.WriteLine($"[DEBUG] Added {fileIds.Count} files to files_share table");
+                            
+                            // Commit transaction
+                            transaction.Commit();
+                            return "200|FOLDER_AND_FILES_SHARED\n";
+                        }
+                        catch (Exception ex)
+                        {
+                            transaction.Rollback();
+                            throw;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in AddFolderAndFilesShare: {ex.Message}");
                 Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
                 return "500|INTERNAL_ERROR\n";
             }

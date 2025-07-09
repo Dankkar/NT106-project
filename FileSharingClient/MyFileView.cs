@@ -33,6 +33,10 @@ namespace FileSharingClient
             MyFileLayoutPanel.WrapContents = false;
             // Set placeholder text style
             txtSearch.ForeColor = Color.Gray;
+            
+            // Add KeyPress event handler for search length validation
+            txtSearch.KeyPress += txtSearch_KeyPress;
+            
             // Subscribe to TrashBinView events
             TrashBinView.FileRestoredFromTrash += OnFileRestoredFromTrash;
             TrashBinView.FolderRestoredFromTrash += OnFolderRestoredFromTrash;
@@ -105,7 +109,7 @@ namespace FileSharingClient
         {
             var backButton = new Button()
             {
-                Text = "? Back",
+                Text = "← Back",
                 Size = new Size(100, 40),
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 BackColor = Color.LightGray,
@@ -128,7 +132,7 @@ namespace FileSharingClient
             
             var iconLabel = new Label()
             {
-                Text = "??",
+                Text = "📁",
                 Font = new Font("Segoe UI", 12),
                 Location = new Point(10, 10),
                 Size = new Size(30, 20),
@@ -926,6 +930,23 @@ namespace FileSharingClient
             {
                 txtSearch.Text = "Tìm kiếm file...";
                 txtSearch.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtSearch_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            const int MAX_SEARCH_LENGTH = 50; // Giới hạn tìm kiếm tối đa 50 ký tự
+            
+            // Cho phép backspace, delete và control keys
+            if (char.IsControl(e.KeyChar))
+                return;
+                
+            // Kiểm tra độ dài
+            if (txtSearch.Text.Length >= MAX_SEARCH_LENGTH && txtSearch.Text != "Tìm kiếm file...")
+            {
+                e.Handled = true; // Ngăn không cho nhập thêm ký tự
+                MessageBox.Show($"Từ khóa tìm kiếm không được vượt quá {MAX_SEARCH_LENGTH} ký tự.", 
+                    "Giới hạn tìm kiếm", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 

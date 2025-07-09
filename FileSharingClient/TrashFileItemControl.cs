@@ -34,7 +34,9 @@ namespace FileSharingClient
             FileType = fileType;
 
             // Set labels
-            lblFileName.Text = fileName;
+            lblFileName.Text = TruncateName(fileName, 30);
+            var toolTip = new ToolTip();
+            toolTip.SetToolTip(lblFileName, fileName);
             lblOwner.Text = owner;
             lblDeletedAt.Text = deletedAt;
             lblFileSize.Text = fileSize;
@@ -133,6 +135,13 @@ namespace FileSharingClient
                 default:
                     return "📄";
             }
+        }
+
+        private string TruncateName(string name, int maxLength)
+        {
+            if (string.IsNullOrEmpty(name) || name.Length <= maxLength)
+                return name;
+            return name.Substring(0, maxLength - 3) + "...";
         }
 
         private void TrashFileItemControl_Load(object sender, EventArgs e)

@@ -30,6 +30,9 @@ namespace FileSharingClient
             // Set placeholder text style
             txtSearch.ForeColor = Color.Gray;
             
+            // Add KeyPress event handler for search length validation
+            txtSearch.KeyPress += txtSearch_KeyPress;
+            
             _ = InitAsync();
         }
 
@@ -123,7 +126,7 @@ namespace FileSharingClient
         {
             var backButton = new Button()
             {
-                Text = "? Back",
+                Text = "← Back",
                 Size = new Size(100, 40),
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 BackColor = Color.LightGray,
@@ -192,7 +195,7 @@ namespace FileSharingClient
                         string data = response.Substring(4);
                         if (data != "NO_FILES_IN_FOLDER")
                         {
-                            var files = ParseFileItems(data);
+                            var files = ParseSharedFolderFiles(data);
                             allSharedFiles.AddRange(files);
                         }
                     }
@@ -280,6 +283,59 @@ namespace FileSharingClient
                 }
                 // Nếu cần parse folder thì thêm else if (item.StartsWith("folder:"))
             }
+            return files;
+        }
+
+        private List<Services.FileItem> ParseSharedFolderFiles(string data)
+        {
+            var files = new List<Services.FileItem>();
+            if (string.IsNullOrWhiteSpace(data) || data == "NO_FILES_IN_FOLDER" || data == "NO_CONTENTS") return files;
+            
+            Console.WriteLine($"[DEBUG][ParseSharedFolderFiles] Raw data: {data}");
+
+            string[] items = data.Split('|');
+            foreach (string item in items)
+            {
+                if (string.IsNullOrWhiteSpace(item)) continue;
+                if (item.StartsWith("file:"))
+                {
+                    // Format from server: file:<file_id>:<file_name>:<file_path>:<relative_path>
+                    var parts = item.Split(':');
+                    if (parts.Length >= 5)
+                    {
+                        if (int.TryParse(parts[1], out int fileId))
+                        {
+                            string name = parts[2];
+                            string filePath = parts[3];
+                            string relativePath = parts[4];
+                            
+                            // Get file extension for type
+                            string fileType = Path.GetExtension(name).ToLower();
+                            
+                            files.Add(new Services.FileItem
+                            {
+                                Id = fileId,
+                                Name = name,
+                                Type = fileType,
+                                FilePath = filePath,
+                                Size = "Unknown", // Server doesn't provide size in this format
+                                CreatedAt = DateTime.Now.ToString(), // Placeholder
+                                Owner = "Shared" // Placeholder for shared files
+                            });
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[ERROR] Failed to parse file_id from: {item}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[ERROR] Invalid file format: {item}");
+                    }
+                }
+            }
+            
+            Console.WriteLine($"[DEBUG][ParseSharedFolderFiles] Parsed {files.Count} files");
             return files;
         }
 
@@ -415,6 +471,23 @@ namespace FileSharingClient
             {
                 txtSearch.Text = "Tìm kiếm file...";
                 txtSearch.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtSearch_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            const int MAX_SEARCH_LENGTH = 50; // Giới hạn tìm kiếm tối đa 50 ký tự
+            
+            // Cho phép backspace, delete và control keys
+            if (char.IsControl(e.KeyChar))
+                return;
+                
+            // Kiểm tra độ dài
+            if (txtSearch.Text.Length >= MAX_SEARCH_LENGTH && txtSearch.Text != "Tìm kiếm file...")
+            {
+                e.Handled = true; // Ngăn không cho nhập thêm ký tự
+                MessageBox.Show($"Từ khóa tìm kiếm không được vượt quá {MAX_SEARCH_LENGTH} ký tự.", 
+                    "Giới hạn tìm kiếm", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -580,24 +653,15 @@ namespace FileSharingClient
                     // First get the permission from the share pass
                     string permission = await GetPermissionFromSharePassAsync(sharePass, "folder");
                     
-                    // Add entry to folder_shares table with permission
-                    string message = $"ADD_FOLDER_SHARE_ENTRY_WITH_PERMISSION|{folderId}|{userId}|{sharePass}|{permission}";
-                    Console.WriteLine($"[DEBUG] Adding folder share entry: {message}");
+                    // Add folder and all its files to share tables in one atomic transaction
+                    string message = $"ADD_FOLDER_AND_FILES_SHARE|{folderId}|{userId}|{sharePass}|{permission}";
+                    Console.WriteLine($"[DEBUG] Adding folder and files share: {message}");
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
-                    Console.WriteLine($"[DEBUG] Add folder reference response: '{response}'");
+                    Console.WriteLine($"[DEBUG] Add folder and files response: '{response}'");
                     
-                    if (response != null && response.StartsWith("200|"))
-                    {
-                        // Also add all files in this folder to files_share table
-                        bool filesAdded = await AddFilesInFolderToShareAsync(folderId, userId, sharePass, permission);
-                        Console.WriteLine($"[DEBUG] Files in folder added to share: {filesAdded}");
-                        
-                        return true;
-                    }
-                    
-                    return false;
+                    return response != null && response.StartsWith("200|");
                 }
             }
             catch (Exception ex)
@@ -607,32 +671,7 @@ namespace FileSharingClient
             }
         }
 
-        private async Task<bool> AddFilesInFolderToShareAsync(string folderId, string userId, string sharePass, string permission)
-        {
-            try
-            {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
-                using (sslStream)
-                using (var reader = new StreamReader(sslStream, Encoding.UTF8))
-                using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
-                {
-                    // Send command to add all files in folder to files_share table
-                    string message = $"ADD_FILES_IN_FOLDER_TO_SHARE|{folderId}|{userId}|{sharePass}|{permission}";
-                    Console.WriteLine($"[DEBUG] Adding files in folder to share: {message}");
-                    await writer.WriteLineAsync(message);
 
-                    string response = await reader.ReadLineAsync();
-                    Console.WriteLine($"[DEBUG] Add files in folder response: '{response}'");
-                    
-                    return response != null && response.StartsWith("200|");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adding files in folder to share: {ex.Message}");
-                return false;
-            }
-        }
 
         private async Task<string> GetPermissionFromSharePassAsync(string sharePass, string itemType)
         {
@@ -905,7 +944,7 @@ namespace FileSharingClient
                         string data = response.Substring(4);
                         if (data != "NO_FILES_IN_FOLDER")
                         {
-                            var files = ParseFileItems(data);
+                            var files = ParseSharedFolderFiles(data);
                             foreach (var file in files)
                             {
                                 try

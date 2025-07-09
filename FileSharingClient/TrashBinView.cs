@@ -40,6 +40,9 @@ namespace FileSharingClient
             // Set placeholder text style for search
             txtSearch.ForeColor = Color.Gray;
             
+            // Add KeyPress event handler for search length validation
+            txtSearch.KeyPress += txtSearch_KeyPress;
+            
             // Subscribe to visibility changes to refresh when view becomes visible
             this.VisibleChanged += OnVisibilityChanged;
             
@@ -499,27 +502,36 @@ namespace FileSharingClient
                 if (response.StartsWith("200|"))
                 {
                     string[] parts = response.Substring(4).Split('|');
-                    if (parts.Length >= 2)
+                    if (parts.Length >= 3)
                     {
                         string filePath = parts[0];
                         string fileType = parts[1];
+                        string fileSizeStr = parts[2];
                         
-                        // Get file size if file exists and path is valid
+                        // Parse file size from server response
                         string size = "N/A";
-                        if (IsValidPath(filePath))
+                        if (long.TryParse(fileSizeStr, out long fileSizeBytes))
                         {
-                            try
+                            size = FormatFileSize(fileSizeBytes);
+                        }
+                        else
+                        {
+                            // Fallback: try to get file size from physical file if path is valid
+                            if (IsValidPath(filePath))
                             {
-                                if (File.Exists(filePath))
+                                try
                                 {
-                                    FileInfo fileInfo = new FileInfo(filePath);
-                                    size = FormatFileSize(fileInfo.Length);
+                                    if (File.Exists(filePath))
+                                    {
+                                        FileInfo fileInfo = new FileInfo(filePath);
+                                        size = FormatFileSize(fileInfo.Length);
+                                    }
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"[DEBUG] TrashBinView - Error accessing file {filePath}: {ex.Message}");
-                                // File path may have issues, but we can continue without size
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"[DEBUG] TrashBinView - Error accessing file {filePath}: {ex.Message}");
+                                    // File path may have issues, but we can continue without size
+                                }
                             }
                         }
                         
@@ -965,6 +977,23 @@ namespace FileSharingClient
             {
                 txtSearch.Text = "Tìm kiếm file...";
                 txtSearch.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtSearch_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            const int MAX_SEARCH_LENGTH = 50; // Giới hạn tìm kiếm tối đa 50 ký tự
+            
+            // Cho phép backspace, delete và control keys
+            if (char.IsControl(e.KeyChar))
+                return;
+                
+            // Kiểm tra độ dài
+            if (txtSearch.Text.Length >= MAX_SEARCH_LENGTH && txtSearch.Text != "Tìm kiếm file...")
+            {
+                e.Handled = true; // Ngăn không cho nhập thêm ký tự
+                MessageBox.Show($"Từ khóa tìm kiếm không được vượt quá {MAX_SEARCH_LENGTH} ký tự.", 
+                    "Giới hạn tìm kiếm", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
