@@ -34,12 +34,16 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.UploadedPanel = new System.Windows.Forms.Panel();
+            this.progressPanel = new System.Windows.Forms.Panel();
+            this.lblProgressStatus = new System.Windows.Forms.Label();
+            this.progressBarUpload = new System.Windows.Forms.ProgressBar();
             this.TotalSizelbl = new System.Windows.Forms.Label();
             this.btnUpload = new System.Windows.Forms.Button();
             this.UploadFilePanel = new System.Windows.Forms.FlowLayoutPanel();
             this.ListFiles = new System.Windows.Forms.Label();
             this.DragPanel.SuspendLayout();
             this.UploadedPanel.SuspendLayout();
+            this.progressPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // DragPanel
@@ -87,12 +91,12 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.label1.Location = new System.Drawing.Point(88, 75);
+            this.label1.Location = new System.Drawing.Point(76, 67);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(177, 21);
+            this.label1.Size = new System.Drawing.Size(172, 21);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Kéo và thả File tại đây";
+            this.label1.Text = "Kéo và thả file/folder";
             // 
             // label2
             // 
@@ -108,6 +112,7 @@
             // 
             // UploadedPanel
             // 
+            this.UploadedPanel.Controls.Add(this.progressPanel);
             this.UploadedPanel.Controls.Add(this.TotalSizelbl);
             this.UploadedPanel.Controls.Add(this.btnUpload);
             this.UploadedPanel.Controls.Add(this.UploadFilePanel);
@@ -120,20 +125,47 @@
             this.UploadedPanel.Size = new System.Drawing.Size(1337, 985);
             this.UploadedPanel.TabIndex = 1;
             // 
+            // progressPanel
+            // 
+            this.progressPanel.Controls.Add(this.lblProgressStatus);
+            this.progressPanel.Controls.Add(this.progressBarUpload);
+            this.progressPanel.Location = new System.Drawing.Point(48, 800);
+            this.progressPanel.Name = "progressPanel";
+            this.progressPanel.Size = new System.Drawing.Size(1000, 60);
+            this.progressPanel.TabIndex = 4;
+            this.progressPanel.Visible = false;
+            // 
+            // lblProgressStatus
+            // 
+            this.lblProgressStatus.AutoSize = true;
+            this.lblProgressStatus.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.lblProgressStatus.Location = new System.Drawing.Point(3, 5);
+            this.lblProgressStatus.Name = "lblProgressStatus";
+            this.lblProgressStatus.Size = new System.Drawing.Size(107, 19);
+            this.lblProgressStatus.TabIndex = 1;
+            this.lblProgressStatus.Text = "Đang chuẩn bị...";
+            // 
+            // progressBarUpload
+            // 
+            this.progressBarUpload.Location = new System.Drawing.Point(3, 30);
+            this.progressBarUpload.Name = "progressBarUpload";
+            this.progressBarUpload.Size = new System.Drawing.Size(994, 25);
+            this.progressBarUpload.TabIndex = 0;
+            // 
             // TotalSizelbl
             // 
             this.TotalSizelbl.AutoSize = true;
-            this.TotalSizelbl.Font = new System.Drawing.Font("Segoe UI Semibold", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.TotalSizelbl.Font = new System.Drawing.Font("Segoe UI Semibold", 12F, System.Drawing.FontStyle.Bold);
             this.TotalSizelbl.Location = new System.Drawing.Point(48, 759);
             this.TotalSizelbl.Name = "TotalSizelbl";
-            this.TotalSizelbl.Size = new System.Drawing.Size(245, 37);
+            this.TotalSizelbl.Size = new System.Drawing.Size(145, 21);
             this.TotalSizelbl.TabIndex = 2;
             this.TotalSizelbl.Text = "Tổng dung lượng: ";
             // 
             // btnUpload
             // 
             this.btnUpload.Font = new System.Drawing.Font("Segoe UI", 16F);
-            this.btnUpload.Location = new System.Drawing.Point(658, 847);
+            this.btnUpload.Location = new System.Drawing.Point(550, 880);
             this.btnUpload.Margin = new System.Windows.Forms.Padding(2);
             this.btnUpload.Name = "btnUpload";
             this.btnUpload.Size = new System.Drawing.Size(211, 79);
@@ -147,19 +179,19 @@
             this.UploadFilePanel.Location = new System.Drawing.Point(4, 54);
             this.UploadFilePanel.Margin = new System.Windows.Forms.Padding(2);
             this.UploadFilePanel.Name = "UploadFilePanel";
-            this.UploadFilePanel.Size = new System.Drawing.Size(1331, 703);
+            this.UploadFilePanel.Size = new System.Drawing.Size(963, 703);
             this.UploadFilePanel.TabIndex = 1;
             // 
             // ListFiles
             // 
             this.ListFiles.AutoSize = true;
             this.ListFiles.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Bold);
-            this.ListFiles.Location = new System.Drawing.Point(653, 13);
+            this.ListFiles.Location = new System.Drawing.Point(248, 13);
             this.ListFiles.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.ListFiles.Name = "ListFiles";
-            this.ListFiles.Size = new System.Drawing.Size(226, 25);
+            this.ListFiles.Size = new System.Drawing.Size(299, 25);
             this.ListFiles.TabIndex = 0;
-            this.ListFiles.Text = "Các File đã được Upload";
+            this.ListFiles.Text = "Các Files/Folder đã được Upload";
             // 
             // UploadView
             // 
@@ -174,6 +206,8 @@
             this.DragPanel.PerformLayout();
             this.UploadedPanel.ResumeLayout(false);
             this.UploadedPanel.PerformLayout();
+            this.progressPanel.ResumeLayout(false);
+            this.progressPanel.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -190,5 +224,8 @@
         private System.Windows.Forms.Button btnBrowse;
         private System.Windows.Forms.Button btnBrowseFolder;
         private System.Windows.Forms.Label TotalSizelbl;
+        private System.Windows.Forms.Panel progressPanel;
+        private System.Windows.Forms.Label lblProgressStatus;
+        private System.Windows.Forms.ProgressBar progressBarUpload;
     }
 }

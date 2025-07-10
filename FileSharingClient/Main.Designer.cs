@@ -30,7 +30,6 @@
         {
             this.Account = new System.Windows.Forms.Button();
             this.PanelDashboard = new System.Windows.Forms.Panel();
-            this.FilePreview_Dashboard = new FontAwesome.Sharp.IconButton();
             this.TrashBin_Dashboard = new FontAwesome.Sharp.IconButton();
             this.Upload_Dashboard = new FontAwesome.Sharp.IconButton();
             this.Share_Dashboard = new FontAwesome.Sharp.IconButton();
@@ -54,7 +53,6 @@
             // 
             this.PanelDashboard.BackColor = System.Drawing.Color.RosyBrown;
             this.PanelDashboard.Controls.Add(this.Account);
-            this.PanelDashboard.Controls.Add(this.FilePreview_Dashboard);
             this.PanelDashboard.Controls.Add(this.TrashBin_Dashboard);
             this.PanelDashboard.Controls.Add(this.Upload_Dashboard);
             this.PanelDashboard.Controls.Add(this.Share_Dashboard);
@@ -65,26 +63,6 @@
             this.PanelDashboard.Name = "PanelDashboard";
             this.PanelDashboard.Size = new System.Drawing.Size(200, 985);
             this.PanelDashboard.TabIndex = 15;
-            // 
-            // FilePreview_Dashboard
-            // 
-            this.FilePreview_Dashboard.Dock = System.Windows.Forms.DockStyle.Top;
-            this.FilePreview_Dashboard.FlatAppearance.BorderSize = 0;
-            this.FilePreview_Dashboard.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.FilePreview_Dashboard.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(163)));
-            this.FilePreview_Dashboard.ForeColor = System.Drawing.Color.White;
-            this.FilePreview_Dashboard.IconChar = FontAwesome.Sharp.IconChar.FileCircleCheck;
-            this.FilePreview_Dashboard.IconColor = System.Drawing.Color.White;
-            this.FilePreview_Dashboard.IconFont = FontAwesome.Sharp.IconFont.Auto;
-            this.FilePreview_Dashboard.Location = new System.Drawing.Point(0, 192);
-            this.FilePreview_Dashboard.Name = "FilePreview_Dashboard";
-            this.FilePreview_Dashboard.Size = new System.Drawing.Size(200, 47);
-            this.FilePreview_Dashboard.TabIndex = 5;
-            this.FilePreview_Dashboard.Text = "File Preview";
-            this.FilePreview_Dashboard.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.FilePreview_Dashboard.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this.FilePreview_Dashboard.UseVisualStyleBackColor = true;
-            this.FilePreview_Dashboard.Click += new System.EventHandler(this.FilePreview_Dashboard_Click);
             // 
             // TrashBin_Dashboard
             // 
@@ -201,7 +179,6 @@
         private FontAwesome.Sharp.IconButton MyFile_Dashboard;
         private FontAwesome.Sharp.IconButton Upload_Dashboard;
         private FontAwesome.Sharp.IconButton Share_Dashboard;
-        private FontAwesome.Sharp.IconButton FilePreview_Dashboard;
         private FontAwesome.Sharp.IconButton TrashBin_Dashboard;
         private System.Windows.Forms.Panel MainContentPanel;
     }

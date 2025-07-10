@@ -129,11 +129,17 @@
     <Compile Include="FolderItemControl.Designer.cs">
       <DependentUpon>FolderItemControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="FilePreview.cs">
+    <Compile Include="FileUploadItemControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="FilePreview.Designer.cs">
-      <DependentUpon>FilePreview.cs</DependentUpon>
+    <Compile Include="FileUploadItemControl.Designer.cs">
+      <DependentUpon>FileUploadItemControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FolderUploadItemControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="FolderUploadItemControl.Designer.cs">
+      <DependentUpon>FolderUploadItemControl.cs</DependentUpon>
     </Compile>
     <Compile Include="ForgotPassword.cs">
       <SubType>Form</SubType>
@@ -211,9 +217,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FolderItemControl.resx">
       <DependentUpon>FolderItemControl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FilePreview.resx">
-      <DependentUpon>FilePreview.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ForgotPassword.resx">
       <DependentUpon>ForgotPassword.cs</DependentUpon>

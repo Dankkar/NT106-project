@@ -55,7 +55,7 @@ namespace FileSharingClient
                         int progress = (int)((totalSent * 100) / totalBytes);
                     }
                     totalStorageUsed += totalSent;
-                    MessageBox.Show("File dã g?i xong!");
+                    MessageBox.Show("File dï¿½ g?i xong!");
                 }
             }
             catch (Exception ex)
@@ -90,7 +90,6 @@ namespace FileSharingClient
 
         private MyFileView myfileView = new MyFileView();
         private ShareView shareView = new ShareView();
-        private FilePreview filepreviewView = new FilePreview();
         private TrashBinView trashbinView = new TrashBinView();
         private UploadView uploadView = new UploadView();
 
@@ -98,9 +97,9 @@ namespace FileSharingClient
         {
             Account accountForm = new Account();
             string username = Session.LoggedInUser ?? "Unknown";
-            string storageUsed = GetTotalStorageUsed(); // Hàm dã d?nh nghia tru?c
+            string storageUsed = GetTotalStorageUsed(); // Hï¿½m dï¿½ d?nh nghia tru?c
             accountForm.SetAccountInfo(username, storageUsed);
-            accountForm.ShowDialog(); // Hi?n th? form Account và ch? ngu?i dùng thao tác
+            accountForm.ShowDialog(); // Hi?n th? form Account vï¿½ ch? ngu?i dï¿½ng thao tï¿½c
         }
 
         private List<Control> dashboardButtons;
@@ -127,7 +126,7 @@ namespace FileSharingClient
             uploadView.FileUploaded += async () =>
             {
                 await shareView.Reload();
-                await filepreviewView.Reload();
+                await trashbinView.RefreshTrashFiles();
             };
             LoadView(myfileView);
             
@@ -140,8 +139,7 @@ namespace FileSharingClient
                     MyFile_Dashboard,
                     Share_Dashboard,
                     Upload_Dashboard,
-                    TrashBin_Dashboard,
-                    FilePreview_Dashboard
+                    TrashBin_Dashboard
                 };
         }
         private async void Share_Dashboard_Click(object sender, EventArgs e)
@@ -160,13 +158,6 @@ namespace FileSharingClient
             HightlightSelectedDashboard(MyFile_Dashboard);
         }
 
-
-        private async void FilePreview_Dashboard_Click(object sender, EventArgs e)
-        {
-            await filepreviewView.Reload();
-            LoadView(filepreviewView);
-            HightlightSelectedDashboard(FilePreview_Dashboard);
-        }
 
         private void TrashBin_Dashboard_Click(object sender, EventArgs e)
         {
