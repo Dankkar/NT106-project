@@ -95,11 +95,11 @@ namespace FileSharingClient
                         {
                             string response = await reader.ReadLineAsync();
                             if (response.Trim() != "200")
-                                MessageBox.Show($"L?i upload file {pf.FilePath}: {response}");
+                                MessageBox.Show($"Lỗi upload file {pf.FilePath}: {response}");
                         }
                     }
                 }
-                MessageBox.Show("Upload folder th�nh c�ng!");
+                MessageBox.Show("Upload folder thành công!");
                 pendingFiles.Clear();
                 totalSizeBytes = 0;
                 pendingFolder = null;
@@ -111,14 +111,14 @@ namespace FileSharingClient
             }
             else
             {
-                await UploadFiles(); // X? l� upload file l? nhu cu
+                await UploadFiles(); // Xử lý upload file lẻ như cũ
             }
         }
 
         private async Task UploadFiles()
         {
             var filesToUpload = new List<string>(pendingFiles.Select(pf => pf.FilePath));
-            // Neu co nhieu file -> nen lai
+            // Nếu có nhiều file -> nén lại
             if(filesToUpload.Count > 1)
             {
                 string zipFilePath = CompressFiles(filesToUpload);
@@ -140,30 +140,30 @@ namespace FileSharingClient
                         byte[] commandBytes = Encoding.UTF8.GetBytes(command + "\n");
                         await sslStream.WriteAsync(commandBytes, 0, commandBytes.Length);
                         await sslStream.FlushAsync();
-                        Console.WriteLine($"�� g?i l?nh: {command.Trim()}");
+                        Console.WriteLine($"Đã gửi lệnh: {command.Trim()}");
                         // Send encrypted file data
                         await sslStream.WriteAsync(encryptedData, 0, encryptedData.Length);
                         await sslStream.FlushAsync();
                         using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                         {
                             string response = await reader.ReadLineAsync();
-                            Console.WriteLine($"Server tr? v?: {response}");
+                            Console.WriteLine($"Server trả về: {response}");
                             if (response.Trim() == "413")
-                                MessageBox.Show("File qu� l?n. Vui l�ng th? l?i v?i file nh? hon.");
+                                MessageBox.Show("File quá lớn. Vui lòng thử lại với file nhỏ hơn.");
                             else if (response.Trim() == "200")
                             {
-                                MessageBox.Show("T?i l�n th�nh c�ng");
+                                MessageBox.Show("Tải lên thành công");
                                 if (FileUploaded != null)
                                     await FileUploaded.Invoke();
                             }
                             else
-                                MessageBox.Show($"L?i: {response.Trim()}");
+                                MessageBox.Show($"Lỗi: {response.Trim()}");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"L?i upload file {filePath}: {ex.Message}");
+                    MessageBox.Show($"Lỗi upload file {filePath}: {ex.Message}");
                 }
             }
             pendingFiles.Clear();
@@ -186,7 +186,7 @@ namespace FileSharingClient
         private void btnBrowseFolder_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog dialog = new FolderBrowserDialog();
-            dialog.Description = "Ch?n folder d? upload";
+            dialog.Description = "Chọn folder để upload";
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 ProcessLocalFolder(dialog.SelectedPath);
@@ -196,9 +196,29 @@ namespace FileSharingClient
         private void ProcessLocalFile(string filePath)
         {
             const long MAX_TOTAL_SIZE = 10 * 1024 * 1024;
+            const int MAX_FILENAME_LENGTH = 100; // Giới hạn tên file tối đa 100 ký tự
+            
             if (!File.Exists(filePath)) return;
 
             string fileName = Path.GetFileName(filePath);
+            
+            // Kiểm tra độ dài tên file
+            if (fileName.Length > MAX_FILENAME_LENGTH)
+            {
+                MessageBox.Show($"Tên file '{fileName}' quá dài (tối đa {MAX_FILENAME_LENGTH} ký tự). Vui lòng đổi tên file và thử lại.", 
+                    "Tên file quá dài", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
+            // Kiểm tra ký tự không hợp lệ trong tên file
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            if (fileName.IndexOfAny(invalidChars) >= 0)
+            {
+                MessageBox.Show($"Tên file '{fileName}' chứa ký tự không hợp lệ. Vui lòng đổi tên file và thử lại.", 
+                    "Tên file không hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
             string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string owner = Session.LoggedInUser;
             FileInfo fi = new FileInfo(filePath);
@@ -206,7 +226,7 @@ namespace FileSharingClient
             
             if(totalSizeBytes + fileSizeBytes > MAX_TOTAL_SIZE)
             {
-                MessageBox.Show($"Kh�ng th? th�m '{fileName}' v� t?ng dung lu?ng vu?t qu� 10MB.");
+                MessageBox.Show($"Không thể thêm '{fileName}' vì tổng dung lượng vượt quá 10MB.");
                 return;
             }
             totalSizeBytes += fileSizeBytes;
@@ -220,16 +240,46 @@ namespace FileSharingClient
         private void ProcessLocalFolder(string folderPath)
         {
             const long MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB for folders
+            const int MAX_FOLDERNAME_LENGTH = 100; // Giới hạn tên folder tối đa 100 ký tự
+            
             if (!Directory.Exists(folderPath)) return;
+
+            string folderName = Path.GetFileName(folderPath);
+            
+            // Kiểm tra độ dài tên folder
+            if (folderName.Length > MAX_FOLDERNAME_LENGTH)
+            {
+                MessageBox.Show($"Tên folder '{folderName}' quá dài (tối đa {MAX_FOLDERNAME_LENGTH} ký tự). Vui lòng đổi tên folder và thử lại.", 
+                    "Tên folder quá dài", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
+            // Kiểm tra ký tự không hợp lệ trong tên folder
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            if (folderName.IndexOfAny(invalidChars) >= 0)
+            {
+                MessageBox.Show($"Tên folder '{folderName}' chứa ký tự không hợp lệ. Vui lòng đổi tên folder và thử lại.", 
+                    "Tên folder không hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             pendingFiles.Clear();
             totalSizeBytes = 0;
             ClearFileList();
 
-            string folderName = Path.GetFileName(folderPath);
             string[] files = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
             foreach (var file in files)
             {
+                string fileName = Path.GetFileName(file);
+                
+                // Kiểm tra độ dài tên file trong folder
+                if (fileName.Length > MAX_FOLDERNAME_LENGTH)
+                {
+                    MessageBox.Show($"File '{fileName}' trong folder có tên quá dài (tối đa {MAX_FOLDERNAME_LENGTH} ký tự). Vui lòng đổi tên file và thử lại.", 
+                        "Tên file trong folder quá dài", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                
                 string relativePath = Path.GetDirectoryName(file.Substring(folderPath.Length).TrimStart(Path.DirectorySeparatorChar)) ?? "";
                 pendingFiles.Add(new PendingFile { FilePath = file, RelativePath = relativePath });
                 FileInfo fi = new FileInfo(file);
@@ -252,7 +302,7 @@ namespace FileSharingClient
         }
         private void UpdateFileSizeLabel()
         {
-            TotalSizelbl.Text = $"T?ng k�ch thu?c: {FormatFileSize(totalSizeBytes)}";
+            TotalSizelbl.Text = $"Tổng kích thước: {FormatFileSize(totalSizeBytes)}";
         }
         private async void OnFileDeleted(string filePath)
         {
@@ -341,7 +391,7 @@ namespace FileSharingClient
 
             Label lblFileName = new Label()
             {
-                Text = "T�n file",
+                Text = "Tên file",
                 Location = new Point(39, 5),
                 Width = 180,
                 Font = headerFont
@@ -349,7 +399,7 @@ namespace FileSharingClient
 
             Label lblOwner = new Label()
             {
-                Text = "Ch? s? h?u",
+                Text = "Chủ sở hữu",
                 Location = new Point(248, 5),
                 Width = 140,
                 Font = headerFont
@@ -357,7 +407,7 @@ namespace FileSharingClient
 
             Label lblCreateAt = new Label()
             {
-                Text = "Ng�y upload",
+                Text = "Ngày upload",
                 Location = new Point(420, 5),
                 Width = 120,
                 Font = headerFont
@@ -365,7 +415,7 @@ namespace FileSharingClient
 
             Label lblFileSize = new Label()
             {
-                Text = "Dung lu?ng",
+                Text = "Dung lượng",
                 Location = new Point(565, 5),
                 Width = 130,
                 Font = headerFont
@@ -373,7 +423,7 @@ namespace FileSharingClient
 
             Label lblFilePath = new Label()
             {
-                Text = "�u?ng d?n",
+                Text = "Đường dẫn",
                 Location = new Point(733, 5),
                 Width = 400,
                 Font = headerFont,
@@ -382,8 +432,8 @@ namespace FileSharingClient
 
             Label lblOption = new Label()
             {
-                Text = "Tu? ch?n",
-                Location = new Point(1253, 5), // Kh?p v?i btnMore
+                Text = "Tùy chọn",
+                Location = new Point(1253, 5), // Khớp với btnMore
                 Width = 80,
                 Font = headerFont
             };

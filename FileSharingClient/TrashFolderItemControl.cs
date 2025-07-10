@@ -25,7 +25,9 @@ namespace FileSharingClient
             Owner = owner;
             
             // Set the data
-            lblFolderName.Text = folderName;
+            lblFolderName.Text = TruncateName(folderName, 30);
+            var toolTip = new ToolTip();
+            toolTip.SetToolTip(lblFolderName, folderName);
             lblOwner.Text = owner;
             lblDeletedAt.Text = deletedAt;
             lblType.Text = "Folder";
@@ -49,6 +51,13 @@ namespace FileSharingClient
             // Configure event handlers
             btnRestore.Click += BtnRestore_Click;
             btnPermanentDelete.Click += BtnPermanentDelete_Click;
+        }
+
+        private string TruncateName(string name, int maxLength)
+        {
+            if (string.IsNullOrEmpty(name) || name.Length <= maxLength)
+                return name;
+            return name.Substring(0, maxLength - 3) + "...";
         }
 
         private void BtnRestore_Click(object sender, EventArgs e)
