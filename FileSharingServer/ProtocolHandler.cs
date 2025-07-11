@@ -93,10 +93,10 @@ namespace FileSharingServer
         }
         static async Task<string> ProcessRequest(string request, NetworkStream stream)
         {
-            Console.WriteLine($"[DEBUG] ProcessRequest - Raw request: '{request}'");
+            //Console.WriteLine($"[DEBUG] ProcessRequest - Raw request: '{request}'");
             
             string[] parts = request.Split('|');
-            Console.WriteLine($"[DEBUG] ProcessRequest - Split into {parts.Length} parts");
+            //Console.WriteLine($"[DEBUG] ProcessRequest - Split into {parts.Length} parts");
             
             if (parts.Length == 0)
             {
@@ -105,7 +105,7 @@ namespace FileSharingServer
             }
 
             string command = parts[0];
-            Console.WriteLine($"[DEBUG] ProcessRequest - Command: '{command}'");
+            //Console.WriteLine($"[DEBUG] ProcessRequest - Command: '{command}'");
 
             switch (command)
             {
@@ -320,15 +320,15 @@ namespace FileSharingServer
                     if (parts.Length != 3) return "400\n";
                     return await GetSharedFolderContents(parts[1], parts[2]);
                 case "GET_TRASH_FILES":
-                    Console.WriteLine($"[DEBUG] ProcessRequest - GET_TRASH_FILES case reached");
+                    //Console.WriteLine($"[DEBUG] ProcessRequest - GET_TRASH_FILES case reached");
                     if (parts.Length != 2) 
                     {
                         Console.WriteLine($"[ERROR] ProcessRequest - GET_TRASH_FILES: Invalid parts count: {parts.Length}");
                         return "400\n";
                     }
-                    Console.WriteLine($"[DEBUG] ProcessRequest - GET_TRASH_FILES: Calling GetTrashFiles with userId: {parts[1]}");
+                    //Console.WriteLine($"[DEBUG] ProcessRequest - GET_TRASH_FILES: Calling GetTrashFiles with userId: {parts[1]}");
                     string trashResult = await GetTrashFiles(parts[1]);
-                    Console.WriteLine($"[DEBUG] ProcessRequest - GET_TRASH_FILES: GetTrashFiles returned: '{trashResult.Substring(0, Math.Min(100, trashResult.Length))}...'");
+                    //Console.WriteLine($"[DEBUG] ProcessRequest - GET_TRASH_FILES: GetTrashFiles returned: '{trashResult.Substring(0, Math.Min(100, trashResult.Length))}...'");
                     return trashResult;
                 case "RESTORE_FILE":
                     if (parts.Length != 3) return "400\n";
@@ -648,12 +648,12 @@ namespace FileSharingServer
                             {
                                 int fileId = Convert.ToInt32(reader["file_id"]);
                                 int ownerId = Convert.ToInt32(reader["owner_id"]);
-                                Console.WriteLine($"[DEBUG] GetFileInfoBySharePass found: fileId={fileId}, ownerId={ownerId}");
+                                //Console.WriteLine($"[DEBUG] GetFileInfoBySharePass found: fileId={fileId}, ownerId={ownerId}");
                                 return $"200|{fileId}|{ownerId}\n";
                             }
                             else
                             {
-                                Console.WriteLine($"[DEBUG] GetFileInfoBySharePass: No file found with share_pass={sharePass}");
+                                //Console.WriteLine($"[DEBUG] GetFileInfoBySharePass: No file found with share_pass={sharePass}");
                                 return "404|FILE_NOT_FOUND\n";
                             }
                         }
@@ -671,7 +671,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] AddFileShareEntry called with: fileId={fileId}, userId={userId}, sharePass={sharePass}");
+                //Console.WriteLine($"[DEBUG] AddFileShareEntry called with: fileId={fileId}, userId={userId}, sharePass={sharePass}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -687,7 +687,7 @@ namespace FileSharingServer
                         long count = (long)await checkCmd.ExecuteScalarAsync();
                         if (count > 0)
                         {
-                            Console.WriteLine($"[DEBUG] File share entry already exists");
+                            //Console.WriteLine($"[DEBUG] File share entry already exists");
                             return "200|ALREADY_SHARED\n";
                         }
                     }
@@ -702,7 +702,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@permission", "read"); // Default permission
                         
                         await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] File share entry added successfully");
+                        //Console.WriteLine($"[DEBUG] File share entry added successfully");
                         return "200|SHARE_ADDED\n";
                     }
                 }
@@ -719,7 +719,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] AddFileShareEntryWithPermission called with: fileId={fileId}, userId={userId}, sharePass={sharePass}, permission={permission}");
+                //Console.WriteLine($"[DEBUG] AddFileShareEntryWithPermission called with: fileId={fileId}, userId={userId}, sharePass={sharePass}, permission={permission}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -735,7 +735,7 @@ namespace FileSharingServer
                         long count = (long)await checkCmd.ExecuteScalarAsync();
                         if (count > 0)
                         {
-                            Console.WriteLine($"[DEBUG] File share entry already exists");
+                            //Console.WriteLine($"[DEBUG] File share entry already exists");
                             return "200|ALREADY_SHARED\n";
                         }
                     }
@@ -750,7 +750,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@permission", permission);
                         
                         await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] File share entry added successfully with permission: {permission}");
+                        //Console.WriteLine($"[DEBUG] File share entry added successfully with permission: {permission}");
                         return "200|SHARE_ADDED_WITH_PERMISSION\n";
                     }
                 }
@@ -917,7 +917,7 @@ namespace FileSharingServer
                             bool isOwner = ownerId == int.Parse(userId);
                             bool isSharedFile = !isOwner && !string.IsNullOrEmpty(sharedFilePath);
                             
-                            Console.WriteLine($"[DEBUG] DownloadFile: fileId={fileId}, userId={userId}, ownerId={ownerId}, isOwner={isOwner}, isSharedFile={isSharedFile}");
+                            //Console.WriteLine($"[DEBUG] DownloadFile: fileId={fileId}, userId={userId}, ownerId={ownerId}, isOwner={isOwner}, isSharedFile={isSharedFile}");
                             
                             // Determine which file to serve
                             string fileToServe;
@@ -925,13 +925,13 @@ namespace FileSharingServer
                             {
                                 // User is accessing shared file → serve shared version (encrypted with share_pass)
                                 fileToServe = sharedFilePath;
-                                Console.WriteLine($"[DEBUG] Serving shared version: {sharedFilePath}");
+                                //Console.WriteLine($"[DEBUG] Serving shared version: {sharedFilePath}");
                             }
                             else
                             {
                                 // User is owner → serve original version (encrypted with owner password)
                                 fileToServe = filePath;
-                                Console.WriteLine($"[DEBUG] Serving original version: {filePath}");
+                                //Console.WriteLine($"[DEBUG] Serving original version: {filePath}");
                             }
                             
                             if (fileSize > 10 * 1024 * 1024) // 10MB
@@ -1011,7 +1011,7 @@ namespace FileSharingServer
                         {
                             result = $"200|{string.Join(";", files)}\n";
                         }
-                        Console.WriteLine($"[DEBUG][GetUserFilesDetailed] Response: {result.Replace("\n", "\\n")}");
+                        //Console.WriteLine($"[DEBUG][GetUserFilesDetailed] Response: {result.Replace("\n", "\\n")}");
                         return result;
                     }
                 }
@@ -1071,7 +1071,7 @@ namespace FileSharingServer
                         {
                             result = $"200|{string.Join(";", folders)}\n";
                         }
-                        Console.WriteLine($"[DEBUG][GetUserFolders] Response: {result.Replace("\n", "\\n")}");
+                        //Console.WriteLine($"[DEBUG][GetUserFolders] Response: {result.Replace("\n", "\\n")}");
                         return result;
                     }
                 }
@@ -1087,7 +1087,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG][GetSharedFilesDetailed] Called with userId: {userId}");
+                //Console.WriteLine($"[DEBUG][GetSharedFilesDetailed] Called with userId: {userId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -1121,19 +1121,19 @@ namespace FileSharingServer
                             {
                                 string fileInfo = $"{reader["file_id"]}:{reader["file_name"]}:{reader["file_type"]}:{reader["file_size"]}:{reader["upload_at"]}:{reader["owner_name"]} (Shared):{reader["file_path"]}:shared";
                                 files.Add(fileInfo);
-                                Console.WriteLine($"[DEBUG][GetSharedFilesDetailed] Found file: {fileInfo}");
+                                //Console.WriteLine($"[DEBUG][GetSharedFilesDetailed] Found file: {fileInfo}");
                             }
                         }
                         
                         if (files.Count == 0)
                         {
                             string noFilesResult = "200|NO_SHARED_FILES\n";
-                            Console.WriteLine($"[DEBUG][GetSharedFilesDetailed] No shared files found, returning: {noFilesResult.Replace("\n", "\\n")}");
+                            //Console.WriteLine($"[DEBUG][GetSharedFilesDetailed] No shared files found, returning: {noFilesResult.Replace("\n", "\\n")}");
                             return noFilesResult;
                         }
                         
                         string filesResult = $"200|{string.Join(";", files)}\n";
-                        Console.WriteLine($"[DEBUG][GetSharedFilesDetailed] Response: {filesResult.Replace("\n", "\\n")}");
+                        //Console.WriteLine($"[DEBUG][GetSharedFilesDetailed] Response: {filesResult.Replace("\n", "\\n")}");
                         return filesResult;
                     }
                 }
@@ -1150,7 +1150,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG][GetSharedFolders] Called with userId: {userId}");
+                //Console.WriteLine($"[DEBUG][GetSharedFolders] Called with userId: {userId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -1175,19 +1175,19 @@ namespace FileSharingServer
                             {
                                 string folderInfo = $"{reader["folder_id"]}:{reader["folder_name"]}:{reader["created_at"]}:{reader["owner_name"]} (Shared):shared";
                                 folders.Add(folderInfo);
-                                Console.WriteLine($"[DEBUG][GetSharedFolders] Found folder: {folderInfo}");
+                                //Console.WriteLine($"[DEBUG][GetSharedFolders] Found folder: {folderInfo}");
                             }
                         }
                         
                         if (folders.Count == 0)
                         {
                             string noFoldersResult = "200|NO_SHARED_FOLDERS\n";
-                            Console.WriteLine($"[DEBUG][GetSharedFolders] No shared folders found, returning: {noFoldersResult.Replace("\n", "\\n")}");
+                            //Console.WriteLine($"[DEBUG][GetSharedFolders] No shared folders found, returning: {noFoldersResult.Replace("\n", "\\n")}");
                             return noFoldersResult;
                         }
                         
                         string foldersResult = $"200|{string.Join(";", folders)}\n";
-                        Console.WriteLine($"[DEBUG][GetSharedFolders] Response: {foldersResult.Replace("\n", "\\n")}");
+                        //Console.WriteLine($"[DEBUG][GetSharedFolders] Response: {foldersResult.Replace("\n", "\\n")}");
                         return foldersResult;
                     }
                 }
@@ -1204,7 +1204,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] CreateFolder called: userId={userId}, folderName={folderName}, parentFolderId={parentFolderId}");
+                //Console.WriteLine($"[DEBUG] CreateFolder called: userId={userId}, folderName={folderName}, parentFolderId={parentFolderId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -1240,8 +1240,8 @@ namespace FileSharingServer
                         }
                     }
                     
-                    Console.WriteLine($"[DEBUG] Generated folder_path: {folderPath}");
-                    Console.WriteLine($"[DEBUG] Physical folder path: {physicalFolderPath}");
+                    //Console.WriteLine($"[DEBUG] Generated folder_path: {folderPath}");
+                    //Console.WriteLine($"[DEBUG] Physical folder path: {physicalFolderPath}");
                     
                     // Create physical directory
                     try
@@ -1249,11 +1249,11 @@ namespace FileSharingServer
                         if (!Directory.Exists(physicalFolderPath))
                         {
                             Directory.CreateDirectory(physicalFolderPath);
-                            Console.WriteLine($"[DEBUG] Physical directory created: {physicalFolderPath}");
+                            //Console.WriteLine($"[DEBUG] Physical directory created: {physicalFolderPath}");
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] Physical directory already exists: {physicalFolderPath}");
+                            //Console.WriteLine($"[DEBUG] Physical directory already exists: {physicalFolderPath}");
                         }
                     }
                     catch (Exception dirEx)
@@ -1274,11 +1274,11 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@parentFolderId", parentFolderId == "null" ? DBNull.Value : (object)int.Parse(parentFolderId));
                         cmd.Parameters.AddWithValue("@folderPath", folderPath);
                         
-                        Console.WriteLine($"[DEBUG] Executing CreateFolder query with params: folderName={folderName}, ownerId={userId}, parentFolderId={parentFolderId}, folderPath={folderPath}");
+                        //Console.WriteLine($"[DEBUG] Executing CreateFolder query with params: folderName={folderName}, ownerId={userId}, parentFolderId={parentFolderId}, folderPath={folderPath}");
                         
                         await cmd.ExecuteNonQueryAsync();
                         
-                        Console.WriteLine($"[DEBUG] Folder created successfully: {folderName}");
+                        //Console.WriteLine($"[DEBUG] Folder created successfully: {folderName}");
                         return "200|FOLDER_CREATED\n";
                     }
                 }
@@ -1311,7 +1311,7 @@ namespace FileSharingServer
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] No rows updated - file might not have status='ACTIVE'");
+                            //Console.WriteLine($"[DEBUG] No rows updated - file might not have status='ACTIVE'");
                             return "404|FILE_NOT_FOUND_OR_ALREADY_DELETED\n";
                         }
                     }
@@ -1329,7 +1329,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] GetTrashFiles - Called with userId: {userId}");
+                //Console.WriteLine($"[DEBUG] GetTrashFiles - Called with userId: {userId}");
                 
                 // Validate userId
                 if (!int.TryParse(userId, out int userIdInt))
@@ -1338,20 +1338,20 @@ namespace FileSharingServer
                     return "400|INVALID_USER_ID\n";
                 }
                 
-                Console.WriteLine($"[DEBUG] GetTrashFiles - Parsed userId as: {userIdInt}");
+                //Console.WriteLine($"[DEBUG] GetTrashFiles - Parsed userId as: {userIdInt}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await conn.OpenAsync();
-                    Console.WriteLine($"[DEBUG] GetTrashFiles - Database connection opened");
+                    //Console.WriteLine($"[DEBUG] GetTrashFiles - Database connection opened");
                     
                     string query = "SELECT file_name, deleted_at FROM files WHERE owner_id = @owner_id AND status = 'TRASH' ORDER BY deleted_at DESC";
-                    Console.WriteLine($"[DEBUG] GetTrashFiles - Executing query: {query}");
+                    //Console.WriteLine($"[DEBUG] GetTrashFiles - Executing query: {query}");
                     
                     using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@owner_id", userIdInt);
-                        Console.WriteLine($"[DEBUG] GetTrashFiles - Query parameter @owner_id = {userIdInt}");
+                        //Console.WriteLine($"[DEBUG] GetTrashFiles - Query parameter @owner_id = {userIdInt}");
                         
                         var files = new List<string>();
                         using (var reader = await cmd.ExecuteReaderAsync())
@@ -1363,18 +1363,18 @@ namespace FileSharingServer
                                 string fileName = reader["file_name"]?.ToString() ?? "";
                                 string deletedAt = reader["deleted_at"]?.ToString() ?? "";
                                 
-                                Console.WriteLine($"[DEBUG] GetTrashFiles - Row {rowCount}: fileName='{fileName}', deletedAt='{deletedAt}'");
+                                //Console.WriteLine($"[DEBUG] GetTrashFiles - Row {rowCount}: fileName='{fileName}', deletedAt='{deletedAt}'");
                                 
                                 // Clean data before sending to client
                                 fileName = CleanString(fileName);
                                 deletedAt = CleanString(deletedAt);
                                 
-                                Console.WriteLine($"[DEBUG] GetTrashFiles - Cleaned Row {rowCount}: fileName='{fileName}', deletedAt='{deletedAt}'");
+                                //Console.WriteLine($"[DEBUG] GetTrashFiles - Cleaned Row {rowCount}: fileName='{fileName}', deletedAt='{deletedAt}'");
                                 
                                 if (!string.IsNullOrWhiteSpace(fileName))
                                 {
                                 files.Add($"{fileName}:{deletedAt}");
-                                    Console.WriteLine($"[DEBUG] GetTrashFiles - Added to list: '{fileName}:{deletedAt}'");
+                                    //Console.WriteLine($"[DEBUG] GetTrashFiles - Added to list: '{fileName}:{deletedAt}'");
                                 }
                                 else
                                 {
@@ -1382,21 +1382,21 @@ namespace FileSharingServer
                                 }
                             }
                             
-                            Console.WriteLine($"[DEBUG] GetTrashFiles - Total rows found: {rowCount}");
-                            Console.WriteLine($"[DEBUG] GetTrashFiles - Valid files after cleaning: {files.Count}");
+                            //Console.WriteLine($"[DEBUG] GetTrashFiles - Total rows found: {rowCount}");
+                            //Console.WriteLine($"[DEBUG] GetTrashFiles - Valid files after cleaning: {files.Count}");
                         }
                         
                         if (files.Count == 0)
                         {
-                            Console.WriteLine($"[DEBUG] GetTrashFiles - No trash files found, returning NO_TRASH_FILES");
+                            //Console.WriteLine($"[DEBUG] GetTrashFiles - No trash files found, returning NO_TRASH_FILES");
                             return "200|NO_TRASH_FILES\n";
                         }
                         
                         string result = $"200|{string.Join(";", files)}\n";
-                        Console.WriteLine($"[DEBUG] GetTrashFiles - Final result length: {result.Length}");
-                        Console.WriteLine($"[DEBUG] GetTrashFiles - Result starts with: '{result.Substring(0, Math.Min(50, result.Length))}'");
-                        Console.WriteLine($"[DEBUG] GetTrashFiles - Result ends with: '{result.Substring(Math.Max(0, result.Length - 20))}'");
-                        Console.WriteLine($"[DEBUG] GetTrashFiles - Files included: {files.Count}");
+                        //Console.WriteLine($"[DEBUG] GetTrashFiles - Final result length: {result.Length}");
+                        //Console.WriteLine($"[DEBUG] GetTrashFiles - Result starts with: '{result.Substring(0, Math.Min(50, result.Length))}'");
+                        //Console.WriteLine($"[DEBUG] GetTrashFiles - Result ends with: '{result.Substring(Math.Max(0, result.Length - 20))}'");
+                        //Console.WriteLine($"[DEBUG] GetTrashFiles - Files included: {files.Count}");
                         
                         // Validate result format
                         if (!result.StartsWith("200|"))
@@ -1406,7 +1406,7 @@ namespace FileSharingServer
                         
                         // Additional validation
                         result = ValidateResponse(result);
-                        Console.WriteLine($"[DEBUG] GetTrashFiles - Final validated result: '{result.Substring(0, Math.Min(100, result.Length))}...'");
+                        //Console.WriteLine($"[DEBUG] GetTrashFiles - Final validated result: '{result.Substring(0, Math.Min(100, result.Length))}...'");
                         
                         return result;
                     }
@@ -1466,7 +1466,7 @@ namespace FileSharingServer
                 // Extra safety: replace any remaining problematic characters
                 cleaned = cleaned.Replace("|", "_").Replace(";", "_").Replace("\n", "_").Replace("\r", "_");
                 
-                Console.WriteLine($"[DEBUG] CleanString - Input: '{input}' -> Output: '{cleaned}'");
+                //Console.WriteLine($"[DEBUG] CleanString - Input: '{input}' -> Output: '{cleaned}'");
                 return cleaned;
             }
             catch (Exception ex)
@@ -1507,7 +1507,7 @@ namespace FileSharingServer
                     response = response.Replace("\r\n", "\n").Replace("\n\r", "\n");
                 }
 
-                Console.WriteLine($"[DEBUG] ValidateResponse - Response validated successfully");
+                //Console.WriteLine($"[DEBUG] ValidateResponse - Response validated successfully");
                 return response;
             }
             catch (Exception ex)
@@ -1521,7 +1521,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] RESTORE_FILE request received: fileName={fileName}, userId={userId}");
+                //Console.WriteLine($"[DEBUG] RESTORE_FILE request received: fileName={fileName}, userId={userId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -1535,11 +1535,11 @@ namespace FileSharingServer
                         checkCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
                         
                         long fileCount = (long)await checkCmd.ExecuteScalarAsync();
-                        Console.WriteLine($"[DEBUG] Trash files found with name '{fileName}' for user {userId}: {fileCount}");
+                        //Console.WriteLine($"[DEBUG] Trash files found with name '{fileName}' for user {userId}: {fileCount}");
                         
                         if (fileCount == 0)
                         {
-                            Console.WriteLine($"[DEBUG] File '{fileName}' not found in trash for user {userId}");
+                            //Console.WriteLine($"[DEBUG] File '{fileName}' not found in trash for user {userId}");
                             return "404|FILE_NOT_FOUND_IN_TRASH\n";
                         }
                     }
@@ -1559,11 +1559,11 @@ namespace FileSharingServer
                         if (result != null && result != DBNull.Value && int.TryParse(result.ToString(), out int folderId))
                         {
                             fileFolderId = folderId;
-                            Console.WriteLine($"[DEBUG] File '{fileName}' belongs to folder_id: {fileFolderId}");
+                            //Console.WriteLine($"[DEBUG] File '{fileName}' belongs to folder_id: {fileFolderId}");
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] File '{fileName}' is a standalone file (folder_id = NULL)");
+                            //Console.WriteLine($"[DEBUG] File '{fileName}' is a standalone file (folder_id = NULL)");
                         }
                     }
                     
@@ -1580,11 +1580,11 @@ namespace FileSharingServer
                             if (folderStatus == "TRASH")
                             {
                                 fileWasInDeletedFolder = true;
-                                Console.WriteLine($"[DEBUG] Parent folder {fileFolderId.Value} is in trash, file will be moved to root level");
+                                //Console.WriteLine($"[DEBUG] Parent folder {fileFolderId.Value} is in trash, file will be moved to root level");
                             }
                             else
                             {
-                                Console.WriteLine($"[DEBUG] Parent folder {fileFolderId.Value} status: {folderStatus}");
+                                //Console.WriteLine($"[DEBUG] Parent folder {fileFolderId.Value} status: {folderStatus}");
                             }
                         }
                     }
@@ -1594,12 +1594,12 @@ namespace FileSharingServer
                     if (fileWasInDeletedFolder)
                     {
                         updateQuery = "UPDATE files SET status = 'ACTIVE', deleted_at = NULL, folder_id = NULL WHERE file_name = @file_name AND owner_id = @owner_id AND status = 'TRASH'";
-                        Console.WriteLine($"[DEBUG] Moving file to root level due to deleted parent folder");
+                        //Console.WriteLine($"[DEBUG] Moving file to root level due to deleted parent folder");
                     }
                     else
                     {
                         updateQuery = "UPDATE files SET status = 'ACTIVE', deleted_at = NULL WHERE file_name = @file_name AND owner_id = @owner_id AND status = 'TRASH'";
-                        Console.WriteLine($"[DEBUG] Restoring file in its original folder");
+                        //Console.WriteLine($"[DEBUG] Restoring file in its original folder");
                     }
                     
                     using (var cmd = new System.Data.SQLite.SQLiteCommand(updateQuery, conn))
@@ -1608,7 +1608,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
                         
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] Rows affected by FILE RESTORE: {rowsAffected}");
+                        //Console.WriteLine($"[DEBUG] Rows affected by FILE RESTORE: {rowsAffected}");
                         
                         if (rowsAffected > 0)
                         {
@@ -1623,7 +1623,7 @@ namespace FileSharingServer
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] No rows updated during restore");
+                            //Console.WriteLine($"[DEBUG] No rows updated during restore");
                             return "404|FILE_NOT_FOUND_IN_TRASH\n";
                         }
                     }
@@ -1641,7 +1641,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] PERMANENTLY_DELETE_FILE request received: fileName={fileName}, userId={userId}");
+                //Console.WriteLine($"[DEBUG] PERMANENTLY_DELETE_FILE request received: fileName={fileName}, userId={userId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -1663,7 +1663,7 @@ namespace FileSharingServer
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] File '{fileName}' not found in trash for user {userId}");
+                            //Console.WriteLine($"[DEBUG] File '{fileName}' not found in trash for user {userId}");
                             return "404|FILE_NOT_FOUND_IN_TRASH\n";
                         }
                     }
@@ -1676,7 +1676,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
                         
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] Rows affected by PERMANENT DELETE: {rowsAffected}");
+                        //Console.WriteLine($"[DEBUG] Rows affected by PERMANENT DELETE: {rowsAffected}");
                         
                         if (rowsAffected > 0)
                         {
@@ -1686,7 +1686,7 @@ namespace FileSharingServer
                                 try
                                 {
                                     File.Delete(filePath);
-                                    Console.WriteLine($"[DEBUG] Physical file deleted: {filePath}");
+                                    //Console.WriteLine($"[DEBUG] Physical file deleted: {filePath}");
                                 }
                                 catch (Exception fileEx)
                                 {
@@ -1699,7 +1699,7 @@ namespace FileSharingServer
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] No rows deleted during permanent deletion");
+                            //Console.WriteLine($"[DEBUG] No rows deleted during permanent deletion");
                             return "404|FILE_NOT_FOUND_IN_TRASH\n";
                         }
                     }
@@ -1717,7 +1717,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] DELETE_FOLDER request received: folderId={folderId}, userId={userId}");
+                //Console.WriteLine($"[DEBUG] DELETE_FOLDER request received: folderId={folderId}, userId={userId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -1731,11 +1731,11 @@ namespace FileSharingServer
                         checkCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
                         
                         long folderCount = (long)await checkCmd.ExecuteScalarAsync();
-                        Console.WriteLine($"[DEBUG] Folders found with id '{folderId}' for user {userId}: {folderCount}");
+                        //Console.WriteLine($"[DEBUG] Folders found with id '{folderId}' for user {userId}: {folderCount}");
                         
                         if (folderCount == 0)
                         {
-                            Console.WriteLine($"[DEBUG] Folder '{folderId}' not found for user {userId}");
+                            //Console.WriteLine($"[DEBUG] Folder '{folderId}' not found for user {userId}");
                             return "404|FOLDER_NOT_FOUND\n";
                         }
                     }
@@ -1748,7 +1748,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
                         
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] Rows affected by FOLDER DELETE: {rowsAffected}");
+                        //Console.WriteLine($"[DEBUG] Rows affected by FOLDER DELETE: {rowsAffected}");
                         
                         if (rowsAffected > 0)
                         {
@@ -1758,7 +1758,7 @@ namespace FileSharingServer
                             {
                                 moveFilesCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
                                 int filesAffected = await moveFilesCmd.ExecuteNonQueryAsync();
-                                Console.WriteLine($"[DEBUG] Files moved to trash: {filesAffected}");
+                                //Console.WriteLine($"[DEBUG] Files moved to trash: {filesAffected}");
                             }
                             
                             Console.WriteLine($"[SUCCESS] Folder '{folderId}' moved to trash by user {userId}");
@@ -1766,7 +1766,7 @@ namespace FileSharingServer
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] No rows updated during folder deletion");
+                            //Console.WriteLine($"[DEBUG] No rows updated during folder deletion");
                             return "404|FOLDER_NOT_FOUND\n";
                         }
                     }
@@ -1784,7 +1784,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] GetTrashFolders - Called with userId: {userId}");
+                //Console.WriteLine($"[DEBUG] GetTrashFolders - Called with userId: {userId}");
                 
                 if (!int.TryParse(userId, out int userIdInt))
                 {
@@ -1824,14 +1824,14 @@ namespace FileSharingServer
                         
                         if (folders.Count == 0)
                         {
-                            Console.WriteLine($"[DEBUG] GetTrashFolders - No trash folders found, returning NO_TRASH_FOLDERS");
+                            //Console.WriteLine($"[DEBUG] GetTrashFolders - No trash folders found, returning NO_TRASH_FOLDERS");
                             return "200|NO_TRASH_FOLDERS\n";
                         }
                         
                         string result = $"200|{string.Join(";", folders)}\n";
                         result = ValidateResponse(result);
                         
-                        Console.WriteLine($"[DEBUG] GetTrashFolders - Final result: '{result.Substring(0, Math.Min(100, result.Length))}...'");
+                        //Console.WriteLine($"[DEBUG] GetTrashFolders - Final result: '{result.Substring(0, Math.Min(100, result.Length))}...'");
                         return result;
                     }
                 }
@@ -1848,7 +1848,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] RESTORE_FOLDER request received: folderId={folderId}, userId={userId}");
+                //Console.WriteLine($"[DEBUG] RESTORE_FOLDER request received: folderId={folderId}, userId={userId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -1862,11 +1862,11 @@ namespace FileSharingServer
                         checkCmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
                         
                         long folderCount = (long)await checkCmd.ExecuteScalarAsync();
-                        Console.WriteLine($"[DEBUG] Trash folders found with id '{folderId}' for user {userId}: {folderCount}");
+                        //Console.WriteLine($"[DEBUG] Trash folders found with id '{folderId}' for user {userId}: {folderCount}");
                         
                         if (folderCount == 0)
                         {
-                            Console.WriteLine($"[DEBUG] Folder '{folderId}' not found in trash for user {userId}");
+                            //Console.WriteLine($"[DEBUG] Folder '{folderId}' not found in trash for user {userId}");
                             return "404|FOLDER_NOT_FOUND_IN_TRASH\n";
                         }
                     }
@@ -1879,7 +1879,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
                         
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] Rows affected by FOLDER RESTORE: {rowsAffected}");
+                        //Console.WriteLine($"[DEBUG] Rows affected by FOLDER RESTORE: {rowsAffected}");
                         
                         if (rowsAffected > 0)
                         {
@@ -1908,10 +1908,10 @@ namespace FileSharingServer
                                 restoreFilesCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
                                 int filesRestored = await restoreFilesCmd.ExecuteNonQueryAsync();
                                 
-                                Console.WriteLine($"[DEBUG] Folder contains {totalFiles} total files");
-                                Console.WriteLine($"[DEBUG] Files already active (restored individually): {alreadyActiveFiles}");
-                                Console.WriteLine($"[DEBUG] Files restored with folder: {filesRestored}");
-                                Console.WriteLine($"[DEBUG] Final result: All {totalFiles} files are now active");
+                                //Console.WriteLine($"[DEBUG] Folder contains {totalFiles} total files");
+                                //Console.WriteLine($"[DEBUG] Files already active (restored individually): {alreadyActiveFiles}");
+                                //Console.WriteLine($"[DEBUG] Files restored with folder: {filesRestored}");
+                                //Console.WriteLine($"[DEBUG] Final result: All {totalFiles} files are now active");
                                 
                                 if (alreadyActiveFiles > 0)
                                 {
@@ -1924,7 +1924,7 @@ namespace FileSharingServer
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] No rows updated during folder restore");
+                            //Console.WriteLine($"[DEBUG] No rows updated during folder restore");
                             return "404|FOLDER_NOT_FOUND_IN_TRASH\n";
                         }
                     }
@@ -1942,7 +1942,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] PERMANENTLY_DELETE_FOLDER request received: folderId={folderId}, userId={userId}");
+                //Console.WriteLine($"[DEBUG] PERMANENTLY_DELETE_FOLDER request received: folderId={folderId}, userId={userId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -1964,7 +1964,7 @@ namespace FileSharingServer
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] Folder '{folderId}' not found in trash for user {userId}");
+                            //Console.WriteLine($"[DEBUG] Folder '{folderId}' not found in trash for user {userId}");
                             return "404|FOLDER_NOT_FOUND_IN_TRASH\n";
                         }
                     }
@@ -1975,7 +1975,7 @@ namespace FileSharingServer
                     {
                         deleteFilesCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
                         int filesDeleted = await deleteFilesCmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] Files permanently deleted: {filesDeleted}");
+                        //Console.WriteLine($"[DEBUG] Files permanently deleted: {filesDeleted}");
                     }
                     
                     // Delete folder record from database
@@ -1986,7 +1986,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@owner_id", int.Parse(userId));
                         
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] Rows affected by PERMANENT FOLDER DELETE: {rowsAffected}");
+                        //Console.WriteLine($"[DEBUG] Rows affected by PERMANENT FOLDER DELETE: {rowsAffected}");
                         
                         if (rowsAffected > 0)
                         {
@@ -1996,7 +1996,7 @@ namespace FileSharingServer
                                 try
                                 {
                                     Directory.Delete(folderPath, true); // Delete recursively
-                                    Console.WriteLine($"[DEBUG] Physical folder deleted: {folderPath}");
+                                    //Console.WriteLine($"[DEBUG] Physical folder deleted: {folderPath}");
                                 }
                                 catch (Exception folderEx)
                                 {
@@ -2009,7 +2009,7 @@ namespace FileSharingServer
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] No rows deleted during permanent folder deletion");
+                            //Console.WriteLine($"[DEBUG] No rows deleted during permanent folder deletion");
                             return "404|FOLDER_NOT_FOUND_IN_TRASH\n";
                         }
                     }
@@ -2026,12 +2026,12 @@ namespace FileSharingServer
         private static string FindProjectRoot()
         {
             string currentDir = Directory.GetCurrentDirectory();
-            Console.WriteLine($"[DEBUG] FindProjectRoot: Starting from {currentDir}");
+            //Console.WriteLine($"[DEBUG] FindProjectRoot: Starting from {currentDir}");
             
             // Navigate up until we find the project root (where test.db and uploads folder are)
             while (currentDir != null)
             {
-                Console.WriteLine($"[DEBUG] FindProjectRoot: Checking {currentDir}");
+                //Console.WriteLine($"[DEBUG] FindProjectRoot: Checking {currentDir}");
                 
                 // Check if this is the project root by looking for test.db and uploads folder
                 string testDbPath = Path.Combine(currentDir, "test.db");
@@ -2039,7 +2039,7 @@ namespace FileSharingServer
                 
                 if (File.Exists(testDbPath) && Directory.Exists(uploadsPath))
                 {
-                    Console.WriteLine($"[DEBUG] FindProjectRoot: Found project root at {currentDir}");
+                    //Console.WriteLine($"[DEBUG] FindProjectRoot: Found project root at {currentDir}");
                     return currentDir;
                 }
                 
@@ -2065,12 +2065,12 @@ namespace FileSharingServer
                 string testDbPath = Path.Combine(currentDir, "test.db");
                 if (File.Exists(testDbPath))
                 {
-                    Console.WriteLine($"[DEBUG] FindProjectRoot: Found project root (fallback) at {currentDir}");
+                    //Console.WriteLine($"[DEBUG] FindProjectRoot: Found project root (fallback) at {currentDir}");
                     return currentDir;
                 }
             }
             
-            Console.WriteLine($"[DEBUG] FindProjectRoot: Could not find project root, using current directory: {Directory.GetCurrentDirectory()}");
+            //Console.WriteLine($"[DEBUG] FindProjectRoot: Could not find project root, using current directory: {Directory.GetCurrentDirectory()}");
             return Directory.GetCurrentDirectory();
         }
 
@@ -2085,7 +2085,7 @@ namespace FileSharingServer
                     
                     // Generate hash-based password from file ID
                     string sharePassword = GenerateHashPassword(fileId);
-                    Console.WriteLine($"[DEBUG] Generated share password for file {fileId}: {sharePassword}");
+                    //Console.WriteLine($"[DEBUG] Generated share password for file {fileId}: {sharePassword}");
                     
                     // Update file to set is_shared = 1 and share_pass (no permission column in files table)
                     string updateQuery = @"
@@ -2101,17 +2101,17 @@ namespace FileSharingServer
                         int rowsAffected = await command.ExecuteNonQueryAsync();
                         if (rowsAffected > 0)
                         {
-                            Console.WriteLine($"[DEBUG] Successfully updated file {fileId} with share password: {sharePassword}");
+                            //Console.WriteLine($"[DEBUG] Successfully updated file {fileId} with share password: {sharePassword}");
                             
                             // Store the default permission info for this shared file in a metadata table or use default
                             // Permission will be handled when users access the file via AddFileShareEntryWithPermission
-                            Console.WriteLine($"[DEBUG] File {fileId} shared with default permission: {permission}");
+                            //Console.WriteLine($"[DEBUG] File {fileId} shared with default permission: {permission}");
                             
                             return $"200|{sharePassword}\n";
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] File {fileId} not found for sharing");
+                            //Console.WriteLine($"[DEBUG] File {fileId} not found for sharing");
                             return "404|File not found\n";
                         }
                     }
@@ -2134,7 +2134,7 @@ namespace FileSharingServer
                     
                     // Generate hash-based password from folder ID
                     string sharePassword = GenerateHashPassword(folderId);
-                    Console.WriteLine($"[DEBUG] Generated share password for folder {folderId}: {sharePassword}");
+                    //Console.WriteLine($"[DEBUG] Generated share password for folder {folderId}: {sharePassword}");
                     
                     // Update folder to set is_shared = 1 and share_pass (no permission column in folders table)
                     string updateFolderQuery = @"
@@ -2150,7 +2150,7 @@ namespace FileSharingServer
                         int rowsAffected = await command.ExecuteNonQueryAsync();
                         if (rowsAffected > 0)
                         {
-                            Console.WriteLine($"[DEBUG] Successfully updated folder {folderId} with share password: {sharePassword}");
+                            //Console.WriteLine($"[DEBUG] Successfully updated folder {folderId} with share password: {sharePassword}");
                             
                             // Also share all files in this folder with the same password
                             string updateFilesQuery = @"
@@ -2164,18 +2164,18 @@ namespace FileSharingServer
                                 filesCommand.Parameters.AddWithValue("@folderId", folderId);
                                 
                                 int filesUpdated = await filesCommand.ExecuteNonQueryAsync();
-                                Console.WriteLine($"[DEBUG] Updated {filesUpdated} files in folder {folderId} with share password: {sharePassword}");
+                                //Console.WriteLine($"[DEBUG] Updated {filesUpdated} files in folder {folderId} with share password: {sharePassword}");
                             }
                             
                             // Store the default permission info for this shared folder
                             // Permission will be handled when users access the folder via AddFolderShareEntryWithPermission
-                            Console.WriteLine($"[DEBUG] Folder {folderId} shared with default permission: {permission}");
+                            //Console.WriteLine($"[DEBUG] Folder {folderId} shared with default permission: {permission}");
                             
                             return $"200|{sharePassword}\n";
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] Folder {folderId} not found for sharing");
+                            //Console.WriteLine($"[DEBUG] Folder {folderId} not found for sharing");
                             return "404|Folder not found\n";
                         }
                     }
@@ -2264,7 +2264,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] Searching for files with password: '{password}'");
+                //Console.WriteLine($"[DEBUG] Searching for files with password: '{password}'");
                 using (var connection = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await connection.OpenAsync();
@@ -2285,12 +2285,12 @@ namespace FileSharingServer
                             {
                                 int folderId = Convert.ToInt32(reader["folder_id"]);
                                 sharedFolderIds.Add(folderId);
-                                Console.WriteLine($"[DEBUG] Found directly shared folder: {folderId}");
+                                //Console.WriteLine($"[DEBUG] Found directly shared folder: {folderId}");
                             }
                         }
                     }
                     
-                    Console.WriteLine($"[DEBUG] Found {sharedFolderIds.Count} directly shared folders");
+                    //Console.WriteLine($"[DEBUG] Found {sharedFolderIds.Count} directly shared folders");
                     
                     // Then, recursively get all subfolders
                     var allFolderIds = new List<int>(sharedFolderIds);
@@ -2308,7 +2308,7 @@ namespace FileSharingServer
                                 FROM folders 
                                 WHERE parent_folder_id IN (" + string.Join(",", currentFolderIds) + ")";
                             
-                            Console.WriteLine($"[DEBUG] Looking for subfolders of: {string.Join(",", currentFolderIds)}");
+                            //Console.WriteLine($"[DEBUG] Looking for subfolders of: {string.Join(",", currentFolderIds)}");
                             
                             using (var subfolderCommand = new System.Data.SQLite.SQLiteCommand(subfolderQuery, connection))
                             {
@@ -2322,7 +2322,7 @@ namespace FileSharingServer
                                             allFolderIds.Add(folderId);
                                             sharedFolderIds.Add(folderId);
                                             processedFolderIds.Add(folderId);
-                                            Console.WriteLine($"[DEBUG] Found subfolder: {folderId}");
+                                            //Console.WriteLine($"[DEBUG] Found subfolder: {folderId}");
                                         }
                                     }
                                 }
@@ -2330,7 +2330,7 @@ namespace FileSharingServer
                         }
                     }
                     
-                    Console.WriteLine($"[DEBUG] Total folders found: {allFolderIds.Count}");
+                    //Console.WriteLine($"[DEBUG] Total folders found: {allFolderIds.Count}");
                     
                     // Finally, get all files in these folders plus directly shared files
                     if (allFolderIds.Count > 0)
@@ -2353,17 +2353,17 @@ namespace FileSharingServer
                                 {
                                     string fileInfo = $"{reader["file_id"]}:{reader["file_name"]}:{reader["file_type"]}:{reader["file_size"]}:{reader["upload_at"]}:{reader["owner_name"]}:{reader["file_path"]}";
                                     files.Add(fileInfo);
-                                    Console.WriteLine($"[DEBUG] Found file: {fileInfo}");
+                                    //Console.WriteLine($"[DEBUG] Found file: {fileInfo}");
                                 }
                                 
                                 if (files.Count > 0)
                                 {
-                                    Console.WriteLine($"[DEBUG] Found {files.Count} files with password: {password}");
+                                    //Console.WriteLine($"[DEBUG] Found {files.Count} files with password: {password}");
                                     return $"200|{string.Join(";", files)}\n";
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"[DEBUG] No files found with password: {password}");
+                                    //Console.WriteLine($"[DEBUG] No files found with password: {password}");
                                     return "404|No files found with this password\n";
                                 }
                             }
@@ -2389,17 +2389,17 @@ namespace FileSharingServer
                                 {
                                     string fileInfo = $"{reader["file_id"]}:{reader["file_name"]}:{reader["file_type"]}:{reader["file_size"]}:{reader["upload_at"]}:{reader["owner_name"]}:{reader["file_path"]}";
                                     files.Add(fileInfo);
-                                    Console.WriteLine($"[DEBUG] Found directly shared file: {fileInfo}");
+                                    //Console.WriteLine($"[DEBUG] Found directly shared file: {fileInfo}");
                                 }
                                 
                                 if (files.Count > 0)
                                 {
-                                    Console.WriteLine($"[DEBUG] Found {files.Count} directly shared files with password: {password}");
+                                    //Console.WriteLine($"[DEBUG] Found {files.Count} directly shared files with password: {password}");
                                     return $"200|{string.Join(";", files)}\n";
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"[DEBUG] No files found with password: {password}");
+                                    //Console.WriteLine($"[DEBUG] No files found with password: {password}");
                                     return "404|No files found with this password\n";
                                 }
                             }
@@ -2418,7 +2418,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] Searching for folders with password: '{password}'");
+                //Console.WriteLine($"[DEBUG] Searching for folders with password: '{password}'");
                 using (var connection = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await connection.OpenAsync();
@@ -2439,12 +2439,12 @@ namespace FileSharingServer
                             {
                                 int folderId = Convert.ToInt32(reader["folder_id"]);
                                 sharedFolderIds.Add(folderId);
-                                Console.WriteLine($"[DEBUG] Found directly shared folder: {folderId}");
+                                //Console.WriteLine($"[DEBUG] Found directly shared folder: {folderId}");
                             }
                         }
                     }
                     
-                    Console.WriteLine($"[DEBUG] Found {sharedFolderIds.Count} directly shared folders");
+                    //Console.WriteLine($"[DEBUG] Found {sharedFolderIds.Count} directly shared folders");
                     
                     // Then, recursively get all subfolders
                     var allFolderIds = new List<int>(sharedFolderIds);
@@ -2462,7 +2462,7 @@ namespace FileSharingServer
                                 FROM folders 
                                 WHERE parent_folder_id IN (" + string.Join(",", currentFolderIds) + ")";
                             
-                            Console.WriteLine($"[DEBUG] Looking for subfolders of: {string.Join(",", currentFolderIds)}");
+                            //Console.WriteLine($"[DEBUG] Looking for subfolders of: {string.Join(",", currentFolderIds)}");
                             
                             using (var subfolderCommand = new System.Data.SQLite.SQLiteCommand(subfolderQuery, connection))
                             {
@@ -2476,7 +2476,7 @@ namespace FileSharingServer
                                             allFolderIds.Add(folderId);
                                             sharedFolderIds.Add(folderId);
                                             processedFolderIds.Add(folderId);
-                                            Console.WriteLine($"[DEBUG] Found subfolder: {folderId}");
+                                            //Console.WriteLine($"[DEBUG] Found subfolder: {folderId}");
                                         }
                                     }
                                 }
@@ -2484,7 +2484,7 @@ namespace FileSharingServer
                         }
                     }
                     
-                    Console.WriteLine($"[DEBUG] Total folders found: {allFolderIds.Count}");
+                    //Console.WriteLine($"[DEBUG] Total folders found: {allFolderIds.Count}");
                     
                     // Finally, get all folders with their details
                     if (allFolderIds.Count > 0)
@@ -2504,17 +2504,17 @@ namespace FileSharingServer
                                 {
                                     string folderInfo = $"{reader["folder_id"]}:{reader["folder_name"]}:{reader["created_at"]}:{reader["owner_name"]}";
                                     folders.Add(folderInfo);
-                                    Console.WriteLine($"[DEBUG] Found folder: {folderInfo}");
+                                    //Console.WriteLine($"[DEBUG] Found folder: {folderInfo}");
                                 }
                                 
                                 if (folders.Count > 0)
                                 {
-                                    Console.WriteLine($"[DEBUG] Found {folders.Count} folders with password: {password}");
+                                    //Console.WriteLine($"[DEBUG] Found {folders.Count} folders with password: {password}");
                                     return $"200|{string.Join(";", folders)}\n";
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"[DEBUG] No folders found with password: {password}");
+                                    //Console.WriteLine($"[DEBUG] No folders found with password: {password}");
                                     return "404|No folders found with this password\n";
                                 }
                             }
@@ -2522,7 +2522,7 @@ namespace FileSharingServer
                     }
                     else
                     {
-                        Console.WriteLine($"[DEBUG] No folders found with password: {password}");
+                        //Console.WriteLine($"[DEBUG] No folders found with password: {password}");
                         return "404|No folders found with this password\n";
                     }
                 }
@@ -2821,7 +2821,7 @@ namespace FileSharingServer
                                 tables.Add(reader["name"].ToString());
                             }
                         }
-                        Console.WriteLine($"[DEBUG] Database tables: {string.Join(", ", tables)}");
+                        //Console.WriteLine($"[DEBUG] Database tables: {string.Join(", ", tables)}");
                     }
                     
                     // Check users count
@@ -2831,12 +2831,12 @@ namespace FileSharingServer
                         using (var cmd = new System.Data.SQLite.SQLiteCommand(userQuery, conn))
                         {
                             var userCount = await cmd.ExecuteScalarAsync();
-                            Console.WriteLine($"[DEBUG] Users count: {userCount}");
+                            //Console.WriteLine($"[DEBUG] Users count: {userCount}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[DEBUG] Error checking users: {ex.Message}");
+                        //Console.WriteLine($"[DEBUG] Error checking users: {ex.Message}");
                     }
                     
                     // Check files count
@@ -2846,12 +2846,12 @@ namespace FileSharingServer
                         using (var cmd = new System.Data.SQLite.SQLiteCommand(fileQuery, conn))
                         {
                             var fileCount = await cmd.ExecuteScalarAsync();
-                            Console.WriteLine($"[DEBUG] Files count: {fileCount}");
+                            //Console.WriteLine($"[DEBUG] Files count: {fileCount}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[DEBUG] Error checking files: {ex.Message}");
+                        //Console.WriteLine($"[DEBUG] Error checking files: {ex.Message}");
                     }
                     
                     // Check folders count
@@ -2861,12 +2861,12 @@ namespace FileSharingServer
                         using (var cmd = new System.Data.SQLite.SQLiteCommand(folderQuery, conn))
                         {
                             var folderCount = await cmd.ExecuteScalarAsync();
-                            Console.WriteLine($"[DEBUG] Folders count: {folderCount}");
+                            //Console.WriteLine($"[DEBUG] Folders count: {folderCount}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[DEBUG] Error checking folders: {ex.Message}");
+                        //Console.WriteLine($"[DEBUG] Error checking folders: {ex.Message}");
                     }
                     
                     // Check shared folders
@@ -2879,14 +2879,14 @@ namespace FileSharingServer
                             {
                                 while (await reader.ReadAsync())
                                 {
-                                    Console.WriteLine($"[DEBUG] Shared folder: ID={reader["folder_id"]}, Name={reader["folder_name"]}, Pass={reader["share_pass"]}, IsShared={reader["is_shared"]}");
+                                    //Console.WriteLine($"[DEBUG] Shared folder: ID={reader["folder_id"]}, Name={reader["folder_name"]}, Pass={reader["share_pass"]}, IsShared={reader["is_shared"]}");
                                 }
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[DEBUG] Error checking shared folders: {ex.Message}");
+                        //Console.WriteLine($"[DEBUG] Error checking shared folders: {ex.Message}");
                     }
                     
                     // Check shared files
@@ -2899,14 +2899,14 @@ namespace FileSharingServer
                             {
                                 while (await reader.ReadAsync())
                                 {
-                                    Console.WriteLine($"[DEBUG] Shared file: ID={reader["file_id"]}, Name={reader["file_name"]}, Pass={reader["share_pass"]}, IsShared={reader["is_shared"]}");
+                                    //Console.WriteLine($"[DEBUG] Shared file: ID={reader["file_id"]}, Name={reader["file_name"]}, Pass={reader["share_pass"]}, IsShared={reader["is_shared"]}");
                                 }
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[DEBUG] Error checking shared files: {ex.Message}");
+                        //Console.WriteLine($"[DEBUG] Error checking shared files: {ex.Message}");
                     }
                     
                     return "200|Database structure check complete.\n";
@@ -3000,7 +3000,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] AddSharedFile called with: fileName={fileName}, fileType={fileType}, fileSize={fileSize}, userId={userId}, filePath={filePath}");
+                //Console.WriteLine($"[DEBUG] AddSharedFile called with: fileName={fileName}, fileType={fileType}, fileSize={fileSize}, userId={userId}, filePath={filePath}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3008,7 +3008,7 @@ namespace FileSharingServer
                     
                     // Generate file hash
                     string fileHash = GenerateFileHash(filePath);
-                    Console.WriteLine($"[DEBUG] Generated file hash: {fileHash}");
+                    //Console.WriteLine($"[DEBUG] Generated file hash: {fileHash}");
                     
                     string query = @"
                         INSERT INTO files (file_name, file_type, file_size, upload_at, owner_id, file_path, file_hash, status) 
@@ -3024,7 +3024,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@fileHash", fileHash);
                         
                         await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] File added to database successfully: {fileName}");
+                        //Console.WriteLine($"[DEBUG] File added to database successfully: {fileName}");
                         return "200|FILE_ADDED_SHARED\n";
                     }
                 }
@@ -3064,7 +3064,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] AddSharedFolder called with: folderName={folderName}, userId={userId}, folderPath={folderPath}");
+                //Console.WriteLine($"[DEBUG] AddSharedFolder called with: folderName={folderName}, userId={userId}, folderPath={folderPath}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3072,7 +3072,7 @@ namespace FileSharingServer
                     
                     // Convert to relative path for database
                     string relativePath = ConvertToRelativePath(folderPath);
-                    Console.WriteLine($"[DEBUG] Converted to relative path: {relativePath}");
+                    //Console.WriteLine($"[DEBUG] Converted to relative path: {relativePath}");
                     
                     string query = @"
                         INSERT INTO folders (folder_name, owner_id, parent_folder_id, folder_path, created_at, status) 
@@ -3085,7 +3085,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@folderPath", relativePath);
                         
                         await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] Folder added to database successfully: {folderName}");
+                        //Console.WriteLine($"[DEBUG] Folder added to database successfully: {folderName}");
                         return "200|FOLDER_ADDED_SHARED\n";
                     }
                 }
@@ -3125,7 +3125,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] GetFileIdByName called with: fileName={fileName}");
+                //Console.WriteLine($"[DEBUG] GetFileIdByName called with: fileName={fileName}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3139,12 +3139,12 @@ namespace FileSharingServer
                         var result = await cmd.ExecuteScalarAsync();
                         if (result != null)
                         {
-                            Console.WriteLine($"[DEBUG] Found file ID: {result}");
+                            //Console.WriteLine($"[DEBUG] Found file ID: {result}");
                             return $"200|{result}\n";
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] File not found: {fileName}");
+                            //Console.WriteLine($"[DEBUG] File not found: {fileName}");
                             return "404|File not found\n";
                         }
                     }
@@ -3162,7 +3162,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] GetFolderIdByName called with: folderName={folderName}");
+                //Console.WriteLine($"[DEBUG] GetFolderIdByName called with: folderName={folderName}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3176,12 +3176,12 @@ namespace FileSharingServer
                         var result = await cmd.ExecuteScalarAsync();
                         if (result != null)
                         {
-                            Console.WriteLine($"[DEBUG] Found folder ID: {result}");
+                            //Console.WriteLine($"[DEBUG] Found folder ID: {result}");
                             return $"200|{result}\n";
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] Folder not found: {folderName}");
+                            //Console.WriteLine($"[DEBUG] Folder not found: {folderName}");
                             return "404|Folder not found\n";
                         }
                     }
@@ -3199,7 +3199,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] AddFolderShareEntry called with: folderId={folderId}, userId={userId}, permission={permission}");
+                //Console.WriteLine($"[DEBUG] AddFolderShareEntry called with: folderId={folderId}, userId={userId}, permission={permission}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3215,7 +3215,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@permission", permission);
                         
                         await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] Folder share entry added successfully");
+                        //Console.WriteLine($"[DEBUG] Folder share entry added successfully");
                         return "200|FOLDER_SHARE_ADDED\n";
                     }
                 }
@@ -3232,7 +3232,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] AddFolderShareEntryWithPermission called with: folderId={folderId}, userId={userId}, sharePass={sharePass}, permission={permission}");
+                //Console.WriteLine($"[DEBUG] AddFolderShareEntryWithPermission called with: folderId={folderId}, userId={userId}, sharePass={sharePass}, permission={permission}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3248,7 +3248,7 @@ namespace FileSharingServer
                         long count = (long)await checkCmd.ExecuteScalarAsync();
                         if (count > 0)
                         {
-                            Console.WriteLine($"[DEBUG] Folder share entry already exists");
+                            //Console.WriteLine($"[DEBUG] Folder share entry already exists");
                             return "200|ALREADY_SHARED\n";
                         }
                     }
@@ -3263,7 +3263,7 @@ namespace FileSharingServer
                         cmd.Parameters.AddWithValue("@permission", permission);
                         
                         await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"[DEBUG] Folder share entry added successfully with permission: {permission}");
+                        //Console.WriteLine($"[DEBUG] Folder share entry added successfully with permission: {permission}");
                         return "200|FOLDER_SHARE_ADDED_WITH_PERMISSION\n";
                     }
                 }
@@ -3290,7 +3290,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] AddFilesInFolderToShare called with: folderId={folderId}, userId={userId}, sharePass={sharePass}, permission={permission}");
+                //Console.WriteLine($"[DEBUG] AddFilesInFolderToShare called with: folderId={folderId}, userId={userId}, sharePass={sharePass}, permission={permission}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3316,7 +3316,7 @@ namespace FileSharingServer
                         }
                     }
                     
-                    Console.WriteLine($"[DEBUG] Found {fileIds.Count} files in folder {folderId}");
+                    //Console.WriteLine($"[DEBUG] Found {fileIds.Count} files in folder {folderId}");
                     
                     // Add each file to files_share table
                     string insertQuery = @"
@@ -3336,7 +3336,7 @@ namespace FileSharingServer
                         }
                     }
                     
-                    Console.WriteLine($"[DEBUG] Added {fileIds.Count} files to files_share table");
+                    //Console.WriteLine($"[DEBUG] Added {fileIds.Count} files to files_share table");
                     return "200|FILES_IN_FOLDER_SHARED\n";
                 }
             }
@@ -3485,7 +3485,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] RemoveSharedFile called with: fileId={fileId}, userId={userId}");
+                //Console.WriteLine($"[DEBUG] RemoveSharedFile called with: fileId={fileId}, userId={userId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3505,12 +3505,12 @@ namespace FileSharingServer
                         
                         if (rowsAffected > 0)
                         {
-                            Console.WriteLine($"[DEBUG] Successfully removed shared file: fileId={fileId}, userId={userId}");
+                            //Console.WriteLine($"[DEBUG] Successfully removed shared file: fileId={fileId}, userId={userId}");
                             return "200|SHARED_FILE_REMOVED\n";
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] No shared file entry found: fileId={fileId}, userId={userId}");
+                            //Console.WriteLine($"[DEBUG] No shared file entry found: fileId={fileId}, userId={userId}");
                             return "404|SHARED_FILE_NOT_FOUND\n";
                         }
                     }
@@ -3528,7 +3528,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] AddFolderAndFilesShare called with: folderId={folderId}, userId={userId}, sharePass={sharePass}, permission={permission}");
+                //Console.WriteLine($"[DEBUG] AddFolderAndFilesShare called with: folderId={folderId}, userId={userId}, sharePass={sharePass}, permission={permission}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3563,7 +3563,7 @@ namespace FileSharingServer
                                 long count = (long)await checkCmd.ExecuteScalarAsync();
                                 if (count > 0)
                                 {
-                                    Console.WriteLine($"[DEBUG] Folder share entry already exists");
+                                    //Console.WriteLine($"[DEBUG] Folder share entry already exists");
                                     transaction.Rollback();
                                     return "200|ALREADY_SHARED\n";
                                 }
@@ -3585,7 +3585,7 @@ namespace FileSharingServer
                                     transaction.Rollback();
                                     return "500|FAILED_TO_ADD_FOLDER_SHARE\n";
                                 }
-                                Console.WriteLine($"[DEBUG] Folder share entry added successfully");
+                                //Console.WriteLine($"[DEBUG] Folder share entry added successfully");
                             }
                             
                             // 4. Get all files in the folder
@@ -3608,7 +3608,7 @@ namespace FileSharingServer
                                 }
                             }
                             
-                            Console.WriteLine($"[DEBUG] Found {fileIds.Count} files in folder {folderId}");
+                            //Console.WriteLine($"[DEBUG] Found {fileIds.Count} files in folder {folderId}");
                             
                             // 5. Add each file to files_share table
                             string insertFileQuery = @"
@@ -3634,7 +3634,7 @@ namespace FileSharingServer
                                 }
                             }
                             
-                            Console.WriteLine($"[DEBUG] Added {fileIds.Count} files to files_share table");
+                            //Console.WriteLine($"[DEBUG] Added {fileIds.Count} files to files_share table");
                             
                             // 6. Update is_shared flag in folders table
                             string updateFolderQuery = "UPDATE folders SET is_shared = 1 WHERE folder_id = @folder_id";
@@ -3670,7 +3670,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] RemoveSharedFolder called with: folderId={folderId}, userId={userId}");
+                //Console.WriteLine($"[DEBUG] RemoveSharedFolder called with: folderId={folderId}, userId={userId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3706,12 +3706,12 @@ namespace FileSharingServer
                                 await filesCmd.ExecuteNonQueryAsync();
                             }
                             
-                            Console.WriteLine($"[DEBUG] Successfully removed shared folder: folderId={folderId}, userId={userId}");
+                            //Console.WriteLine($"[DEBUG] Successfully removed shared folder: folderId={folderId}, userId={userId}");
                             return "200|SHARED_FOLDER_REMOVED\n";
                         }
                         else
                         {
-                            Console.WriteLine($"[DEBUG] No shared folder entry found: folderId={folderId}, userId={userId}");
+                            //Console.WriteLine($"[DEBUG] No shared folder entry found: folderId={folderId}, userId={userId}");
                             return "404|SHARED_FOLDER_NOT_FOUND\n";
                         }
                     }
@@ -3736,7 +3736,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] UploadSharedVersion: fileId={fileId}, fileName={sharedFileName}, size={fileSize}, owner={ownerId}, sharePass={sharePass}");
+                //Console.WriteLine($"[DEBUG] UploadSharedVersion: fileId={fileId}, fileName={sharedFileName}, size={fileSize}, owner={ownerId}, sharePass={sharePass}");
                 
                 if (fileSize > 10 * 1024 * 1024) // 10MB limit
                 {
@@ -3768,7 +3768,7 @@ namespace FileSharingServer
                     }
                 }
 
-                Console.WriteLine($"[DEBUG] Received shared version: {totalRead}/{fileSize} bytes");
+                //Console.WriteLine($"[DEBUG] Received shared version: {totalRead}/{fileSize} bytes");
 
                 if (totalRead == fileSize)
                 {
@@ -3791,7 +3791,7 @@ namespace FileSharingServer
                             int rowsAffected = await cmd.ExecuteNonQueryAsync();
                             if (rowsAffected > 0)
                             {
-                                Console.WriteLine($"[DEBUG] Successfully updated file {fileId} with shared version path");
+                                //Console.WriteLine($"[DEBUG] Successfully updated file {fileId} with shared version path");
                                 return "200|SHARED_VERSION_UPLOADED\n";
                             }
                             else
@@ -3820,7 +3820,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] GetFilesInFolder called with folderId: {folderId}");
+                //Console.WriteLine($"[DEBUG] GetFilesInFolder called with folderId: {folderId}");
                 
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
@@ -3856,12 +3856,12 @@ namespace FileSharingServer
                         
                         if (files.Count == 0)
                         {
-                            Console.WriteLine($"[DEBUG] No files found in folder {folderId}");
+                            //Console.WriteLine($"[DEBUG] No files found in folder {folderId}");
                             return "200|NO_FILES\n";
                         }
                         
                         string result = string.Join("|", files);
-                        Console.WriteLine($"[DEBUG] Found {files.Count} files in folder {folderId}");
+                        //Console.WriteLine($"[DEBUG] Found {files.Count} files in folder {folderId}");
                         return $"200|{result}\n";
                     }
                 }

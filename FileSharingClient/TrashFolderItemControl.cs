@@ -74,7 +74,7 @@ namespace FileSharingClient
 
                 if (result == DialogResult.Yes)
                 {
-                    Console.WriteLine($"[DEBUG] TrashFolderItemControl - Restore folder clicked for: {FolderName} (ID: {FolderId})");
+                    //Console.WriteLine($"[DEBUG] TrashFolderItemControl - Restore folder clicked for: {FolderName} (ID: {FolderId})");
                     FolderRestored?.Invoke(FolderId);
                 }
             }
@@ -97,7 +97,7 @@ namespace FileSharingClient
 
                 if (result == DialogResult.Yes)
                 {
-                    Console.WriteLine($"[DEBUG] TrashFolderItemControl - Permanent delete folder clicked for: {FolderName} (ID: {FolderId})");
+                    //Console.WriteLine($"[DEBUG] TrashFolderItemControl - Permanent delete folder clicked for: {FolderName} (ID: {FolderId})");
                     FolderPermanentlyDeleted?.Invoke(FolderId);
                 }
             }

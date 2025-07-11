@@ -66,12 +66,12 @@ namespace FileSharingClient
             {
                 // Use Session class instead of database query
                 currentUserId = Session.LoggedInUserId;
-                Console.WriteLine($"[DEBUG] TrashBinView - Current User ID: {currentUserId}");
-                Console.WriteLine($"[DEBUG] TrashBinView - Session.LoggedInUser: {Session.LoggedInUser}");
+                ////Console.WriteLine($"[DEBUG] TrashBinView - Current User ID: {currentUserId}");
+                ////Console.WriteLine($"[DEBUG] TrashBinView - Session.LoggedInUser: {Session.LoggedInUser}");
                 
                 if (currentUserId != -1)
                 {
-                    Console.WriteLine($"[DEBUG] TrashBinView - Starting to load trash files...");
+                    ////Console.WriteLine($"[DEBUG] TrashBinView - Starting to load trash files...");
                     await LoadTrashFilesAsync();
                 }
                 else
@@ -96,19 +96,19 @@ namespace FileSharingClient
                 allTrashFiles.Clear();
                 allTrashFolders.Clear();
                 
-                Console.WriteLine($"[DEBUG] TrashBinView - Loading trash files and folders for user {currentUserId}");
+                ////Console.WriteLine($"[DEBUG] TrashBinView - Loading trash files and folders for user {currentUserId}");
                 
                 // Test server connection first
-                Console.WriteLine("[DEBUG] TrashBinView - Testing server connection...");
+                ////Console.WriteLine($"[DEBUG] TrashBinView - Testing server connection...");
                 
                 // Get trash files from server
                 string requestString = $"GET_TRASH_FILES|{currentUserId}";
-                Console.WriteLine($"[DEBUG] TrashBinView - Sending request: {requestString}");
+                ////Console.WriteLine($"[DEBUG] TrashBinView - Sending request: {requestString}");
                 
                 string response = await SendRequestToServer(requestString);
                 
-                Console.WriteLine($"[DEBUG] TrashBinView - Server response: '{response}'");
-                Console.WriteLine($"[DEBUG] TrashBinView - Response length: {response?.Length ?? 0}");
+                ////Console.WriteLine($"[DEBUG] TrashBinView - Server response: '{response}'");
+                ////Console.WriteLine($"[DEBUG] TrashBinView - Response length: {response?.Length ?? 0}");
                 
                 if (string.IsNullOrEmpty(response))
                 {
@@ -120,11 +120,11 @@ namespace FileSharingClient
                 if (response.StartsWith("200|"))
                 {
                     string filesData = response.Substring(4).Trim();
-                    Console.WriteLine($"[DEBUG] TrashBinView - Extracted files data: '{filesData}'");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - Extracted files data: '{filesData}'");
                     
                     if (filesData == "NO_TRASH_FILES")
                     {
-                        Console.WriteLine("[DEBUG] TrashBinView - No trash files found");
+                        //Console.WriteLine($"[DEBUG] TrashBinView - No trash files found");
                         // Don't show message here, wait for folders result
                     }
                     else
@@ -132,8 +132,8 @@ namespace FileSharingClient
                         // Parse files data: fileName:deletedAt;fileName:deletedAt;...
                         string[] files = filesData.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
                         
-                        Console.WriteLine($"[DEBUG] TrashBinView - Found {files.Length} files");
-                        Console.WriteLine($"[DEBUG] TrashBinView - Files array: [{string.Join(", ", files)}]");
+                        //Console.WriteLine($"[DEBUG] TrashBinView - Found {files.Length} files");
+                        //Console.WriteLine($"[DEBUG] TrashBinView - Files array: [{string.Join(", ", files)}]");
                         
                         foreach (string file in files)
                         {
@@ -147,12 +147,12 @@ namespace FileSharingClient
                                     string fileName = parts[0];
                                     string deletedAt = parts[1];
                                     
-                                    Console.WriteLine($"[DEBUG] TrashBinView - Processing file: {fileName}");
+                                    //Console.WriteLine($"[DEBUG] TrashBinView - Processing file: {fileName}");
                                     
                                     // Validate fileName
                                     if (string.IsNullOrWhiteSpace(fileName))
                                     {
-                                        Console.WriteLine("[DEBUG] TrashBinView - Skipping invalid fileName");
+                                        //Console.WriteLine($"[DEBUG] TrashBinView - Skipping invalid fileName");
                                         continue;
                                     }
                                     
@@ -189,12 +189,12 @@ namespace FileSharingClient
                             }
                         }
                         
-                        Console.WriteLine($"[DEBUG] TrashBinView - Successfully loaded {allTrashFiles.Count} files");
+                        //Console.WriteLine($"[DEBUG] TrashBinView - Successfully loaded {allTrashFiles.Count} files");
                     }
                 }
                 else if (response.StartsWith("404|"))
                 {
-                    Console.WriteLine($"[DEBUG] TrashBinView - No files found (404)");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - No files found (404)");
                     // Still load folders even if no files found
                 }
                 else if (response.StartsWith("500|"))
@@ -214,8 +214,8 @@ namespace FileSharingClient
                 await LoadTrashFoldersAsync();
                 DisplayTrashFiles();
                 
-                Console.WriteLine($"[DEBUG] TrashBinView - Final counts: {allTrashFiles.Count} files, {allTrashFolders.Count} folders");
-                Console.WriteLine($"[DEBUG] TrashBinView - Added {TrashFileLayoutPanel.Controls.Count} controls to FlowLayoutPanel");
+                //Console.WriteLine($"[DEBUG] TrashBinView - Final counts: {allTrashFiles.Count} files, {allTrashFolders.Count} folders");
+                //Console.WriteLine($"[DEBUG] TrashBinView - Added {TrashFileLayoutPanel.Controls.Count} controls to FlowLayoutPanel");
                 
                 // Show no items message if both files and folders are empty
                 if (allTrashFiles.Count == 0 && allTrashFolders.Count == 0)
@@ -243,13 +243,13 @@ namespace FileSharingClient
         {
             try
             {
-                Console.WriteLine($"[DEBUG] TrashBinView - Loading trash folders for user {currentUserId}");
+                //Console.WriteLine($"[DEBUG] TrashBinView - Loading trash folders for user {currentUserId}");
                 
                 string requestString = $"GET_TRASH_FOLDERS|{currentUserId}";
-                Console.WriteLine($"[DEBUG] TrashBinView - Sending folder request: {requestString}");
+                //Console.WriteLine($"[DEBUG] TrashBinView - Sending folder request: {requestString}");
                 
                 string response = await SendRequestToServer(requestString);
-                Console.WriteLine($"[DEBUG] TrashBinView - Folder response: '{response}'");
+                //Console.WriteLine($"[DEBUG] TrashBinView - Folder response: '{response}'");
                 
                 if (string.IsNullOrEmpty(response))
                 {
@@ -260,18 +260,18 @@ namespace FileSharingClient
                 if (response.StartsWith("200|"))
                 {
                     string foldersData = response.Substring(4).Trim();
-                    Console.WriteLine($"[DEBUG] TrashBinView - Extracted folders data: '{foldersData}'");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - Extracted folders data: '{foldersData}'");
                     
                     if (foldersData == "NO_TRASH_FOLDERS")
                     {
-                        Console.WriteLine("[DEBUG] TrashBinView - No trash folders found");
+                        //Console.WriteLine($"[DEBUG] TrashBinView - No trash folders found");
                         return;
                     }
                     
                     // Parse folders data: folderId:folderName:deletedAt;folderId:folderName:deletedAt;...
                     string[] folders = foldersData.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
                     
-                    Console.WriteLine($"[DEBUG] TrashBinView - Found {folders.Length} folders");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - Found {folders.Length} folders");
                     
                     foreach (string folder in folders)
                     {
@@ -286,12 +286,12 @@ namespace FileSharingClient
                                 string folderName = parts[1];
                                 string deletedAt = parts[2];
                                 
-                                Console.WriteLine($"[DEBUG] TrashBinView - Processing folder: {folderName} (ID: {folderId})");
+                                //Console.WriteLine($"[DEBUG] TrashBinView - Processing folder: {folderName} (ID: {folderId})");
                                 
                                 // Validate folderName
                                 if (string.IsNullOrWhiteSpace(folderName))
                                 {
-                                    Console.WriteLine("[DEBUG] TrashBinView - Skipping invalid folderName");
+                                    //Console.WriteLine($"[DEBUG] TrashBinView - Skipping invalid folderName");
                                     continue;
                                 }
                                 
@@ -324,11 +324,11 @@ namespace FileSharingClient
                         }
                     }
                     
-                    Console.WriteLine($"[DEBUG] TrashBinView - Successfully loaded {allTrashFolders.Count} folders");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - Successfully loaded {allTrashFolders.Count} folders");
                 }
                 else if (response.StartsWith("404|"))
                 {
-                    Console.WriteLine($"[DEBUG] TrashBinView - No folders found (404)");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - No folders found (404)");
                 }
                 else if (response.StartsWith("500|"))
                 {
@@ -413,12 +413,12 @@ namespace FileSharingClient
                 if (response.StartsWith("200|"))
                 {
                     MessageBox.Show("Phục hồi file thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Console.WriteLine($"[DEBUG] TrashBinView - File '{fileName}' restored, refreshing list");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - File '{fileName}' restored, refreshing list");
                     await LoadTrashFilesAsync(); // Refresh the list
                     
                     // Notify MyFileView that file has been restored
                     FileRestoredFromTrash?.Invoke(fileName);
-                    Console.WriteLine($"[DEBUG] TrashBinView - FileRestoredFromTrash event fired for: {fileName}");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - FileRestoredFromTrash event fired for: {fileName}");
                 }
                 else
                 {
@@ -440,12 +440,12 @@ namespace FileSharingClient
                 if (response.StartsWith("200|"))
                 {
                     MessageBox.Show("Phục hồi folder thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Console.WriteLine($"[DEBUG] TrashBinView - Folder '{folderId}' restored, refreshing list");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - Folder '{folderId}' restored, refreshing list");
                     await LoadTrashFilesAsync(); // Refresh the list
                     
                     // Notify MyFileView that folder has been restored
                     FolderRestoredFromTrash?.Invoke(folderId);
-                    Console.WriteLine($"[DEBUG] TrashBinView - FolderRestoredFromTrash event fired for: {folderId}");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - FolderRestoredFromTrash event fired for: {folderId}");
                 }
                 else
                 {
@@ -467,7 +467,7 @@ namespace FileSharingClient
                 if (response.StartsWith("200|"))
                 {
                     MessageBox.Show("Xóa vĩnh viễn folder thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Console.WriteLine($"[DEBUG] TrashBinView - Folder '{folderId}' permanently deleted, refreshing list");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - Folder '{folderId}' permanently deleted, refreshing list");
                     await LoadTrashFilesAsync(); // Refresh the list
                 }
                 else
@@ -490,7 +490,7 @@ namespace FileSharingClient
                 if (response.StartsWith("200|"))
                 {
                     MessageBox.Show("Xóa vĩnh viễn file thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Console.WriteLine($"[DEBUG] TrashBinView - File '{fileName}' permanently deleted, refreshing list");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - File '{fileName}' permanently deleted, refreshing list");
                     await LoadTrashFilesAsync(); // Refresh the list
                 }
                 else
@@ -540,7 +540,7 @@ namespace FileSharingClient
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.WriteLine($"[DEBUG] TrashBinView - Error accessing file {filePath}: {ex.Message}");
+                                    //Console.WriteLine($"[DEBUG] TrashBinView - Error accessing file {filePath}: {ex.Message}");
                                     // File path may have issues, but we can continue without size
                                 }
                             }
@@ -554,7 +554,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DEBUG] TrashBinView - Error in GetFileInfoFromServer: {ex.Message}");
+                //Console.WriteLine($"[DEBUG] TrashBinView - Error in GetFileInfoFromServer: {ex.Message}");
                 return ("N/A", GetSafeFileExtension(fileName));
             }
         }
@@ -603,25 +603,25 @@ namespace FileSharingClient
         {
             try
             {
-                Console.WriteLine($"[DEBUG] SendRequestToServer - Connecting via LoadBalancer to {serverIp}:{serverPort}");
+                //Console.WriteLine($"[DEBUG] SendRequestToServer - Connecting via LoadBalancer to {serverIp}:{serverPort}");
                 
                 var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 {
-                    Console.WriteLine($"[DEBUG] SendRequestToServer - Connected successfully via TLS");
+                    //Console.WriteLine($"[DEBUG] SendRequestToServer - Connected successfully via TLS");
                     
                     // Send request using StreamWriter - but don't dispose it to avoid closing the stream
                     StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true };
                     
-                    Console.WriteLine($"[DEBUG] SendRequestToServer - Sending: '{request}'");
+                    //Console.WriteLine($"[DEBUG] SendRequestToServer - Sending: '{request}'");
                     await writer.WriteLineAsync(request);
                     await writer.FlushAsync();
-                    Console.WriteLine($"[DEBUG] SendRequestToServer - Request sent");
+                    //Console.WriteLine($"[DEBUG] SendRequestToServer - Request sent");
                     
                     // Read response using StreamReader for proper text handling
                     using (StreamReader responseReader = new StreamReader(sslStream, Encoding.UTF8))
                     {
-                        Console.WriteLine($"[DEBUG] SendRequestToServer - Waiting for response...");
+                        //Console.WriteLine($"[DEBUG] SendRequestToServer - Waiting for response...");
                         
                         // Read the full response - could be multiline
                         StringBuilder responseBuilder = new StringBuilder();
@@ -643,8 +643,8 @@ namespace FileSharingClient
                         }
                         
                         string response = responseBuilder.ToString();
-                        Console.WriteLine($"[DEBUG] SendRequestToServer - Received {response.Length} characters");
-                        Console.WriteLine($"[DEBUG] SendRequestToServer - Response: '{response}'");
+                        //Console.WriteLine($"[DEBUG] SendRequestToServer - Received {response.Length} characters");
+                        //Console.WriteLine($"[DEBUG] SendRequestToServer - Response: '{response}'");
                         
                         if (string.IsNullOrEmpty(response))
                         {
@@ -675,24 +675,24 @@ namespace FileSharingClient
         // {
         //     try
         //     {
-        //         Console.WriteLine($"[DEBUG] TrashBinView - Getting user ID from session");
-        //         Console.WriteLine($"[DEBUG] TrashBinView - Connection string: {connectionString}");
+        //         //Console.WriteLine($"[DEBUG] TrashBinView - Getting user ID from session");
+        //         //Console.WriteLine($"[DEBUG] TrashBinView - Connection string: {connectionString}");
         //         
         //         using (var conn = new SQLiteConnection(connectionString))
         //         {
         //             await conn.OpenAsync();
         //             string query = "SELECT user_id FROM session WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1";
-        //             Console.WriteLine($"[DEBUG] TrashBinView - Query: {query}");
+        //             //Console.WriteLine($"[DEBUG] TrashBinView - Query: {query}");
         //             
         //             using (var cmd = new SQLiteCommand(query, conn))
         //             {
         //                 var result = await cmd.ExecuteScalarAsync();
-        //                 Console.WriteLine($"[DEBUG] TrashBinView - Query result: {result}");
+        //                 //Console.WriteLine($"[DEBUG] TrashBinView - Query result: {result}");
         //                 
         //                 if (result != null)
         //                 {
         //                     int userId = Convert.ToInt32(result);
-        //                     Console.WriteLine($"[DEBUG] TrashBinView - User ID: {userId}");
+        //                     //Console.WriteLine($"[DEBUG] TrashBinView - User ID: {userId}");
         //                     return userId;
         //                 }
         //             }
@@ -723,7 +723,7 @@ namespace FileSharingClient
 
         public async Task RefreshTrashFiles()
         {
-            Console.WriteLine("[DEBUG] TrashBinView - RefreshTrashFiles called");
+            ////Console.WriteLine($"[DEBUG] TrashBinView - RefreshTrashFiles called");
             try
             {
                 // Clear current data and reload completely
@@ -733,7 +733,7 @@ namespace FileSharingClient
                 
                 // Reload all data
                 await LoadTrashFilesAsync();
-                Console.WriteLine("[DEBUG] TrashBinView - RefreshTrashFiles completed successfully");
+                ////Console.WriteLine($"[DEBUG] TrashBinView - RefreshTrashFiles completed successfully");
             }
             catch (Exception ex)
             {
@@ -746,12 +746,12 @@ namespace FileSharingClient
         {
             if (this.Visible)
             {
-                Console.WriteLine("[DEBUG] TrashBinView - Became visible, refreshing data...");
+                //Console.WriteLine($"[DEBUG] TrashBinView - Became visible, refreshing data...");
                 try
                 {
                     // Refresh data when view becomes visible
                     await LoadTrashFilesAsync();
-                    Console.WriteLine("[DEBUG] TrashBinView - Data refreshed successfully");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - Data refreshed successfully");
                 }
                 catch (Exception ex)
                 {
@@ -826,13 +826,13 @@ namespace FileSharingClient
                 foreach (string fileName in restoredFiles)
                 {
                     FileRestoredFromTrash?.Invoke(fileName);
-                    Console.WriteLine($"[DEBUG] TrashBinView - FileRestoredFromTrash event fired for: {fileName}");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - FileRestoredFromTrash event fired for: {fileName}");
                 }
                 
                 foreach (int folderId in restoredFolders)
                 {
                     FolderRestoredFromTrash?.Invoke(folderId);
-                    Console.WriteLine($"[DEBUG] TrashBinView - FolderRestoredFromTrash event fired for: {folderId}");
+                    //Console.WriteLine($"[DEBUG] TrashBinView - FolderRestoredFromTrash event fired for: {folderId}");
                 }
             }
         }
@@ -1014,7 +1014,7 @@ namespace FileSharingClient
             {
                 // Unsubscribe from events to prevent memory leaks
                 this.VisibleChanged -= OnVisibilityChanged;
-                Console.WriteLine("[DEBUG] TrashBinView - Unsubscribed from events");
+                //Console.WriteLine($"[DEBUG] TrashBinView - Unsubscribed from events");
             }
             catch (Exception ex)
             {

@@ -245,9 +245,9 @@ namespace LoadBalancerServer
                     // Track connection
                     Interlocked.Increment(ref backend.ActiveConnections);
 
-                    Console.WriteLine($"[DEBUG] Attempt {attempt + 1}/{MAX_RETRY_ATTEMPTS}: Connecting to backend {backend.EndPoint}...");
+                    //Console.WriteLine($"[DEBUG] Attempt {attempt + 1}/{MAX_RETRY_ATTEMPTS}: Connecting to backend {backend.EndPoint}...");
                     await server.ConnectAsync(backend.EndPoint.Address, backend.EndPoint.Port);
-                    Console.WriteLine($"[DEBUG] Successfully connected to backend {backend.EndPoint}");
+                    //Console.WriteLine($"[DEBUG] Successfully connected to backend {backend.EndPoint}");
                     Console.WriteLine($"[PROXY] {client.Client.RemoteEndPoint} -> {backend.EndPoint} (Active: {backend.ActiveConnections})");
 
                     // TLS termination: wrap client stream with SslStream
@@ -257,10 +257,10 @@ namespace LoadBalancerServer
                     X509Certificate2 certificate = null;
                     try
                     {
-                        Console.WriteLine($"[DEBUG] Loading certificate from: {CERTIFICATE_PATH}");
+                        //Console.WriteLine($"[DEBUG] Loading certificate from: {CERTIFICATE_PATH}");
                         certificate = new X509Certificate2(CERTIFICATE_PATH, CERTIFICATE_PASSWORD);
-                        Console.WriteLine($"[DEBUG] Certificate loaded successfully. Subject: {certificate.Subject}");
-                        Console.WriteLine($"[DEBUG] Certificate valid from: {certificate.NotBefore} to: {certificate.NotAfter}");
+                        //Console.WriteLine($"[DEBUG] Certificate loaded successfully. Subject: {certificate.Subject}");
+                        //Console.WriteLine($"[DEBUG] Certificate valid from: {certificate.NotBefore} to: {certificate.NotAfter}");
                     }
                     catch (Exception ex)
                     {
@@ -275,12 +275,12 @@ namespace LoadBalancerServer
                     
                     try
                     {
-                        Console.WriteLine($"[DEBUG] Starting TLS handshake with client...");
+                        //Console.WriteLine($"[DEBUG] Starting TLS handshake with client...");
                         await Task.Factory.FromAsync(
                             (callback, state) => sslStream.BeginAuthenticateAsServer(certificate, false, false, callback, state),
                             sslStream.EndAuthenticateAsServer,
                             null);
-                        Console.WriteLine($"[DEBUG] TLS handshake completed successfully");
+                        //Console.WriteLine($"[DEBUG] TLS handshake completed successfully");
                     }
                     catch (Exception ex)
                     {
@@ -311,11 +311,11 @@ namespace LoadBalancerServer
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[ERROR] Attempt {attempt + 1}/{MAX_RETRY_ATTEMPTS} failed for backend {backend?.EndPoint}: {ex.Message}");
-                    Console.WriteLine($"[DEBUG] Exception type: {ex.GetType().Name}");
+                    //Console.WriteLine($"[DEBUG] Exception type: {ex.GetType().Name}");
                     
                     if (backend != null)
                     {
-                        Console.WriteLine($"[DEBUG] Backend health status: {backend.IsHealthy}, Last check: {backend.LastHealthCheck}");
+                        //Console.WriteLine($"[DEBUG] Backend health status: {backend.IsHealthy}, Last check: {backend.LastHealthCheck}");
                         backend.FailedChecks++;
                         
                         // Mark as unhealthy immediately if connection fails

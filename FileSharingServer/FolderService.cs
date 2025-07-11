@@ -181,7 +181,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] Adding to DB: {fileName}, FolderID: {folderId}, Size: {fileSize}");
+                //Console.WriteLine($"[DEBUG] Adding to DB: {fileName}, FolderID: {folderId}, Size: {fileSize}");
                 using (SQLiteConnection conn = new SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await conn.OpenAsync();
@@ -274,7 +274,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] Starting upload: {folderName}/{relativePath}/{fileName} (Size: {fileSize}, Owner: {ownerId})");
+                //Console.WriteLine($"[DEBUG] Starting upload: {folderName}/{relativePath}/{fileName} (Size: {fileSize}, Owner: {ownerId})");
                 
                 // 1. Kiểm tra/tạo folder trong DB
                 int folderId = await EnsureFolderExists(folderName, ownerId);
@@ -283,7 +283,7 @@ namespace FileSharingServer
                     Console.WriteLine($"[ERROR] Failed to ensure folder exists: {folderName}");
                     return "500\n";
                 }
-                Console.WriteLine($"[DEBUG] Folder ID: {folderId}");
+                //Console.WriteLine($"[DEBUG] Folder ID: {folderId}");
 
                 // 2. Tạo thư mục vật lý nếu chưa có
                 string uploadDir = GetSharedUploadsPath();
@@ -295,7 +295,7 @@ namespace FileSharingServer
 
                 // 3. Nhận file
                 string destFilePath = Path.Combine(fullDir, fileName);
-                Console.WriteLine($"[DEBUG] Saving to: {destFilePath}");
+                //Console.WriteLine($"[DEBUG] Saving to: {destFilePath}");
                 
                 // Kiểm tra file đã tồn tại
                 if (File.Exists(destFilePath))
@@ -345,7 +345,7 @@ namespace FileSharingServer
                         }
                     }
                 }
-                Console.WriteLine($"[DEBUG] Received {totalRead}/{fileSize} bytes");
+                //Console.WriteLine($"[DEBUG] Received {totalRead}/{fileSize} bytes");
                 if (totalRead != fileSize)
                 {
                     Console.WriteLine($"[ERROR] Incomplete upload: {totalRead}/{fileSize} bytes");
@@ -354,7 +354,7 @@ namespace FileSharingServer
 
                 // 4. Lưu DB
                 string fileHash = CalculateSHA256(destFilePath);
-                Console.WriteLine($"[DEBUG] File hash: {fileHash}");
+                //Console.WriteLine($"[DEBUG] File hash: {fileHash}");
                 await AddFileToDatabase(fileName, folderId, fileSize, Path.GetExtension(fileName).TrimStart('.').ToLower(), relativePath, fileHash, ownerId, uploadTime);
                 Console.WriteLine($"[SUCCESS] Upload completed: {fileName}");
                 return "200\n";
@@ -413,7 +413,7 @@ namespace FileSharingServer
         {
             try
             {
-                Console.WriteLine($"[DEBUG] Adding to DB: {fileName}, FolderID: {folderId}, Size: {fileSize}");
+                //Console.WriteLine($"[DEBUG] Adding to DB: {fileName}, FolderID: {folderId}, Size: {fileSize}");
                 
                 // Lấy thông tin folder để tạo full path
                 string fullFilePath = relativePath;

@@ -57,8 +57,6 @@ namespace FileSharingClient
             FileSize = filesize;
             FileId = fileId;
 
-            Console.WriteLine($"[DEBUG][FileItemControl] Setting owner: '{owner}' for file: '{filename}'");
-
             // Set file type
             string fileExtension = Path.GetExtension(filename).ToLower();
             string fileType = GetFileType(fileExtension);
@@ -173,7 +171,6 @@ namespace FileSharingClient
                     {
                         // Shared file → decrypt with share_pass
                         decryptionKey = sharePass;
-                        Console.WriteLine($"[DEBUG] FileItemControl: Previewing shared file, using share_pass for decryption");
                     }
                     else
                     {
@@ -184,7 +181,6 @@ namespace FileSharingClient
                             return;
                         }
                         decryptionKey = Session.UserPassword;
-                        Console.WriteLine($"[DEBUG] FileItemControl: Previewing owner file, using user password for decryption");
                     }
 
                     // Decrypt the file data before displaying
@@ -192,13 +188,11 @@ namespace FileSharingClient
                     try
                     {
                         decryptedData = CryptoHelper.DecryptFile(fileBytes, decryptionKey);
-                        Console.WriteLine($"[DEBUG] FileItemControl: Successfully decrypted file for preview");
                     }
                     catch (Exception decryptEx)
                     {
                         // If decryption fails, show detailed error
                         MessageBox.Show($"Giải mã thất bại: {decryptEx.Message}\n\nEncryption Type: {encryptionType}\nFile này có thể chưa được mã hóa hoặc key không đúng.", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        Console.WriteLine($"[ERROR] FileItemControl: Decryption failed - {decryptEx.Message}");
                         return;
                     }
 
@@ -319,25 +313,21 @@ namespace FileSharingClient
                             {
                                 // Shared file → decrypt with share_pass
                                 decryptionKey = sharePass;
-                                Console.WriteLine($"[DEBUG] FileItemControl: Downloading shared file, using share_pass for decryption");
                             }
                             else
                             {
                                 // Owner file → decrypt with user password
                                 decryptionKey = Session.UserPassword;
-                                Console.WriteLine($"[DEBUG] FileItemControl: Downloading owner file, using user password for decryption");
                             }
                         }
                         else
                         {
                             // Legacy format → assume owner file
                             decryptionKey = Session.UserPassword;
-                            Console.WriteLine($"[DEBUG] FileItemControl: Legacy download format, using user password for decryption");
                         }
                         
                         // Decrypt and save file
                         CryptoHelper.DecryptFileToLocal(encryptedData, decryptionKey, savePath);
-                        Console.WriteLine($"[DEBUG] FileItemControl: Successfully downloaded and decrypted file to: {savePath}");
                     }
                     else if (parts[0] == "404")
                     {

@@ -50,7 +50,7 @@ namespace FileSharingClient
             Owner = owner;
             IsShared = isShared;
 
-            Console.WriteLine($"[DEBUG][FolderItemControl] Setting owner: '{owner}' for folder: '{folderName}'");
+            //Console.WriteLine($"[DEBUG][FolderItemControl] Setting owner: '{owner}' for folder: '{folderName}'");
 
             lblFolderName.Text = TruncateFolderName(folderName, 25); // Giới hạn tên folder 25 ký tự
             lblOwner.Text = owner;
@@ -255,25 +255,25 @@ namespace FileSharingClient
                                 {
                                     // Shared file → decrypt with share_pass
                                     decryptionKey = sharePass;
-                                    Console.WriteLine($"[DEBUG] FolderItemControl: Downloading shared file, using share_pass for decryption");
+                                    //Console.WriteLine($"[DEBUG] FolderItemControl: Downloading shared file, using share_pass for decryption");
                                 }
                                 else
                                 {
                                     // Owner file → decrypt with user password
                                     decryptionKey = Session.UserPassword;
-                                    Console.WriteLine($"[DEBUG] FolderItemControl: Downloading owner file, using user password for decryption");
+                                    //Console.WriteLine($"[DEBUG] FolderItemControl: Downloading owner file, using user password for decryption");
                                 }
                             }
                             else
                             {
                                 // Legacy format → assume owner file
                                 decryptionKey = Session.UserPassword;
-                                Console.WriteLine($"[DEBUG] FolderItemControl: Legacy download format, using user password for decryption");
+                                //Console.WriteLine($"[DEBUG] FolderItemControl: Legacy download format, using user password for decryption");
                             }
                             
                             // Decrypt and save file
                             CryptoHelper.DecryptFileToLocal(encryptedData, decryptionKey, savePath);
-                            Console.WriteLine($"[DEBUG] FolderItemControl: Successfully downloaded and decrypted file to: {savePath}");
+                            //Console.WriteLine($"[DEBUG] FolderItemControl: Successfully downloaded and decrypted file to: {savePath}");
                         }
                         else
                         {
