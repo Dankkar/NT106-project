@@ -565,45 +565,7 @@ namespace FileSharingClient
             {
                 Console.WriteLine($"[DEBUG] GetItemsByPasswordAsync called with password: '{password}'");
                 
-                // First try to get file info from share password
-                (int fileId, int ownerId) = await GetFileInfoFromSharePassAsync(password);
-                Console.WriteLine($"[DEBUG] GetFileInfoFromSharePassAsync returned: fileId={fileId}, ownerId={ownerId}");
-                
-                if (fileId != -1)
-                {
-                    // Check if current user is the owner
-                    int currentUserId = Session.LoggedInUserId;
-                    if (currentUserId == ownerId)
-                    {
-                        Console.WriteLine($"[DEBUG] Current user is the owner, no need to share");
-                        MessageBox.Show("Bạn là chủ sở hữu của file này. Không cần chia sẻ lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return (null, null, false);
-                    }
-                    
-                    // Add reference to files_share table
-                    bool shareResult = await AddFileReferenceAsync(fileId.ToString(), currentUserId.ToString(), password);
-                    Console.WriteLine($"[DEBUG] AddFileReferenceAsync result: {shareResult}");
-                    
-                    if (shareResult)
-                    {
-                        Console.WriteLine($"[DEBUG] File reference added successfully");
-                        MessageBox.Show("Bạn đã có quyền truy cập vào file này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        
-                        // Reload shared files and folders list
-                        await LoadSharedFoldersAndFilesAsync();
-                        
-                        return (new List<Services.FileItem>(), new List<Services.FolderItem>(), true);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"[DEBUG] Failed to add file reference");
-                        MessageBox.Show("Lỗi khi thêm quyền truy cập file!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return (null, null, false);
-                    }
-                }
-                
-                // If no file found, try to get folder info from share password
-                Console.WriteLine($"[DEBUG] No file found, trying folder...");
+                // Ưu tiên kiểm tra folder trước
                 (int folderId, int folderOwnerId) = await GetFolderInfoFromSharePassAsync(password);
                 Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync returned: folderId={folderId}, ownerId={folderOwnerId}");
                 
@@ -638,6 +600,43 @@ namespace FileSharingClient
                     {
                         Console.WriteLine($"[DEBUG] Failed to add folder reference");
                         MessageBox.Show("Lỗi khi thêm quyền truy cập thư mục!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return (null, null, false);
+                    }
+                }
+                
+                // Nếu không phải folder, thử tiếp với file
+                (int fileId, int ownerId) = await GetFileInfoFromSharePassAsync(password);
+                Console.WriteLine($"[DEBUG] GetFileInfoFromSharePassAsync returned: fileId={fileId}, ownerId={ownerId}");
+                
+                if (fileId != -1)
+                {
+                    // Check if current user is the owner
+                    int currentUserId = Session.LoggedInUserId;
+                    if (currentUserId == ownerId)
+                    {
+                        Console.WriteLine($"[DEBUG] Current user is the owner, no need to share");
+                        MessageBox.Show("Bạn là chủ sở hữu của file này. Không cần chia sẻ lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return (null, null, false);
+                    }
+                    
+                    // Add reference to files_share table
+                    bool shareResult = await AddFileReferenceAsync(fileId.ToString(), currentUserId.ToString(), password);
+                    Console.WriteLine($"[DEBUG] AddFileReferenceAsync result: {shareResult}");
+                    
+                    if (shareResult)
+                    {
+                        Console.WriteLine($"[DEBUG] File reference added successfully");
+                        MessageBox.Show("Bạn đã có quyền truy cập vào file này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        
+                        // Reload shared files and folders list
+                        await LoadSharedFoldersAndFilesAsync();
+                        
+                        return (new List<Services.FileItem>(), new List<Services.FolderItem>(), true);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DEBUG] Failed to add file reference");
+                        MessageBox.Show("Lỗi khi thêm quyền truy cập file!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return (null, null, false);
                     }
                 }

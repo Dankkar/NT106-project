@@ -669,45 +669,64 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
-                using (sslStream)
-                using (var reader = new StreamReader(sslStream, Encoding.UTF8))
-                using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                Console.WriteLine($"[DEBUG] Starting folder share with re-encryption for folder: {folderName}");
+                
+                // Step 1: Generate share_pass on server and get it
+                string sharePass = await GenerateAndGetFolderSharePassAsync(folderId, permission);
+                if (string.IsNullOrEmpty(sharePass))
                 {
-                    // Send SHARE_FOLDER command with folder ID and permission
-                    // This will:
-                    // 1. Generate a share_pass for the folder
-                    // 2. Update folders table: set share_pass and is_shared=1
-                    // 3. Store the permission info for later use
-                    string message = $"SHARE_FOLDER|{folderId}|{permission}";
-                    Console.WriteLine($"[DEBUG] Sharing folder with permission: {message}");
-                    await writer.WriteLineAsync(message);
-
-                    string response = await reader.ReadLineAsync();
-                    response = response?.Trim();
-                    Console.WriteLine($"[DEBUG] Share folder response: '{response}'");
-
-                    if (response != null)
-                    {
-                        string[] parts = response.Split('|');
-                        if (parts.Length >= 2 && parts[0] == "200")
-                        {
-                            // Success - folder shared with permission
-                            return true;
-                        }
-                        else
-                        {
-                            // Error
-                            Console.WriteLine($"[ERROR] Share folder failed: {response}");
-                            return false;
-                        }
-                    }
+                    Console.WriteLine($"[ERROR] Failed to generate folder share password");
                     return false;
                 }
+                Console.WriteLine($"[DEBUG] Generated folder share password: {sharePass}");
+                
+                // Step 2: Get all files in this folder
+                var filesInFolder = await GetFilesInFolderAsync(folderId);
+                if (filesInFolder == null)
+                {
+                    Console.WriteLine($"[ERROR] Failed to get files in folder");
+                    return false;
+                }
+                Console.WriteLine($"[DEBUG] Found {filesInFolder.Count} files in folder to re-encrypt");
+                
+                // Step 3: Re-encrypt each file with folder's share_pass
+                foreach (var file in filesInFolder)
+                {
+                    Console.WriteLine($"[DEBUG] Re-encrypting file: {file.Name} (ID: {file.Id})");
+                    
+                    // Download original file (encrypted with owner password)
+                    byte[] originalEncryptedData = await DownloadFileDataAsync(file.Id);
+                    if (originalEncryptedData == null)
+                    {
+                        Console.WriteLine($"[ERROR] Failed to download file data for: {file.Name}");
+                        return false;
+                    }
+                    
+                    // Decrypt with owner password
+                    byte[] plainData = CryptoHelper.DecryptFile(originalEncryptedData, Session.UserPassword);
+                    Console.WriteLine($"[DEBUG] Decrypted file: {file.Name}, size: {plainData.Length} bytes");
+                    
+                    // Encrypt with folder's share_pass
+                    byte[] sharedEncryptedData = CryptoHelper.EncryptFile(plainData, sharePass);
+                    Console.WriteLine($"[DEBUG] Re-encrypted file: {file.Name} with folder share_pass, size: {sharedEncryptedData.Length} bytes");
+                    
+                    // Upload shared version to server
+                    bool uploadResult = await UploadSharedVersionAsync(file.Id, file.Name, sharedEncryptedData, sharePass);
+                    if (!uploadResult)
+                    {
+                        Console.WriteLine($"[ERROR] Failed to upload shared version for file: {file.Name}");
+                        return false;
+                    }
+                    Console.WriteLine($"[DEBUG] Successfully uploaded shared version for file: {file.Name}");
+                }
+                
+                Console.WriteLine($"[DEBUG] Successfully re-encrypted and uploaded all {filesInFolder.Count} files in folder");
+                return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Error sharing folder: {ex.Message}");
+                Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
                 MessageBox.Show($"Lỗi chia sẻ folder: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
@@ -1873,6 +1892,118 @@ namespace FileSharingClient
                 Console.WriteLine($"[ERROR] Error uploading shared version: {ex.Message}");
                 return false;
             }
+        }
+
+        private async Task<string> GenerateAndGetFolderSharePassAsync(int folderId, string permission)
+        {
+            try
+            {
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
+                using (sslStream)
+                using (var reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send SHARE_FOLDER command to generate share_pass
+                    string message = $"SHARE_FOLDER|{folderId}|{permission}";
+                    Console.WriteLine($"[DEBUG] Generating folder share pass: {message}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Generate folder share pass response: '{response}'");
+
+                    if (response != null)
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2 && parts[0] == "200")
+                        {
+                            return parts[1]; // Return the share_pass
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[ERROR] Failed to generate folder share pass: {response}");
+                            return null;
+                        }
+                    }
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error generating folder share pass: {ex.Message}");
+                return null;
+            }
+        }
+
+        private async Task<List<Services.FileItem>> GetFilesInFolderAsync(int folderId)
+        {
+            try
+            {
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
+                using (sslStream)
+                using (var reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    string message = $"GET_FILES_IN_FOLDER|{folderId}";
+                    Console.WriteLine($"[DEBUG] Getting files in folder: {message}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Get files in folder response: '{response}'");
+
+                    if (response != null && response.StartsWith("200|"))
+                    {
+                        string filesData = response.Substring(4); // Remove "200|"
+                        return ParseFileItemsForShare(filesData);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[ERROR] Failed to get files in folder: {response}");
+                        return new List<Services.FileItem>();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error getting files in folder: {ex.Message}");
+                return null;
+            }
+        }
+
+        private List<Services.FileItem> ParseFileItemsForShare(string data)
+        {
+            var files = new List<Services.FileItem>();
+            if (string.IsNullOrWhiteSpace(data) || data == "NO_FILES") return files;
+
+            Console.WriteLine($"[DEBUG] Parsing files for share: {data}");
+
+            string[] items = data.Split('|');
+            foreach (string item in items)
+            {
+                if (string.IsNullOrWhiteSpace(item)) continue;
+                
+                // Parse format: fileId:fileName:fileType:fileSize:uploadAt:filePath
+                string[] parts = item.Split(':');
+                if (parts.Length >= 6)
+                {
+                    if (int.TryParse(parts[0], out int fileId))
+                    {
+                        files.Add(new Services.FileItem
+                        {
+                            Id = fileId,
+                            Name = parts[1],
+                            Type = parts[2],
+                            Size = parts[3], // Size is string type
+                            CreatedAt = parts[4], // Use CreatedAt instead of UploadAt
+                            FilePath = parts[5]
+                        });
+                    }
+                }
+            }
+            
+            Console.WriteLine($"[DEBUG] Parsed {files.Count} files for share");
+            return files;
         }
     }
 }

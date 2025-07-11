@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "Nl9Jgu7BU3Y=",
+  "success": true,
+  "projectFilePath": "D:\\NT106_Project\\NT106-project\\CleanUpDbApp\\CleanUpDbApp.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\ASUS\\.nuget\\packages\\stub.system.data.sqlite.core.netstandard\\1.0.119\\stub.system.data.sqlite.core.netstandard.1.0.119.nupkg.sha512",
+    "C:\\Users\\ASUS\\.nuget\\packages\\system.data.sqlite.core\\1.0.119\\system.data.sqlite.core.1.0.119.nupkg.sha512"
+  ],
+  "logs": []
+}
