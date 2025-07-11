@@ -276,6 +276,10 @@ namespace FileSharingServer
                     if (parts.Length != 2) return "400\n";
                     return await GetFolderContents(parts[1]);
                     
+                case "GET_FILES_IN_FOLDER":
+                    if (parts.Length != 2) return "400\n";
+                    return await GetFilesInFolder(parts[1]);
+                    
                 case "DEBUG_LIST_SHARED_FILES":
                     return await DebugListSharedFiles();
                     
@@ -3807,6 +3811,64 @@ namespace FileSharingServer
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Error in UploadSharedVersion: {ex.Message}");
+                Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        private static async Task<string> GetFilesInFolder(string folderId)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] GetFilesInFolder called with folderId: {folderId}");
+                
+                using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    string query = @"
+                        SELECT file_id, file_name, file_type, file_size, upload_at, file_path
+                        FROM files 
+                        WHERE folder_id = @folderId AND status = 'ACTIVE'
+                        ORDER BY file_name";
+                    
+                    using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@folderId", int.Parse(folderId));
+                        
+                        var files = new List<string>();
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                int fileId = Convert.ToInt32(reader["file_id"]);
+                                string fileName = reader["file_name"].ToString();
+                                string fileType = reader["file_type"].ToString();
+                                int fileSize = Convert.ToInt32(reader["file_size"]);
+                                string uploadAt = reader["upload_at"].ToString();
+                                string filePath = reader["file_path"].ToString();
+                                
+                                // Format: fileId:fileName:fileType:fileSize:uploadAt:filePath
+                                string fileInfo = $"{fileId}:{fileName}:{fileType}:{fileSize}:{uploadAt}:{filePath}";
+                                files.Add(fileInfo);
+                            }
+                        }
+                        
+                        if (files.Count == 0)
+                        {
+                            Console.WriteLine($"[DEBUG] No files found in folder {folderId}");
+                            return "200|NO_FILES\n";
+                        }
+                        
+                        string result = string.Join("|", files);
+                        Console.WriteLine($"[DEBUG] Found {files.Count} files in folder {folderId}");
+                        return $"200|{result}\n";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in GetFilesInFolder: {ex.Message}");
                 Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
                 return "500|INTERNAL_ERROR\n";
             }
