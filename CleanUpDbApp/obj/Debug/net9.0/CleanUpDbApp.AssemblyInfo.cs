@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CleanUpDbApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7919ceca47dbce2543d520a438fa46cb65a4076a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4d1e22b99008eaff762b773c4d5f8fc619bc11bb")]
 [assembly: System.Reflection.AssemblyProductAttribute("CleanUpDbApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CleanUpDbApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

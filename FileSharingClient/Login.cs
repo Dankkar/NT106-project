@@ -152,7 +152,7 @@ namespace FileSharingClient
                                         return;
                                     }
                                 }
-                                Console.WriteLine($"[DEBUG] Login successful - userId: {userId}");
+                                //Console.WriteLine($"[DEBUG] Login successful - userId: {userId}");
                             }
 
                             this.Invoke(new Action(() =>

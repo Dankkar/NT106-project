@@ -63,8 +63,6 @@ namespace FileSharingClient
         {
             try
             {
-                Console.WriteLine($"[DEBUG] LoadSharedFoldersAndFilesAsync called for user {Session.LoggedInUserId}");
-                
                 allSharedFiles.Clear();
                 allSharedFolders.Clear();
                 SharedFileLayoutPanel.Controls.Clear();
@@ -78,16 +76,14 @@ namespace FileSharingClient
 
                 // Load shared folders (from folder_shares table where shared_with_user_id = current user)
                 var sharedFolders = await ApiService.GetSharedFoldersAsync(Session.LoggedInUserId);
-                Console.WriteLine($"[DEBUG] Loaded {sharedFolders.Count} shared folders");
                 allSharedFolders.AddRange(sharedFolders);
 
                 // Load shared files (from files_share table where user_id = current user)
                 var sharedFiles = await ApiService.GetSharedFilesAsync(Session.LoggedInUserId);
-                Console.WriteLine($"[DEBUG] Loaded {sharedFiles.Count} shared files");
                 allSharedFiles.AddRange(sharedFiles);
 
                 // Debug: Show counts
-                Console.WriteLine($"[DEBUG] Total: {allSharedFolders.Count} shared folders and {allSharedFiles.Count} shared files for user {Session.LoggedInUserId}");
+                // Console.WriteLine($"[ERROR] Total: {allSharedFolders.Count} shared folders and {allSharedFiles.Count} shared files for user {Session.LoggedInUserId}");
 
                 // Display shared folders and files
                 DisplaySharedFoldersAndFiles();
@@ -114,7 +110,7 @@ namespace FileSharingClient
             // Add shared folders first
             foreach (var folder in allSharedFolders)
             {
-                Console.WriteLine($"[DEBUG][ShareView] Creating shared folder control: {folder.Name}, Owner: '{folder.Owner}'");
+                Console.WriteLine($"[ERROR][ShareView] Creating shared folder control: {folder.Name}, Owner: '{folder.Owner}'");
                 
                 var folderControl = new FolderItemControl(folder.Name, folder.CreatedAt, folder.Owner, folder.IsShared, folder.Id);
                 folderControl.FolderClicked += async (folderId) => await NavigateToSharedFolderById(folderId);
@@ -126,7 +122,7 @@ namespace FileSharingClient
             // Add shared files
             foreach (var file in allSharedFiles)
             {
-                Console.WriteLine($"[DEBUG][ShareView] Creating shared file control: {file.Name}, Owner: '{file.Owner}'");
+                Console.WriteLine($"[ERROR][ShareView] Creating shared file control: {file.Name}, Owner: '{file.Owner}'");
                 
                 var fileItemControl = new FileItemControl(file.Name, file.CreatedAt, file.Owner, file.Size, file.FilePath, file.Id);
                 // Remove default context menu and create custom one for shared files
@@ -179,7 +175,7 @@ namespace FileSharingClient
         {
             try
             {
-                Console.WriteLine($"[DEBUG] LoadSharedFolderContentsAsync called for folder {folderId}");
+                Console.WriteLine($"[ERROR] LoadSharedFolderContentsAsync called for folder {folderId}");
                 
                 allSharedFiles.Clear();
                 allSharedFolders.Clear();
@@ -196,12 +192,12 @@ namespace FileSharingClient
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
                     string message = $"GET_SHARED_FOLDER_CONTENTS|{folderId}|{Session.LoggedInUserId}";
-                    Console.WriteLine($"[DEBUG] Getting shared folder contents: {message}");
+                    Console.WriteLine($"[ERROR] Getting shared folder contents: {message}");
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
                     response = response?.Trim();
-                    Console.WriteLine($"[DEBUG] Shared folder contents response: '{response}'");
+                    Console.WriteLine($"[ERROR] Shared folder contents response: '{response}'");
 
                     if (response != null && response.StartsWith("200|"))
                     {
@@ -255,7 +251,7 @@ namespace FileSharingClient
             var files = new List<Services.FileItem>();
             if (string.IsNullOrWhiteSpace(data) || data == "NO_FILES" || data == "NO_SHARED_FILES" || data == "NO_FILES_IN_FOLDER" || data == "NO_CONTENTS") return files;
             
-            Console.WriteLine($"[DEBUG][ParseFileItems] Raw data: {data}");
+            Console.WriteLine($"[ERROR][ParseFileItems] Raw data: {data}");
             
             // Nếu có prefix 200| thì bỏ đi
             if (data.StartsWith("200|"))
@@ -304,7 +300,7 @@ namespace FileSharingClient
             var files = new List<Services.FileItem>();
             if (string.IsNullOrWhiteSpace(data) || data == "NO_FILES_IN_FOLDER" || data == "NO_CONTENTS") return files;
             
-            Console.WriteLine($"[DEBUG][ParseSharedFolderFiles] Raw data: {data}");
+            Console.WriteLine($"[ERROR][ParseSharedFolderFiles] Raw data: {data}");
 
             string[] items = data.Split('|');
             foreach (string item in items)
@@ -371,7 +367,7 @@ namespace FileSharingClient
                 }
             }
             
-            Console.WriteLine($"[DEBUG][ParseSharedFolderFiles] Parsed {files.Count} files");
+            Console.WriteLine($"[ERROR][ParseSharedFolderFiles] Parsed {files.Count} files");
             return files;
         }
 
@@ -391,34 +387,34 @@ namespace FileSharingClient
         // Toolbar event handlers
         private async void btnGetFile_Click(object sender, EventArgs e)
         {
-            Console.WriteLine($"[DEBUG] btnGetFile_Click called");
+            Console.WriteLine($"[ERROR] btnGetFile_Click called");
             
             // Show dialog to enter password for getting files
             string password = ShowPasswordDialog();
-            Console.WriteLine($"[DEBUG] Password entered: '{password}'");
+            Console.WriteLine($"[ERROR] Password entered: '{password}'");
             
             if (!string.IsNullOrEmpty(password))
             {
                 try
                 {
-                    Console.WriteLine($"[DEBUG] Calling GetItemsByPasswordAsync with password: '{password}'");
+                    Console.WriteLine($"[ERROR] Calling GetItemsByPasswordAsync with password: '{password}'");
                     
                     // Get files and folders using password
                     var (files, folders, success) = await GetItemsByPasswordAsync(password);
-                    Console.WriteLine($"[DEBUG] GetItemsByPasswordAsync returned: success={success}");
+                    Console.WriteLine($"[ERROR] GetItemsByPasswordAsync returned: success={success}");
                     
                     if (success)
                     {
-                        Console.WriteLine($"[DEBUG] Success! Refreshing shared file list");
+                        Console.WriteLine($"[ERROR] Success! Refreshing shared file list");
                         
                         // Refresh the list to show new shared items
                         await LoadSharedFoldersAndFilesAsync();
                         
-                        Console.WriteLine($"[DEBUG] Shared file list refreshed");
+                        Console.WriteLine($"[ERROR] Shared file list refreshed");
                     }
                     else
                     {
-                        Console.WriteLine($"[DEBUG] No items found or invalid password");
+                        Console.WriteLine($"[ERROR] No items found or invalid password");
                     }
                 }
                 catch (Exception ex)
@@ -430,7 +426,7 @@ namespace FileSharingClient
             }
             else
             {
-                Console.WriteLine($"[DEBUG] No password entered");
+                Console.WriteLine($"[ERROR] No password entered");
             }
         }
 
@@ -563,32 +559,32 @@ namespace FileSharingClient
         {
             try
             {
-                Console.WriteLine($"[DEBUG] GetItemsByPasswordAsync called with password: '{password}'");
+                Console.WriteLine($"[ERROR] GetItemsByPasswordAsync called with password: '{password}'");
                 
                 // Ưu tiên kiểm tra folder trước
                 (int folderId, int folderOwnerId) = await GetFolderInfoFromSharePassAsync(password);
-                Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync returned: folderId={folderId}, ownerId={folderOwnerId}");
+                Console.WriteLine($"[ERROR] GetFolderInfoFromSharePassAsync returned: folderId={folderId}, ownerId={folderOwnerId}");
                 
                 if (folderId != -1)
                 {
                     // Check if current user is the owner
                     int currentUserId = Session.LoggedInUserId;
-                    Console.WriteLine($"[DEBUG] Current user ID: {currentUserId}, Folder owner ID: {folderOwnerId}");
+                    Console.WriteLine($"[ERROR] Current user ID: {currentUserId}, Folder owner ID: {folderOwnerId}");
                     
                     if (currentUserId == folderOwnerId)
                     {
-                        Console.WriteLine($"[DEBUG] Current user is the folder owner, no need to share");
+                        Console.WriteLine($"[ERROR] Current user is the folder owner, no need to share");
                         MessageBox.Show("Bạn là chủ sở hữu của thư mục này. Không cần chia sẻ lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return (null, null, false);
                     }
                     
                     // Add reference to folder_shares table
                     bool shareResult = await AddFolderReferenceAsync(folderId.ToString(), currentUserId.ToString(), password);
-                    Console.WriteLine($"[DEBUG] AddFolderReferenceAsync result: {shareResult}");
+                    Console.WriteLine($"[ERROR] AddFolderReferenceAsync result: {shareResult}");
                     
                     if (shareResult)
                     {
-                        Console.WriteLine($"[DEBUG] Folder reference added successfully");
+                        Console.WriteLine($"[ERROR] Folder reference added successfully");
                         MessageBox.Show("Bạn đã có quyền truy cập vào thư mục này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         
                         // Reload shared files and folders list
@@ -598,7 +594,7 @@ namespace FileSharingClient
                     }
                     else
                     {
-                        Console.WriteLine($"[DEBUG] Failed to add folder reference");
+                        Console.WriteLine($"[ERROR] Failed to add folder reference");
                         MessageBox.Show("Lỗi khi thêm quyền truy cập thư mục!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return (null, null, false);
                     }
@@ -606,7 +602,7 @@ namespace FileSharingClient
                 
                 // Nếu không phải folder, thử tiếp với file
                 (int fileId, int ownerId) = await GetFileInfoFromSharePassAsync(password);
-                Console.WriteLine($"[DEBUG] GetFileInfoFromSharePassAsync returned: fileId={fileId}, ownerId={ownerId}");
+                Console.WriteLine($"[ERROR] GetFileInfoFromSharePassAsync returned: fileId={fileId}, ownerId={ownerId}");
                 
                 if (fileId != -1)
                 {
@@ -614,18 +610,18 @@ namespace FileSharingClient
                     int currentUserId = Session.LoggedInUserId;
                     if (currentUserId == ownerId)
                     {
-                        Console.WriteLine($"[DEBUG] Current user is the owner, no need to share");
+                        Console.WriteLine($"[ERROR] Current user is the owner, no need to share");
                         MessageBox.Show("Bạn là chủ sở hữu của file này. Không cần chia sẻ lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return (null, null, false);
                     }
                     
                     // Add reference to files_share table
                     bool shareResult = await AddFileReferenceAsync(fileId.ToString(), currentUserId.ToString(), password);
-                    Console.WriteLine($"[DEBUG] AddFileReferenceAsync result: {shareResult}");
+                    Console.WriteLine($"[ERROR] AddFileReferenceAsync result: {shareResult}");
                     
                     if (shareResult)
                     {
-                        Console.WriteLine($"[DEBUG] File reference added successfully");
+                        Console.WriteLine($"[ERROR] File reference added successfully");
                         MessageBox.Show("Bạn đã có quyền truy cập vào file này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         
                         // Reload shared files and folders list
@@ -635,13 +631,13 @@ namespace FileSharingClient
                     }
                     else
                     {
-                        Console.WriteLine($"[DEBUG] Failed to add file reference");
+                        Console.WriteLine($"[ERROR] Failed to add file reference");
                         MessageBox.Show("Lỗi khi thêm quyền truy cập file!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return (null, null, false);
                     }
                 }
                 
-                Console.WriteLine($"[DEBUG] Invalid password, no file or folder found");
+                Console.WriteLine($"[ERROR] Invalid password, no file or folder found");
                 MessageBox.Show("Mật khẩu không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, false);
             }
@@ -668,18 +664,18 @@ namespace FileSharingClient
                     
                     // Add entry to files_share table with permission
                     string message = $"ADD_FILE_SHARE_ENTRY_WITH_PERMISSION|{fileId}|{userId}|{sharePass}|{permission}";
-                    Console.WriteLine($"[DEBUG] Adding file share entry: {message}");
+                    Console.WriteLine($"[ERROR] Adding file share entry: {message}");
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
-                    Console.WriteLine($"[DEBUG] Add file reference response: '{response}'");
+                    Console.WriteLine($"[ERROR] Add file reference response: '{response}'");
                     
                     return response != null && response.StartsWith("200|");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error adding file reference: {ex.Message}");
+                Console.WriteLine($"[ERROR] Error adding file reference: {ex.Message}");
                 return false;
             }
         }
@@ -698,18 +694,18 @@ namespace FileSharingClient
                     
                     // Add folder and all its files to share tables in one atomic transaction
                     string message = $"ADD_FOLDER_AND_FILES_SHARE|{folderId}|{userId}|{sharePass}|{permission}";
-                    Console.WriteLine($"[DEBUG] Adding folder and files share: {message}");
+                    Console.WriteLine($"[ERROR] Adding folder and files share: {message}");
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
-                    Console.WriteLine($"[DEBUG] Add folder and files response: '{response}'");
+                    Console.WriteLine($"[ERROR] Add folder and files response: '{response}'");
                     
                     return response != null && response.StartsWith("200|");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error adding folder reference: {ex.Message}");
+                Console.WriteLine($"[ERROR] Error adding folder reference: {ex.Message}");
                 return false;
             }
         }
@@ -745,7 +741,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error getting permission from share pass: {ex.Message}");
+                Console.WriteLine($"[ERROR] Error getting permission from share pass: {ex.Message}");
                 return "read"; // Default to read permission
             }
         }
@@ -760,12 +756,12 @@ namespace FileSharingClient
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
                     string message = $"GET_FOLDER_INFO_BY_SHARE_PASS|{sharePass}";
-                    Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync: Sending message: {message.Trim()}");
+                    Console.WriteLine($"[ERROR] GetFolderInfoFromSharePassAsync: Sending message: {message.Trim()}");
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
                     response = response?.Trim();
-                    Console.WriteLine($"[DEBUG] GetFolderInfoFromSharePassAsync response: '{response}'");
+                    Console.WriteLine($"[ERROR] GetFolderInfoFromSharePassAsync response: '{response}'");
 
                     if (response != null)
                     {
@@ -780,7 +776,7 @@ namespace FileSharingClient
                                 {
                                     // Get owner_id from owner_name (we need to query this)
                                     int ownerId = await GetOwnerIdFromUsernameAsync(folderInfo[3]);
-                                    Console.WriteLine($"[DEBUG] Parsed folder: id={folderId}, owner={folderInfo[3]}, ownerId={ownerId}");
+                                    Console.WriteLine($"[ERROR] Parsed folder: id={folderId}, owner={folderInfo[3]}, ownerId={ownerId}");
                                     return (folderId, ownerId);
                                 }
                             }
@@ -791,7 +787,7 @@ namespace FileSharingClient
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Error getting folder info from share pass: {ex.Message}");
+                Console.WriteLine($"[ERROR] Error getting folder info from share pass: {ex.Message}");
                 return (-1, -1);
             }
         }
@@ -827,7 +823,7 @@ namespace FileSharingClient
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Error getting user ID from username: {ex.Message}");
+                Console.WriteLine($"[ERROR] Error getting user ID from username: {ex.Message}");
                 return -1;
             }
         }
@@ -864,7 +860,7 @@ namespace FileSharingClient
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Error getting file info from share pass: {ex.Message}");
+                Console.WriteLine($"[ERROR] Error getting file info from share pass: {ex.Message}");
                 return (-1, -1);
             }
         }
@@ -975,12 +971,12 @@ namespace FileSharingClient
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
                     string message = $"GET_SHARED_FOLDER_CONTENTS|{folderId}|{Session.LoggedInUserId}";
-                    Console.WriteLine($"[DEBUG] Getting shared folder contents for download: {message}");
+                    Console.WriteLine($"[ERROR] Getting shared folder contents for download: {message}");
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
                     response = response?.Trim();
-                    Console.WriteLine($"[DEBUG] Shared folder contents response for download: '{response}'");
+                    Console.WriteLine($"[ERROR] Shared folder contents response for download: '{response}'");
 
                     if (response != null && response.StartsWith("200|"))
                     {
@@ -994,7 +990,7 @@ namespace FileSharingClient
                                 {
                                     string filePath = Path.Combine(targetPath, file.Name);
                                     await DownloadSharedFileAsync(file.Id, filePath);
-                                    Console.WriteLine($"[DEBUG] Downloaded file: {file.Name}");
+                                    Console.WriteLine($"[ERROR] Downloaded file: {file.Name}");
                                 }
                                 catch (Exception ex)
                                 {
@@ -1048,25 +1044,25 @@ namespace FileSharingClient
                                 {
                                     // Shared file → decrypt with share_pass
                                     decryptionKey = sharePass;
-                                    Console.WriteLine($"[DEBUG] Downloading shared file, using share_pass for decryption");
+                                    Console.WriteLine($"[ERROR] Downloading shared file, using share_pass for decryption");
                                 }
                                 else
                                 {
                                     // Owner file → decrypt with user password
                                     decryptionKey = Session.UserPassword;
-                                    Console.WriteLine($"[DEBUG] Downloading owner file, using user password for decryption");
+                                    Console.WriteLine($"[ERROR] Downloading owner file, using user password for decryption");
                                 }
                             }
                             else
                             {
                                 // Legacy format → assume owner file
                                 decryptionKey = Session.UserPassword;
-                                Console.WriteLine($"[DEBUG] Legacy download format, using user password for decryption");
+                                Console.WriteLine($"[ERROR] Legacy download format, using user password for decryption");
                             }
                             
                             // Decrypt and save file
                             CryptoHelper.DecryptFileToLocal(encryptedData, decryptionKey, savePath);
-                            Console.WriteLine($"[DEBUG] Successfully downloaded and decrypted shared file to: {savePath}");
+                            Console.WriteLine($"[ERROR] Successfully downloaded and decrypted shared file to: {savePath}");
                         }
                         else
                         {
@@ -1150,12 +1146,12 @@ namespace FileSharingClient
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
                     string message = $"REMOVE_SHARED_FILE|{fileId}|{Session.LoggedInUserId}";
-                    Console.WriteLine($"[DEBUG] Removing shared file: {message}");
+                    Console.WriteLine($"[ERROR] Removing shared file: {message}");
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
                     response = response?.Trim();
-                    Console.WriteLine($"[DEBUG] Remove shared file response: '{response}'");
+                    Console.WriteLine($"[ERROR] Remove shared file response: '{response}'");
 
                     if (response != null)
                     {
@@ -1182,12 +1178,12 @@ namespace FileSharingClient
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
                     string message = $"REMOVE_SHARED_FOLDER|{folderId}|{Session.LoggedInUserId}";
-                    Console.WriteLine($"[DEBUG] Removing shared folder: {message}");
+                    Console.WriteLine($"[ERROR] Removing shared folder: {message}");
                     await writer.WriteLineAsync(message);
 
                     string response = await reader.ReadLineAsync();
                     response = response?.Trim();
-                    Console.WriteLine($"[DEBUG] Remove shared folder response: '{response}'");
+                    Console.WriteLine($"[ERROR] Remove shared folder response: '{response}'");
 
                     if (response != null)
                     {
