@@ -155,7 +155,7 @@ namespace FileSharingClient
                 string extension = Path.GetExtension(FileName).ToLower();
                 if (FileId > 0)
                 {
-                    var (fileBytes, error) = await Services.ApiService.DownloadFileForPreviewAsync(FileId);
+                    var (fileBytes, error, encryptionType, sharePass) = await Services.ApiService.DownloadFileForPreviewAsync(FileId);
                     if (error == "FILE_TOO_LARGE")
                     {
                         MessageBox.Show("File quá lớn, vui lòng tải về để xem.", "File quá lớn", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
@@ -167,25 +167,39 @@ namespace FileSharingClient
                         return;
                     }
 
-                    // Check if we have user password for decryption
-                    if (string.IsNullOrEmpty(Session.UserPassword))
+                    // CLIENT-SIDE RE-ENCRYPTION: Determine decryption key based on file type
+                    string decryptionKey;
+                    if (encryptionType == "SHARED" && !string.IsNullOrEmpty(sharePass))
                     {
-                        MessageBox.Show("Không thể preview file đã mã hóa: Mật khẩu người dùng không khả dụng.\nVui lòng đăng nhập lại để preview file đã mã hóa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
+                        // Shared file → decrypt with share_pass
+                        decryptionKey = sharePass;
+                        Console.WriteLine($"[DEBUG] FileItemControl: Previewing shared file, using share_pass for decryption");
+                    }
+                    else
+                    {
+                        // Owner file → decrypt with user password
+                        if (string.IsNullOrEmpty(Session.UserPassword))
+                        {
+                            MessageBox.Show("Không thể preview file đã mã hóa: Mật khẩu người dùng không khả dụng.\nVui lòng đăng nhập lại để preview file đã mã hóa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+                        decryptionKey = Session.UserPassword;
+                        Console.WriteLine($"[DEBUG] FileItemControl: Previewing owner file, using user password for decryption");
                     }
 
                     // Decrypt the file data before displaying
                     byte[] decryptedData = null;
                     try
                     {
-                        decryptedData = CryptoHelper.DecryptFile(fileBytes, Session.UserPassword);
+                        decryptedData = CryptoHelper.DecryptFile(fileBytes, decryptionKey);
+                        Console.WriteLine($"[DEBUG] FileItemControl: Successfully decrypted file for preview");
                     }
                     catch (Exception decryptEx)
                     {
-                        // If decryption fails, the file might not be encrypted yet (legacy files)
-                        // Try to display as is, but show warning
-                        MessageBox.Show($"Giải mã thất bại: {decryptEx.Message}\n\nFile này có thể chưa được mã hóa. Hiển thị nội dung gốc.", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        decryptedData = fileBytes;
+                        // If decryption fails, show detailed error
+                        MessageBox.Show($"Giải mã thất bại: {decryptEx.Message}\n\nEncryption Type: {encryptionType}\nFile này có thể chưa được mã hóa hoặc key không đúng.", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        Console.WriteLine($"[ERROR] FileItemControl: Decryption failed - {decryptEx.Message}");
+                        return;
                     }
 
                     // Display the decrypted file data
@@ -272,7 +286,7 @@ namespace FileSharingClient
 
         private async Task DownloadEncryptedFile(string fileName, string savePath)
         {
-                            var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
+            var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
             using (sslStream)
             using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
             using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -293,8 +307,37 @@ namespace FileSharingClient
                         // Parse base64 data directly from response (same as ApiService)
                         byte[] encryptedData = Convert.FromBase64String(parts[1]);
                         
+                        // CLIENT-SIDE RE-ENCRYPTION: Determine decryption key based on file type
+                        string decryptionKey;
+                        if (parts.Length >= 4)
+                        {
+                            // New format with encryption type
+                            string encryptionType = parts[2];
+                            string sharePass = parts[3];
+                            
+                            if (encryptionType == "SHARED" && !string.IsNullOrEmpty(sharePass))
+                            {
+                                // Shared file → decrypt with share_pass
+                                decryptionKey = sharePass;
+                                Console.WriteLine($"[DEBUG] FileItemControl: Downloading shared file, using share_pass for decryption");
+                            }
+                            else
+                            {
+                                // Owner file → decrypt with user password
+                                decryptionKey = Session.UserPassword;
+                                Console.WriteLine($"[DEBUG] FileItemControl: Downloading owner file, using user password for decryption");
+                            }
+                        }
+                        else
+                        {
+                            // Legacy format → assume owner file
+                            decryptionKey = Session.UserPassword;
+                            Console.WriteLine($"[DEBUG] FileItemControl: Legacy download format, using user password for decryption");
+                        }
+                        
                         // Decrypt and save file
-                        CryptoHelper.DecryptFileToLocal(encryptedData, Session.UserPassword, savePath);
+                        CryptoHelper.DecryptFileToLocal(encryptedData, decryptionKey, savePath);
+                        Console.WriteLine($"[DEBUG] FileItemControl: Successfully downloaded and decrypted file to: {savePath}");
                     }
                     else if (parts[0] == "404")
                     {

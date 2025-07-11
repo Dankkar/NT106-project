@@ -275,6 +275,29 @@ namespace FileSharingServer
                         }
                     }
                 }
+
+                // CLIENT-SIDE RE-ENCRYPTION: Check if shared_file_path column exists in files table
+                string checkSharedFilePathColumn = @"
+                    SELECT COUNT(*) FROM pragma_table_info('files') 
+                    WHERE name = 'shared_file_path'";
+                
+                using (var cmd = new SQLiteCommand(checkSharedFilePathColumn, conn))
+                {
+                    var result = await cmd.ExecuteScalarAsync();
+                    int columnCount = Convert.ToInt32(result);
+                    
+                    if (columnCount == 0)
+                    {
+                        // Add missing shared_file_path column to files table
+                        string addSharedFilePathColumn = "ALTER TABLE files ADD COLUMN shared_file_path TEXT";
+                        
+                        using (var addCmd = new SQLiteCommand(addSharedFilePathColumn, conn))
+                        {
+                            await addCmd.ExecuteNonQueryAsync();
+                        }
+                        Console.WriteLine("[DEBUG] Added shared_file_path column to files table");
+                    }
+                }
             }
             catch (Exception ex)
             {

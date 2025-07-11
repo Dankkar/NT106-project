@@ -364,6 +364,11 @@ namespace FileSharingServer
                     if (parts.Length != 3) return "400\n";
                     return await RemoveSharedFolder(parts[1], parts[2]);
                     
+                // CLIENT-SIDE RE-ENCRYPTION: Upload shared version
+                case "UPLOAD_SHARED_VERSION":
+                    if (parts.Length != 7) return "400\n";
+                    return await UploadSharedVersion(parts[1], parts[2], int.Parse(parts[3]), parts[4], parts[5], parts[6], stream);
+                    
                 default:
                     return "400\n";
             }
@@ -629,7 +634,7 @@ namespace FileSharingServer
                 using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
                 {
                     await conn.OpenAsync();
-                    string query = "SELECT file_path, file_type, file_size FROM files WHERE share_pass = @share_pass AND is_shared = 1";
+                    string query = "SELECT file_id, owner_id FROM files WHERE share_pass = @share_pass AND is_shared = 1";
                     using (var cmd = new System.Data.SQLite.SQLiteCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@share_pass", sharePass);
@@ -637,15 +642,14 @@ namespace FileSharingServer
                         {
                             if (await reader.ReadAsync())
                             {
-                                string filePath = reader["file_path"]?.ToString() ?? "";
-                                string fileType = reader["file_type"]?.ToString() ?? "";
-                                long fileSize = Convert.ToInt64(reader["file_size"] ?? 0);
-                                filePath = CleanFilePath(filePath);
-                                fileType = CleanString(fileType);
-                                return $"200|{filePath}|{fileType}|{fileSize}\n";
+                                int fileId = Convert.ToInt32(reader["file_id"]);
+                                int ownerId = Convert.ToInt32(reader["owner_id"]);
+                                Console.WriteLine($"[DEBUG] GetFileInfoBySharePass found: fileId={fileId}, ownerId={ownerId}");
+                                return $"200|{fileId}|{ownerId}\n";
                             }
                             else
                             {
+                                Console.WriteLine($"[DEBUG] GetFileInfoBySharePass: No file found with share_pass={sharePass}");
                                 return "404|FILE_NOT_FOUND\n";
                             }
                         }
@@ -877,9 +881,9 @@ namespace FileSharingServer
                 {
                     await conn.OpenAsync();
                     
-                    // Check if user owns this file OR has access to shared file
+                    // CLIENT-SIDE RE-ENCRYPTION: Check if user owns this file OR has access to shared file
                     string query = @"
-                        SELECT f.file_path, f.file_size, f.owner_id 
+                        SELECT f.file_path, f.file_size, f.owner_id, f.shared_file_path, f.share_pass
                         FROM files f 
                         WHERE f.file_id = @fileId 
                         AND f.status = 'ACTIVE'
@@ -903,19 +907,47 @@ namespace FileSharingServer
                             string filePath = reader["file_path"].ToString();
                             long fileSize = Convert.ToInt64(reader["file_size"]);
                             int ownerId = Convert.ToInt32(reader["owner_id"]);
+                            string sharedFilePath = reader["shared_file_path"]?.ToString();
+                            string sharePass = reader["share_pass"]?.ToString();
+                            
+                            bool isOwner = ownerId == int.Parse(userId);
+                            bool isSharedFile = !isOwner && !string.IsNullOrEmpty(sharedFilePath);
+                            
+                            Console.WriteLine($"[DEBUG] DownloadFile: fileId={fileId}, userId={userId}, ownerId={ownerId}, isOwner={isOwner}, isSharedFile={isSharedFile}");
+                            
+                            // Determine which file to serve
+                            string fileToServe;
+                            if (isSharedFile)
+                            {
+                                // User is accessing shared file → serve shared version (encrypted with share_pass)
+                                fileToServe = sharedFilePath;
+                                Console.WriteLine($"[DEBUG] Serving shared version: {sharedFilePath}");
+                            }
+                            else
+                            {
+                                // User is owner → serve original version (encrypted with owner password)
+                                fileToServe = filePath;
+                                Console.WriteLine($"[DEBUG] Serving original version: {filePath}");
+                            }
                             
                             if (fileSize > 10 * 1024 * 1024) // 10MB
                                 return "413|FILE_TOO_LARGE\n";
                                 
                             string projectRoot = FindProjectRoot();
-                            string absPath = Path.Combine(projectRoot, filePath.Replace("/", Path.DirectorySeparatorChar.ToString()).Replace("\\", Path.DirectorySeparatorChar.ToString()));
+                            string absPath = Path.Combine(projectRoot, fileToServe.Replace("/", Path.DirectorySeparatorChar.ToString()).Replace("\\", Path.DirectorySeparatorChar.ToString()));
                             
                             if (!File.Exists(absPath))
+                            {
+                                Console.WriteLine($"[ERROR] File not found: {absPath}");
                                 return $"404|FILE_NOT_FOUND ({absPath})\n";
+                            }
                                 
                             byte[] fileBytes = File.ReadAllBytes(absPath);
                             string base64 = Convert.ToBase64String(fileBytes);
-                            return $"200|{base64}\n";
+                            
+                            // Return file data with metadata about encryption type
+                            string encryptionType = isSharedFile ? "SHARED" : "OWNER";
+                            return $"200|{base64}|{encryptionType}|{sharePass ?? ""}\n";
                         }
                     }
                 }
@@ -3503,7 +3535,21 @@ namespace FileSharingServer
                     {
                         try
                         {
-                            // 1. Add folder to folder_shares table
+                            // 1. Verify folder exists and is active
+                            string verifyFolderQuery = "SELECT COUNT(*) FROM folders WHERE folder_id = @folder_id AND status = 'ACTIVE'";
+                            using (var verifyCmd = new System.Data.SQLite.SQLiteCommand(verifyFolderQuery, conn, transaction))
+                            {
+                                verifyCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                                long folderCount = (long)await verifyCmd.ExecuteScalarAsync();
+                                if (folderCount == 0)
+                                {
+                                    Console.WriteLine($"[ERROR] Folder {folderId} not found or not active");
+                                    transaction.Rollback();
+                                    return "404|FOLDER_NOT_FOUND\n";
+                                }
+                            }
+
+                            // 2. Check if share already exists
                             string checkQuery = "SELECT COUNT(*) FROM folder_shares WHERE folder_id = @folder_id AND shared_with_user_id = @user_id";
                             using (var checkCmd = new System.Data.SQLite.SQLiteCommand(checkQuery, conn, transaction))
                             {
@@ -3519,6 +3565,7 @@ namespace FileSharingServer
                                 }
                             }
                             
+                            // 3. Add folder to folder_shares table
                             string insertFolderQuery = "INSERT INTO folder_shares (folder_id, shared_with_user_id, share_pass, permission, shared_at) VALUES (@folder_id, @user_id, @share_pass, @permission, datetime('now'))";
                             using (var folderCmd = new System.Data.SQLite.SQLiteCommand(insertFolderQuery, conn, transaction))
                             {
@@ -3527,11 +3574,17 @@ namespace FileSharingServer
                                 folderCmd.Parameters.AddWithValue("@share_pass", sharePass);
                                 folderCmd.Parameters.AddWithValue("@permission", permission);
                                 
-                                await folderCmd.ExecuteNonQueryAsync();
+                                int rowsAffected = await folderCmd.ExecuteNonQueryAsync();
+                                if (rowsAffected == 0)
+                                {
+                                    Console.WriteLine($"[ERROR] Failed to insert folder share entry");
+                                    transaction.Rollback();
+                                    return "500|FAILED_TO_ADD_FOLDER_SHARE\n";
+                                }
                                 Console.WriteLine($"[DEBUG] Folder share entry added successfully");
                             }
                             
-                            // 2. Get all files in the folder
+                            // 4. Get all files in the folder
                             string getFilesQuery = @"
                                 SELECT file_id 
                                 FROM files 
@@ -3553,7 +3606,7 @@ namespace FileSharingServer
                             
                             Console.WriteLine($"[DEBUG] Found {fileIds.Count} files in folder {folderId}");
                             
-                            // 3. Add each file to files_share table
+                            // 5. Add each file to files_share table
                             string insertFileQuery = @"
                                 INSERT OR REPLACE INTO files_share (file_id, user_id, share_pass, permission, shared_at) 
                                 VALUES (@fileId, @userId, @sharePass, @permission, datetime('now'))";
@@ -3567,11 +3620,25 @@ namespace FileSharingServer
                                     insertCmd.Parameters.AddWithValue("@sharePass", sharePass);
                                     insertCmd.Parameters.AddWithValue("@permission", permission);
                                     
-                                    await insertCmd.ExecuteNonQueryAsync();
+                                    int rowsAffected = await insertCmd.ExecuteNonQueryAsync();
+                                    if (rowsAffected == 0)
+                                    {
+                                        Console.WriteLine($"[ERROR] Failed to insert file share entry for file {fileId}");
+                                        transaction.Rollback();
+                                        return "500|FAILED_TO_ADD_FILE_SHARE\n";
+                                    }
                                 }
                             }
                             
                             Console.WriteLine($"[DEBUG] Added {fileIds.Count} files to files_share table");
+                            
+                            // 6. Update is_shared flag in folders table
+                            string updateFolderQuery = "UPDATE folders SET is_shared = 1 WHERE folder_id = @folder_id";
+                            using (var updateCmd = new System.Data.SQLite.SQLiteCommand(updateFolderQuery, conn, transaction))
+                            {
+                                updateCmd.Parameters.AddWithValue("@folder_id", int.Parse(folderId));
+                                await updateCmd.ExecuteNonQueryAsync();
+                            }
                             
                             // Commit transaction
                             transaction.Commit();
@@ -3579,8 +3646,10 @@ namespace FileSharingServer
                         }
                         catch (Exception ex)
                         {
+                            Console.WriteLine($"[ERROR] Transaction error in AddFolderAndFilesShare: {ex.Message}");
+                            Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
                             transaction.Rollback();
-                            throw;
+                            return "500|INTERNAL_ERROR\n";
                         }
                     }
                 }
@@ -3648,6 +3717,97 @@ namespace FileSharingServer
             {
                 Console.WriteLine($"[ERROR] Error in RemoveSharedFolder: {ex.Message}");
                 Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                return "500|INTERNAL_ERROR\n";
+            }
+        }
+
+        // ================ CLIENT-SIDE RE-ENCRYPTION SUPPORT ================
+
+        /// <summary>
+        /// Upload shared version of file (encrypted with share_pass)
+        /// Command: UPLOAD_SHARED_VERSION|fileId|sharedFileName|fileSize|ownerId|uploadAt|sharePass
+        /// </summary>
+        private static async Task<string> UploadSharedVersion(string fileId, string sharedFileName, int fileSize, 
+            string ownerId, string uploadAt, string sharePass, NetworkStream stream)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG] UploadSharedVersion: fileId={fileId}, fileName={sharedFileName}, size={fileSize}, owner={ownerId}, sharePass={sharePass}");
+                
+                if (fileSize > 10 * 1024 * 1024) // 10MB limit
+                {
+                    return "413|FILE_TOO_LARGE\n";
+                }
+
+                // Create shared uploads directory
+                string projectRoot = FindProjectRoot();
+                string uploadsDir = Path.Combine(projectRoot, "uploads");
+                string userDir = Path.Combine(uploadsDir, ownerId);
+                string sharedDir = Path.Combine(userDir, "shared"); // Special subdirectory for shared versions
+                
+                if (!Directory.Exists(sharedDir))
+                    Directory.CreateDirectory(sharedDir);
+
+                // Save shared version to disk
+                string sharedFilePath = Path.Combine(sharedDir, sharedFileName);
+                byte[] buffer = new byte[8192];
+                int totalRead = 0;
+
+                using (FileStream fs = new FileStream(sharedFilePath, FileMode.Create, FileAccess.Write))
+                {
+                    while (totalRead < fileSize)
+                    {
+                        int bytesRead = await stream.ReadAsync(buffer, 0, Math.Min(buffer.Length, fileSize - totalRead));
+                        if (bytesRead == 0) break;
+                        await fs.WriteAsync(buffer, 0, bytesRead);
+                        totalRead += bytesRead;
+                    }
+                }
+
+                Console.WriteLine($"[DEBUG] Received shared version: {totalRead}/{fileSize} bytes");
+
+                if (totalRead == fileSize)
+                {
+                    // Update database: add shared_file_path to the original file record
+                    using (var conn = new System.Data.SQLite.SQLiteConnection(DatabaseHelper.connectionString))
+                    {
+                        await conn.OpenAsync();
+                        
+                        // Update files table with shared version path
+                        string updateQuery = @"
+                            UPDATE files 
+                            SET shared_file_path = @sharedFilePath 
+                            WHERE file_id = @fileId";
+                        
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand(updateQuery, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@sharedFilePath", Path.Combine("uploads", ownerId, "shared", sharedFileName));
+                            cmd.Parameters.AddWithValue("@fileId", int.Parse(fileId));
+                            
+                            int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                            if (rowsAffected > 0)
+                            {
+                                Console.WriteLine($"[DEBUG] Successfully updated file {fileId} with shared version path");
+                                return "200|SHARED_VERSION_UPLOADED\n";
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[ERROR] Failed to update file {fileId} with shared version");
+                                return "404|ORIGINAL_FILE_NOT_FOUND\n";
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"[ERROR] Incomplete upload: received {totalRead}/{fileSize} bytes");
+                    return "400|INCOMPLETE_UPLOAD\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error in UploadSharedVersion: {ex.Message}");
+                Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
                 return "500|INTERNAL_ERROR\n";
             }
         }

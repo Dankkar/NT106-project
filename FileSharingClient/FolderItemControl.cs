@@ -243,8 +243,37 @@ namespace FileSharingClient
                             // Parse base64 data
                             byte[] encryptedData = Convert.FromBase64String(parts[1]);
                             
+                            // CLIENT-SIDE RE-ENCRYPTION: Determine decryption key based on file type
+                            string decryptionKey;
+                            if (parts.Length >= 4)
+                            {
+                                // New format with encryption type
+                                string encryptionType = parts[2];
+                                string sharePass = parts[3];
+                                
+                                if (encryptionType == "SHARED" && !string.IsNullOrEmpty(sharePass))
+                                {
+                                    // Shared file → decrypt with share_pass
+                                    decryptionKey = sharePass;
+                                    Console.WriteLine($"[DEBUG] FolderItemControl: Downloading shared file, using share_pass for decryption");
+                                }
+                                else
+                                {
+                                    // Owner file → decrypt with user password
+                                    decryptionKey = Session.UserPassword;
+                                    Console.WriteLine($"[DEBUG] FolderItemControl: Downloading owner file, using user password for decryption");
+                                }
+                            }
+                            else
+                            {
+                                // Legacy format → assume owner file
+                                decryptionKey = Session.UserPassword;
+                                Console.WriteLine($"[DEBUG] FolderItemControl: Legacy download format, using user password for decryption");
+                            }
+                            
                             // Decrypt and save file
-                            CryptoHelper.DecryptFileToLocal(encryptedData, Session.UserPassword, savePath);
+                            CryptoHelper.DecryptFileToLocal(encryptedData, decryptionKey, savePath);
+                            Console.WriteLine($"[DEBUG] FolderItemControl: Successfully downloaded and decrypted file to: {savePath}");
                         }
                         else
                         {
@@ -259,6 +288,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[ERROR] FolderItemControl: Error in DownloadFileAsync: {ex.Message}");
                 throw new Exception($"Lỗi khi tải file {Path.GetFileName(savePath)}: {ex.Message}");
             }
         }

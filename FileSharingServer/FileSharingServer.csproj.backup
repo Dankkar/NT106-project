@@ -134,6 +134,12 @@
     <Compile Include="ProtocolHandler.cs" />
     <Compile Include="SecureChannelHelper.cs" />
     <Compile Include="SessionKeyManager.cs" />
+    <Compile Include="UploadView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UploadView.Designer.cs">
+      <DependentUpon>UploadView.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -151,7 +157,11 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-
+  <ItemGroup>
+    <EmbeddedResource Include="UploadView.resx">
+      <DependentUpon>UploadView.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

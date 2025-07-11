@@ -563,8 +563,37 @@ namespace FileSharingClient
                             // Parse base64 data
                             byte[] encryptedData = Convert.FromBase64String(parts[1]);
                             
+                            // CLIENT-SIDE RE-ENCRYPTION: Determine decryption key based on file type
+                            string decryptionKey;
+                            if (parts.Length >= 4)
+                            {
+                                // New format with encryption type
+                                string encryptionType = parts[2];
+                                string sharePass = parts[3];
+                                
+                                if (encryptionType == "SHARED" && !string.IsNullOrEmpty(sharePass))
+                                {
+                                    // Shared file → decrypt with share_pass
+                                    decryptionKey = sharePass;
+                                    Console.WriteLine($"[DEBUG] Downloading shared file, using share_pass for decryption");
+                                }
+                                else
+                                {
+                                    // Owner file → decrypt with user password
+                                    decryptionKey = Session.UserPassword;
+                                    Console.WriteLine($"[DEBUG] Downloading owner file, using user password for decryption");
+                                }
+                            }
+                            else
+                            {
+                                // Legacy format → assume owner file
+                                decryptionKey = Session.UserPassword;
+                                Console.WriteLine($"[DEBUG] Legacy download format, using user password for decryption");
+                            }
+                            
                             // Decrypt and save file
-                            CryptoHelper.DecryptFileToLocal(encryptedData, Session.UserPassword, savePath);
+                            CryptoHelper.DecryptFileToLocal(encryptedData, decryptionKey, savePath);
+                            Console.WriteLine($"[DEBUG] Successfully downloaded and decrypted file to: {savePath}");
                         }
                         else
                         {
@@ -579,6 +608,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[ERROR] Error in DownloadFileAsync: {ex.Message}");
                 throw new Exception($"Lỗi khi tải file {Path.GetFileName(savePath)}: {ex.Message}");
             }
         }
@@ -587,45 +617,49 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
-                using (sslStream)
-                using (var reader = new StreamReader(sslStream, Encoding.UTF8))
-                using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                Console.WriteLine($"[DEBUG] Starting client-side re-encryption for file: {fileName}");
+                
+                // Step 1: Generate share_pass on server and get it
+                string sharePass = await GenerateAndGetSharePassAsync(fileId, permission);
+                if (string.IsNullOrEmpty(sharePass))
                 {
-                    // Send SHARE_FILE command with file ID and permission
-                    // This will:
-                    // 1. Generate a share_pass for the file
-                    // 2. Update files table: set share_pass and is_shared=1
-                    // 3. Store the permission info for later use
-                    string message = $"SHARE_FILE|{fileId}|{permission}";
-                    Console.WriteLine($"[DEBUG] Sharing file with permission: {message.Trim()}");
-                    await writer.WriteLineAsync(message);
-
-                    string response = await reader.ReadLineAsync();
-                    response = response?.Trim();
-                    Console.WriteLine($"[DEBUG] Share file response: '{response}'");
-
-                    if (response != null)
-                    {
-                        string[] parts = response.Split('|');
-                        if (parts.Length >= 2 && parts[0] == "200")
-                        {
-                            // Success - file shared with permission
-                            return true;
-                        }
-                        else
-                        {
-                            // Error
-                            Console.WriteLine($"[ERROR] Share file failed: {response}");
-                            return false;
-                        }
-                    }
+                    Console.WriteLine($"[ERROR] Failed to generate share password");
                     return false;
                 }
+                Console.WriteLine($"[DEBUG] Generated share password: {sharePass}");
+                
+                // Step 2: Download original file (encrypted with owner password)
+                byte[] originalEncryptedData = await DownloadFileDataAsync(fileId);
+                if (originalEncryptedData == null)
+                {
+                    Console.WriteLine($"[ERROR] Failed to download original file data");
+                    return false;
+                }
+                Console.WriteLine($"[DEBUG] Downloaded original file data: {originalEncryptedData.Length} bytes");
+                
+                // Step 3: Decrypt with owner password
+                byte[] plainData = CryptoHelper.DecryptFile(originalEncryptedData, Session.UserPassword);
+                Console.WriteLine($"[DEBUG] Decrypted file data: {plainData.Length} bytes");
+                
+                // Step 4: Encrypt with share_pass
+                byte[] sharedEncryptedData = CryptoHelper.EncryptFile(plainData, sharePass);
+                Console.WriteLine($"[DEBUG] Re-encrypted with share password: {sharedEncryptedData.Length} bytes");
+                
+                // Step 5: Upload shared version to server
+                bool uploadSuccess = await UploadSharedVersionAsync(fileId, fileName, sharedEncryptedData, sharePass);
+                if (!uploadSuccess)
+                {
+                    Console.WriteLine($"[ERROR] Failed to upload shared version");
+                    return false;
+                }
+                
+                Console.WriteLine($"[DEBUG] Successfully completed client-side re-encryption for {fileName}");
+                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Error sharing file: {ex.Message}");
+                Console.WriteLine($"[ERROR] Error in ShareFileAsync: {ex.Message}");
+                Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
                 System.Windows.Forms.MessageBox.Show($"Lỗi chia sẻ file: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                 return false;
             }
@@ -1714,6 +1748,130 @@ namespace FileSharingClient
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Failed to refresh TrashBin: {ex.Message}");
+            }
+        }
+
+        // ================ CLIENT-SIDE RE-ENCRYPTION HELPERS ================
+
+        /// <summary>
+        /// Generate share_pass on server and return it
+        /// </summary>
+        private async Task<string> GenerateAndGetSharePassAsync(int fileId, string permission)
+        {
+            try
+            {
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
+                using (sslStream)
+                using (var reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send SHARE_FILE command to generate share_pass
+                    string message = $"SHARE_FILE|{fileId}|{permission}";
+                    Console.WriteLine($"[DEBUG] Generating share pass: {message}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Share pass response: '{response}'");
+
+                    if (response != null && response.StartsWith("200|"))
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2)
+                        {
+                            return parts[1]; // Return the share_pass
+                        }
+                    }
+                    
+                    Console.WriteLine($"[ERROR] Failed to generate share pass: {response}");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error generating share pass: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Download raw encrypted file data (still encrypted with owner password)
+        /// </summary>
+        private async Task<byte[]> DownloadFileDataAsync(int fileId)
+        {
+            try
+            {
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
+                using (sslStream)
+                using (var reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Send download request 
+                    string message = $"DOWNLOAD_FILE|{fileId}|{Session.LoggedInUserId}";
+                    Console.WriteLine($"[DEBUG] Downloading file data: {message}");
+                    await writer.WriteLineAsync(message);
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+
+                    if (response != null && response.StartsWith("200|"))
+                    {
+                        string[] parts = response.Split('|');
+                        if (parts.Length >= 2)
+                        {
+                            // Parse base64 data
+                            byte[] encryptedData = Convert.FromBase64String(parts[1]);
+                            Console.WriteLine($"[DEBUG] Downloaded {encryptedData.Length} bytes of encrypted data");
+                            return encryptedData;
+                        }
+                    }
+                    
+                    Console.WriteLine($"[ERROR] Failed to download file data: {response}");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error downloading file data: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Upload shared version (encrypted with share_pass) to server
+        /// </summary>
+        private async Task<bool> UploadSharedVersionAsync(int fileId, string fileName, byte[] sharedEncryptedData, string sharePass)
+        {
+            try
+            {
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
+                using (sslStream)
+                using (var reader = new StreamReader(sslStream, Encoding.UTF8))
+                using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
+                {
+                    // Upload shared version with special command
+                    string sharedFileName = $"{fileName}.shared"; // Add .shared suffix
+                    string uploadAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    string command = $"UPLOAD_SHARED_VERSION|{fileId}|{sharedFileName}|{sharedEncryptedData.Length}|{Session.LoggedInUserId}|{uploadAt}|{sharePass}";
+                    
+                    Console.WriteLine($"[DEBUG] Uploading shared version: {command}");
+                    await writer.WriteLineAsync(command);
+
+                    // Send encrypted data
+                    await sslStream.WriteAsync(sharedEncryptedData, 0, sharedEncryptedData.Length);
+                    await sslStream.FlushAsync();
+
+                    string response = await reader.ReadLineAsync();
+                    response = response?.Trim();
+                    Console.WriteLine($"[DEBUG] Upload shared version response: '{response}'");
+
+                    return response != null && response.StartsWith("200");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error uploading shared version: {ex.Message}");
+                return false;
             }
         }
     }

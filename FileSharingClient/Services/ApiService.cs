@@ -428,7 +428,7 @@ namespace FileSharingClient.Services
             }
         }
 
-        public static async Task<(byte[] fileBytes, string error)> DownloadFileForPreviewAsync(int fileId)
+        public static async Task<(byte[] fileBytes, string error, string encryptionType, string sharePass)> DownloadFileForPreviewAsync(int fileId)
         {
             try
             {
@@ -442,7 +442,7 @@ namespace FileSharingClient.Services
                     int userId = Session.LoggedInUserId;
                     if (userId == -1)
                     {
-                        return (null, "User not logged in");
+                        return (null, "User not logged in", null, null);
                     }
                     
                     string message = $"DOWNLOAD_FILE|{fileId}|{userId}";
@@ -455,23 +455,29 @@ namespace FileSharingClient.Services
                         if (parts.Length >= 2 && parts[0] == "200")
                         {
                             byte[] fileBytes = Convert.FromBase64String(parts[1]);
-                            return (fileBytes, null);
+                            
+                            // Parse encryption metadata if available
+                            string encryptionType = parts.Length >= 3 ? parts[2] : "OWNER";
+                            string sharePass = parts.Length >= 4 ? parts[3] : "";
+                            
+                            Console.WriteLine($"[DEBUG] DownloadFileForPreviewAsync: encryptionType={encryptionType}, sharePass={sharePass}");
+                            return (fileBytes, null, encryptionType, sharePass);
                         }
                         else if (parts[0] == "404")
                         {
-                            return (null, "File not found on server or no access");
+                            return (null, "File not found on server or no access", null, null);
                         }
                         else if (parts[0] == "413")
                         {
-                            return (null, "FILE_TOO_LARGE");
+                            return (null, "FILE_TOO_LARGE", null, null);
                         }
                     }
-                    return (null, "Invalid response from server");
+                    return (null, "Invalid response from server", null, null);
                 }
             }
             catch (Exception ex)
             {
-                return (null, $"Download failed: {ex.Message}");
+                return (null, $"Download failed: {ex.Message}", null, null);
             }
         }
 
@@ -495,7 +501,7 @@ namespace FileSharingClient.Services
                 
                 Console.WriteLine($"[DEBUG][ParseFolderItems] FolderString: {folderString}");
                 
-                // Format: id:name:created_at:owner_name
+                // Format: id:name:created_at:owner_name:shared
                 // created_at format: "yyyy-MM-dd HH:mm:ss" (contains colons)
                 string[] parts = folderString.Split(':');
                 Console.WriteLine($"[DEBUG][ParseFolderItems] Total parts: {parts.Length}");
@@ -513,6 +519,7 @@ namespace FileSharingClient.Services
                     // We need to reconstruct the datetime from parts[2], parts[3], parts[4]
                     string createdAt;
                     string owner;
+                    bool isShared = false;
                     
                     if (parts.Length == 4)
                     {
@@ -520,15 +527,26 @@ namespace FileSharingClient.Services
                         createdAt = parts[2];
                         owner = parts[3];
                     }
+                    else if (parts.Length == 5)
+                    {
+                        // Case with shared flag: id:name:datetime:owner:shared
+                        createdAt = parts[2];
+                        owner = parts[3];
+                        isShared = parts[4].ToLower() == "shared";
+                    }
                     else
                     {
-                        // Complex case: id:name:yyyy-MM-dd:HH:mm:ss:owner
+                        // Complex case: id:name:yyyy-MM-dd:HH:mm:ss:owner[:shared]
                         // Reconstruct datetime from parts[2], parts[3], parts[4]
                         createdAt = $"{parts[2]}:{parts[3]}:{parts[4]}";
                         owner = parts[5];
+                        if (parts.Length > 6)
+                        {
+                            isShared = parts[6].ToLower() == "shared";
+                        }
                     }
                     
-                    Console.WriteLine($"[DEBUG][ParseFolderItems] Parsed folder: {name}, Owner: {owner}");
+                    Console.WriteLine($"[DEBUG][ParseFolderItems] Parsed folder: {name}, Owner: {owner}, IsShared: {isShared}");
                     
                     folders.Add(new FolderItem
                     {
@@ -536,7 +554,7 @@ namespace FileSharingClient.Services
                         Name = name,
                         CreatedAt = createdAt,
                         Owner = owner,
-                        IsShared = false
+                        IsShared = isShared
                     });
                 }
                 else

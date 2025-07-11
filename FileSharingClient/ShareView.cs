@@ -588,6 +588,10 @@ namespace FileSharingClient
                     {
                         Console.WriteLine($"[DEBUG] File reference added successfully");
                         MessageBox.Show("Bạn đã có quyền truy cập vào file này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        
+                        // Reload shared files and folders list
+                        await LoadSharedFoldersAndFilesAsync();
+                        
                         return (new List<Services.FileItem>(), new List<Services.FolderItem>(), true);
                     }
                     else
@@ -624,6 +628,10 @@ namespace FileSharingClient
                     {
                         Console.WriteLine($"[DEBUG] Folder reference added successfully");
                         MessageBox.Show("Bạn đã có quyền truy cập vào thư mục này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        
+                        // Reload shared files and folders list
+                        await LoadSharedFoldersAndFilesAsync();
+                        
                         return (new List<Services.FileItem>(), new List<Services.FolderItem>(), true);
                     }
                     else
@@ -634,9 +642,9 @@ namespace FileSharingClient
                     }
                 }
                 
-                                  Console.WriteLine($"[DEBUG] Invalid password, no file or folder found");
-                 MessageBox.Show("Mật khẩu không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                  return (null, null, false);
+                Console.WriteLine($"[DEBUG] Invalid password, no file or folder found");
+                MessageBox.Show("Mật khẩu không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return (null, null, false);
             }
             catch (Exception ex)
             {
@@ -1029,8 +1037,37 @@ namespace FileSharingClient
                             // Parse base64 data
                             byte[] encryptedData = Convert.FromBase64String(parts[1]);
                             
+                            // CLIENT-SIDE RE-ENCRYPTION: Determine decryption key based on file type
+                            string decryptionKey;
+                            if (parts.Length >= 4)
+                            {
+                                // New format with encryption type
+                                string encryptionType = parts[2];
+                                string sharePass = parts[3];
+                                
+                                if (encryptionType == "SHARED" && !string.IsNullOrEmpty(sharePass))
+                                {
+                                    // Shared file → decrypt with share_pass
+                                    decryptionKey = sharePass;
+                                    Console.WriteLine($"[DEBUG] Downloading shared file, using share_pass for decryption");
+                                }
+                                else
+                                {
+                                    // Owner file → decrypt with user password
+                                    decryptionKey = Session.UserPassword;
+                                    Console.WriteLine($"[DEBUG] Downloading owner file, using user password for decryption");
+                                }
+                            }
+                            else
+                            {
+                                // Legacy format → assume owner file
+                                decryptionKey = Session.UserPassword;
+                                Console.WriteLine($"[DEBUG] Legacy download format, using user password for decryption");
+                            }
+                            
                             // Decrypt and save file
-                            CryptoHelper.DecryptFileToLocal(encryptedData, Session.UserPassword, savePath);
+                            CryptoHelper.DecryptFileToLocal(encryptedData, decryptionKey, savePath);
+                            Console.WriteLine($"[DEBUG] Successfully downloaded and decrypted shared file to: {savePath}");
                         }
                         else
                         {
@@ -1045,6 +1082,7 @@ namespace FileSharingClient
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[ERROR] Error in DownloadSharedFileAsync: {ex.Message}");
                 throw new Exception($"Lỗi khi tải file {Path.GetFileName(savePath)}: {ex.Message}");
             }
         }
