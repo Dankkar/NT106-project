@@ -3370,9 +3370,10 @@ namespace FileSharingServer
                                     var files = new List<string>();
                                     while (await filesReader.ReadAsync())
                                     {
-                                        // Format expected by client: file:<file_id>:<file_name>:<file_path>:<relative_path>
+                                        // Format expected by client: file:<file_id>:<file_name>:<file_path>:<relative_path>:<file_size>
                                         string relativePath = GetRelativePath(filesReader["file_path"].ToString(), folderId);
-                                        string fileInfo = $"file:{filesReader["file_id"]}:{filesReader["file_name"]}:{filesReader["file_path"]}:{relativePath}";
+                                        string fileSize = filesReader["file_size"].ToString();
+                                        string fileInfo = $"file:{filesReader["file_id"]}:{filesReader["file_name"]}:{filesReader["file_path"]}:{relativePath}:{fileSize}";
                                         files.Add(fileInfo);
                                     }
                                     

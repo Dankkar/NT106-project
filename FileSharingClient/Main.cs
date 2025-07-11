@@ -13,6 +13,8 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Configuration;
+using System.Security.Cryptography;
 
 namespace FileSharingClient
 {
@@ -34,16 +36,19 @@ namespace FileSharingClient
             }
         }
         private long totalStorageUsed = 0;
+        private string serverIp = ConfigurationManager.AppSettings["ServerIP"];
+        private int serverPort = int.Parse(ConfigurationManager.AppSettings["ServerPort"]);
+        private int chunkSize = int.Parse(ConfigurationManager.AppSettings["ChunkSize"]);
         private async Task SendFile(string filePath)
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
-                using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
+                using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: chunkSize, useAsync: true))
                 {
                     long totalBytes = fileStream.Length;
-                    byte[] buffer = new byte[4096];
+                    byte[] buffer = new byte[chunkSize];
                     int bytesRead;
                     long totalSent = 0;
                     while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
@@ -55,7 +60,7 @@ namespace FileSharingClient
                         int progress = (int)((totalSent * 100) / totalBytes);
                     }
                     totalStorageUsed += totalSent;
-                    MessageBox.Show("File dã g?i xong!");
+                    MessageBox.Show("File Ä‘Ã£ gá»­i xong!");
                 }
             }
             catch (Exception ex)
@@ -90,7 +95,6 @@ namespace FileSharingClient
 
         private MyFileView myfileView = new MyFileView();
         private ShareView shareView = new ShareView();
-        private FilePreview filepreviewView = new FilePreview();
         private TrashBinView trashbinView = new TrashBinView();
         private UploadView uploadView = new UploadView();
 
@@ -98,9 +102,9 @@ namespace FileSharingClient
         {
             Account accountForm = new Account();
             string username = Session.LoggedInUser ?? "Unknown";
-            string storageUsed = GetTotalStorageUsed(); // Hàm dã d?nh nghia tru?c
+            string storageUsed = GetTotalStorageUsed(); // Hï¿½m dï¿½ d?nh nghia tru?c
             accountForm.SetAccountInfo(username, storageUsed);
-            accountForm.ShowDialog(); // Hi?n th? form Account và ch? ngu?i dùng thao tác
+            accountForm.ShowDialog(); // Hi?n th? form Account vï¿½ ch? ngu?i dï¿½ng thao tï¿½c
         }
 
         private List<Control> dashboardButtons;
@@ -127,7 +131,7 @@ namespace FileSharingClient
             uploadView.FileUploaded += async () =>
             {
                 await shareView.Reload();
-                await filepreviewView.Reload();
+                await trashbinView.RefreshTrashFiles();
             };
             LoadView(myfileView);
             
@@ -140,8 +144,7 @@ namespace FileSharingClient
                     MyFile_Dashboard,
                     Share_Dashboard,
                     Upload_Dashboard,
-                    TrashBin_Dashboard,
-                    FilePreview_Dashboard
+                    TrashBin_Dashboard
                 };
         }
         private async void Share_Dashboard_Click(object sender, EventArgs e)
@@ -160,13 +163,6 @@ namespace FileSharingClient
             HightlightSelectedDashboard(MyFile_Dashboard);
         }
 
-
-        private async void FilePreview_Dashboard_Click(object sender, EventArgs e)
-        {
-            await filepreviewView.Reload();
-            LoadView(filepreviewView);
-            HightlightSelectedDashboard(FilePreview_Dashboard);
-        }
 
         private void TrashBin_Dashboard_Click(object sender, EventArgs e)
         {

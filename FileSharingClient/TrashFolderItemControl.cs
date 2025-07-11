@@ -45,7 +45,7 @@ namespace FileSharingClient
 
             // Set layout
             this.Height = 45;
-            this.Width = 790;
+            this.Width = 1100;
             this.BorderStyle = BorderStyle.FixedSingle;
 
             // Configure event handlers

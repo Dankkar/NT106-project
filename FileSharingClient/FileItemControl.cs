@@ -2,14 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SQLite;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Configuration;
+using System.Security.Cryptography;
 
 namespace FileSharingClient
 {
@@ -28,6 +33,12 @@ namespace FileSharingClient
         public int FileId { get; set; }
         
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+        private string serverIp = ConfigurationManager.AppSettings["ServerIP"];
+        private int serverPort = int.Parse(ConfigurationManager.AppSettings["ServerPort"]);
+        private int chunkSize = int.Parse(ConfigurationManager.AppSettings["ChunkSize"]);
+        private long maxFileSize = long.Parse(ConfigurationManager.AppSettings["MaxFileSizeMB"]) * 1024 * 1024;
+        private string uploadsPath = ConfigurationManager.AppSettings["UploadsPath"];
+        private string databasePath = ConfigurationManager.AppSettings["DatabasePath"];
 
         public FileItemControl(string filename, string createAt, string owner, string filesize, string filepath, int fileId = -1)
         {
@@ -261,7 +272,7 @@ namespace FileSharingClient
 
         private async Task DownloadEncryptedFile(string fileName, string savePath)
         {
-            var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                            var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
             using (sslStream)
             using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
             using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })

@@ -2,15 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SQLite;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
+using System.Drawing.Text;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Data.SQLite;
-using System.IO;
+using System.Configuration;
 using System.Drawing.Drawing2D;
-using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
 using System.Security.Cryptography;
 using FontAwesome.Sharp;
@@ -21,12 +25,16 @@ namespace FileSharingClient
     public partial class Register : Form
     {
         private bool isLoginOpen = false;
-        private string username = "T�n dang nh?p";
-        private string password = "M?t kh?u";
-        private string conf_pass = "X�c nh?n m?t kh?u";
+        private string username = "Tên đăng nhập";
+        private string password = "Mật khẩu";
+        private string conf_pass = "Xác nhận mật khẩu";
         private string gmail = "Gmail";
-        private const string SERVER_IP = "localhost";
-        private const int SERVER_PORT = 5000;
+        private string serverIp = ConfigurationManager.AppSettings["ServerIP"];
+        private int serverPort = int.Parse(ConfigurationManager.AppSettings["ServerPort"]);
+        private int chunkSize = int.Parse(ConfigurationManager.AppSettings["ChunkSize"]);
+        private long maxFileSize = long.Parse(ConfigurationManager.AppSettings["MaxFileSizeMB"]) * 1024 * 1024;
+        private string uploadsPath = ConfigurationManager.AppSettings["UploadsPath"];
+        private string databasePath = ConfigurationManager.AppSettings["DatabasePath"];
         public Register()
         {
             InitializeComponent();
@@ -135,13 +143,13 @@ namespace FileSharingClient
         {
             try
             {
-                // K?t n?i d?n server
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                // Kết nối đến server
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    // L?y th�ng tin t? c�c TextBox
+                    // Lấy thông tin từ các TextBox
                     string username = usernametxtBox.Text;
                     string email = gmailtxtBox.Text;
                     string password = passtxtBox.Text;
@@ -154,7 +162,15 @@ namespace FileSharingClient
                     {
                         this.Invoke(new Action(() =>
                         {
-                            MessageBox.Show("Vui l�ng nh?p d?y d? th�ng tin", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("Vui lòng nhập đầy đủ thông tin", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+                        return;
+                    }
+                    if (password.Length < 8)
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            MessageBox.Show("Mật khẩu phải có ít nhất 8 ký tự!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }));
                         return;
                     }
@@ -162,7 +178,7 @@ namespace FileSharingClient
                     {
                         this.Invoke(new Action(() =>
                         {
-                            MessageBox.Show("M?t kh?u v� x�c nh?n m?t kh?u kh�ng tr�ng kh?p!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("Mật khẩu và xác nhận mật khẩu không trùng khớp!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }));
                         return;
                     }
@@ -170,12 +186,12 @@ namespace FileSharingClient
                     {
                         this.Invoke(new Action(() =>
                         {
-                            MessageBox.Show("Vui l�ng nh?p d�ng d?nh d?ng email!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("Vui lòng nhập định dạng email hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }));
                         return;
                     }
 
-                    // Hash password b?ng SHA256 tru?c khi g?i
+                    // Hash password bằng SHA256 trước khi gửi
                     string hashedPassword;
                     using (SHA256 sha256Hash = SHA256.Create())
                     {
@@ -188,13 +204,13 @@ namespace FileSharingClient
                         hashedPassword = sb.ToString();
                     }
                     
-                    // G?i d? li?u dang k� theo d?nh d?ng: REGISTER|username|email|hashedPassword
+                    // Gửi dữ liệu đăng ký theo định dạng: REGISTER|username|email|hashedPassword
                     string message = $"REGISTER|{username}|{email}|{hashedPassword}";
                     await writer.WriteLineAsync(message);
 
-                    // Nh?n ph?n h?i t? server (status code d?ng s?)
+                    // Nhận phản hồi từ server (status code dạng số)
                     string response = await reader.ReadLineAsync();
-                    response = response?.Trim(); // c?t b? kho?ng tr?ng th?a, newline, ...
+                    response = response?.Trim(); // cắt bỏ khoảng trắng thừa, newline, ...
                     int statusCode;
                     if (int.TryParse(response, out statusCode))
                     {
@@ -203,21 +219,21 @@ namespace FileSharingClient
                             switch (statusCode)
                             {
                                 case 201:
-                                    MessageBox.Show("�ang k� th�nh c�ng!", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                    this.Tag= "login"; // �?t tag d? bi?t form n�y d� dang k� th�nh c�ng
+                                    MessageBox.Show("Đăng ký thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    this.Tag= "login"; // Đặt tag để biết form này đã đăng ký thành công
                                     this.Close();
                                     break;
                                 case 409:
-                                    MessageBox.Show("Username d� t?n t?i!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    MessageBox.Show("Username đã tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     break;
                                 case 400:
-                                    MessageBox.Show("Y�u c?u kh�ng h?p l?!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    MessageBox.Show("Yêu cầu không hợp lý!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     break;
                                 case 500:
-                                    MessageBox.Show("L?i t? server. Vui l�ng th? l?i sau!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    MessageBox.Show("Lỗi từ server. Vui lòng thử lại sau!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     break;
                                 default:
-                                    MessageBox.Show("Ph?n h?i kh�ng x�c d?nh t? server: " + statusCode, "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                    MessageBox.Show("Phản hồi không xác định từ server: " + statusCode, "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                     break;
                             }
                         }));
@@ -226,7 +242,7 @@ namespace FileSharingClient
                     {
                         this.Invoke(new Action(() =>
                         {
-                            MessageBox.Show("Ph?n h?i kh�ng h?p l? t? server: " + response, "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("Phản hồi không hợp lệ từ server: " + response, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }));
                     }
                 }
@@ -235,7 +251,7 @@ namespace FileSharingClient
             {
                 this.Invoke(new Action(() =>
                 {
-                    MessageBox.Show("L?i k?t n?i d?n server: " + ex.Message, "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Lỗi kết nối đến server: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }));
             }
         }

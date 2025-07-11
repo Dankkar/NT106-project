@@ -59,7 +59,7 @@
             this.MyFileLayoutPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.MyFileLayoutPanel.Location = new System.Drawing.Point(0, 50);
             this.MyFileLayoutPanel.Name = "MyFileLayoutPanel";
-            this.MyFileLayoutPanel.Size = new System.Drawing.Size(601, 342);
+            this.MyFileLayoutPanel.Size = new System.Drawing.Size(1320, 588);
             this.MyFileLayoutPanel.TabIndex = 1;
             this.MyFileLayoutPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.MyFileLayoutPanel_Paint);
             // 
@@ -67,7 +67,7 @@
             // 
             this.lblFileName.AutoSize = true;
             this.lblFileName.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFileName.Location = new System.Drawing.Point(50, 32);
+            this.lblFileName.Location = new System.Drawing.Point(32, 32);
             this.lblFileName.Name = "lblFileName";
             this.lblFileName.Size = new System.Drawing.Size(53, 17);
             this.lblFileName.TabIndex = 2;
@@ -77,7 +77,7 @@
             // 
             this.lblOwner.AutoSize = true;
             this.lblOwner.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblOwner.Location = new System.Drawing.Point(260, 32);
+            this.lblOwner.Location = new System.Drawing.Point(300, 32);
             this.lblOwner.Name = "lblOwner";
             this.lblOwner.Size = new System.Drawing.Size(91, 17);
             this.lblOwner.TabIndex = 3;
@@ -87,7 +87,7 @@
             // 
             this.lblCreateAt.AutoSize = true;
             this.lblCreateAt.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblCreateAt.Location = new System.Drawing.Point(306, 32);
+            this.lblCreateAt.Location = new System.Drawing.Point(500, 32);
             this.lblCreateAt.Name = "lblCreateAt";
             this.lblCreateAt.Size = new System.Drawing.Size(51, 17);
             this.lblCreateAt.TabIndex = 4;
@@ -98,7 +98,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(420, 32);
+            this.label1.Location = new System.Drawing.Point(700, 32);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(72, 17);
             this.label1.TabIndex = 5;
@@ -108,7 +108,7 @@
             // 
             this.lblType.AutoSize = true;
             this.lblType.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblType.Location = new System.Drawing.Point(650, 32);
+            this.lblType.Location = new System.Drawing.Point(900, 32);
             this.lblType.Name = "lblType";
             this.lblType.Size = new System.Drawing.Size(35, 17);
             this.lblType.TabIndex = 7;
@@ -127,7 +127,7 @@
             this.btnRefresh});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(601, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(1320, 25);
             this.toolStrip1.TabIndex = 6;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -156,7 +156,7 @@
             // 
             this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(111, 25);
+            this.txtSearch.Size = new System.Drawing.Size(200, 25);
             this.txtSearch.Text = "Tìm kiếm file...";
             this.txtSearch.ToolTipText = "Nhập tên file để tìm kiếm";
             this.txtSearch.Enter += new System.EventHandler(this.txtSearch_Enter);
@@ -197,7 +197,7 @@
             this.Controls.Add(this.MyFileLayoutPanel);
             this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Name = "MyFileView";
-            this.Size = new System.Drawing.Size(601, 392);
+            this.Size = new System.Drawing.Size(1320, 638);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
             this.ResumeLayout(false);
