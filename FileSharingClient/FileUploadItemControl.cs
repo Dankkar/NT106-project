@@ -23,7 +23,7 @@ namespace FileSharingClient
         public event Action<string> FilePreviewRequested; // For navigation/preview
 
         private Color originalBackColor = Color.White;
-        private Color hoverBackColor = Color.FromArgb(230, 240, 250);
+        private Color hoverBackColor = Color.LightGray;
 
         public FileUploadItemControl(string fileName, string owner, string fileSize, string filePath)
         {

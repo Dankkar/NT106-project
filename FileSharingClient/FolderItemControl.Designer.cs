@@ -150,7 +150,7 @@ namespace FileSharingClient
             this.AutoSize = false;
             this.Height = 45;
             this.Margin = new System.Windows.Forms.Padding(0);
-            this.BackColor = System.Drawing.SystemColors.ButtonHighlight;
+            this.BackColor = System.Drawing.Color.White;
             this.Controls.Add(this.lblFolderIcon);
             this.Controls.Add(this.btnMore);
             this.Controls.Add(this.lblType);

@@ -111,7 +111,7 @@ namespace FileSharingClient
             this.AutoSize = false;
             this.Height = 48;
             this.Margin = new System.Windows.Forms.Padding(0);
-            this.BackColor = System.Drawing.SystemColors.ButtonHighlight;
+            this.BackColor = System.Drawing.Color.White;
             this.Controls.Add(this.btnRemove);
             this.Controls.Add(this.lblFileType);
             this.Controls.Add(this.lblFileSize);

@@ -225,6 +225,9 @@
     <EmbeddedResource Include="FolderItemControl.resx">
       <DependentUpon>FolderItemControl.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="FolderUploadItemControl.resx">
+      <DependentUpon>FolderUploadItemControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ForgotPassword.resx">
       <DependentUpon>ForgotPassword.cs</DependentUpon>
     </EmbeddedResource>

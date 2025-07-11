@@ -53,14 +53,15 @@ namespace FileSharingClient
             btnDelete.BackColor = Color.LightCoral;
 
             // Add hover effects
+            this.BackColor = Color.WhiteSmoke;
             this.MouseEnter += (s, e) => this.BackColor = Color.LightBlue;
-            this.MouseLeave += (s, e) => this.BackColor = Color.LightGray;
+            this.MouseLeave += (s, e) => this.BackColor = Color.WhiteSmoke;
 
             // Set layout giống folder
             this.Height = 45;
-            this.Width = 1100;
+            this.Width = 1080;
             this.BorderStyle = BorderStyle.FixedSingle;
-            this.BackColor = Color.LightGray;
+            this.BackColor = Color.WhiteSmoke;
         }
 
         private void btnRestore_Click(object sender, EventArgs e)
