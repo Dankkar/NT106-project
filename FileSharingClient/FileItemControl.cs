@@ -96,14 +96,14 @@ namespace FileSharingClient
             lblFileSize.Cursor = Cursors.Hand;
             
             // Add hover effects
-            this.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
-            this.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
-            lblFileName.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
-            lblFileName.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
-            lblOwner.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
-            lblOwner.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
-            lblFileSize.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
-            lblFileSize.MouseLeave += (s, e) => this.BackColor = SystemColors.ButtonHighlight;
+            this.MouseEnter += (s, e) => this.BackColor = Color.LightBlue;
+            this.MouseLeave += (s, e) => this.BackColor = Color.WhiteSmoke;
+            lblFileName.MouseEnter += (s, e) => this.BackColor = Color.LightBlue;
+            lblFileName.MouseLeave += (s, e) => this.BackColor = Color.WhiteSmoke;
+            lblOwner.MouseEnter += (s, e) => this.BackColor = Color.LightBlue;
+            lblOwner.MouseLeave += (s, e) => this.BackColor = Color.WhiteSmoke;
+            lblFileSize.MouseEnter += (s, e) => this.BackColor = Color.LightBlue;
+            lblFileSize.MouseLeave += (s, e) => this.BackColor = Color.WhiteSmoke;
 
             // Double click để preview
             this.DoubleClick += FileItemControl_DoubleClick;

@@ -38,6 +38,39 @@ namespace FileSharingClient
         public Register()
         {
             InitializeComponent();
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
+            // Nếu có panel chứa nội dung chính, set panel.BackColor = Color.White;
+            foreach (Control ctrl in this.Controls)
+            {
+                if (ctrl is Panel panel)
+                {
+                    panel.BackColor = System.Drawing.Color.White;
+                    foreach (Control child in panel.Controls)
+                    {
+                        if (child is TextBox tb)
+                        {
+                            tb.BackColor = System.Drawing.Color.White;
+                            tb.ForeColor = System.Drawing.Color.Gray;
+                        }
+                        if (child is Label lbl)
+                        {
+                            lbl.ForeColor = System.Drawing.Color.Gray;
+                        }
+                    }
+                }
+            }
+            btnRegister.BackColor = System.Drawing.Color.LightBlue;
+            btnRegister.ForeColor = System.Drawing.Color.White;
+            btnRegister.FlatStyle = FlatStyle.Flat;
+            btnRegister.FlatAppearance.BorderSize = 0;
+            btnRegister.MouseEnter += (s, e) => {
+                btnRegister.BackColor = System.Drawing.Color.FromArgb(41, 121, 255);
+                btnRegister.ForeColor = System.Drawing.Color.White;
+            };
+            btnRegister.MouseLeave += (s, e) => {
+                btnRegister.BackColor = System.Drawing.Color.LightBlue;
+                btnRegister.ForeColor = System.Drawing.Color.White;
+            };
             usernametxtBox.Text = username;
             usernametxtBox.ForeColor = Color.Gray;
             usernametxtBox.Enter += usernametxtBox_Enter;

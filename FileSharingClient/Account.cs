@@ -32,6 +32,11 @@ namespace FileSharingClient
         public Account()
         {
             InitializeComponent();
+            this.BackColor = System.Drawing.Color.White;
+            lblUsername.ForeColor = System.Drawing.Color.Black;
+            lblStorage.ForeColor = System.Drawing.Color.Black;
+            btnChangePassword.BackColor = System.Drawing.Color.LightGray;
+            btnChangePassword.ForeColor = System.Drawing.Color.Black;
             LoadAccountInfo();
         }
 
@@ -143,18 +148,18 @@ namespace FileSharingClient
             // Change progress bar style based on usage percentage
             if (percentage < 70)
             {
-                // Green for low usage (default)
-                progressBar1.ForeColor = Color.Green;
+                // Xanh dương cho usage thấp
+                progressBar1.ForeColor = Color.DodgerBlue;
             }
             else if (percentage < 90)
             {
-                // Yellow/Orange for medium usage  
-                progressBar1.ForeColor = Color.Orange;
+                // Xanh cyan cho usage trung bình
+                progressBar1.ForeColor = Color.MediumTurquoise;
             }
             else
             {
-                // Red for high usage
-                progressBar1.ForeColor = Color.Red;
+                // Xanh navy cho usage cao
+                progressBar1.ForeColor = Color.Navy;
             }
         }
 

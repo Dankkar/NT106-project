@@ -138,7 +138,7 @@ namespace FileSharingClient
             {
                 Size = new Size(1000, 40),
                 BorderStyle = BorderStyle.FixedSingle,
-                //BackColor = Color.LightBlue,
+                BackColor = Color.White,
                 Cursor = Cursors.Hand
             };
             

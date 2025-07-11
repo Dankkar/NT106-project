@@ -41,67 +41,52 @@ namespace FileSharingClient
             // lblFileIcon
             // 
             this.lblFileIcon.AutoSize = true;
-            this.lblFileIcon.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Regular);
+            this.lblFileIcon.Font = new System.Drawing.Font("Segoe UI", 14F);
             this.lblFileIcon.Location = new System.Drawing.Point(12, 10);
             this.lblFileIcon.Name = "lblFileIcon";
-            this.lblFileIcon.Size = new System.Drawing.Size(32, 25);
+            this.lblFileIcon.Size = new System.Drawing.Size(33, 25);
             this.lblFileIcon.TabIndex = 0;
             this.lblFileIcon.Text = "📄";
             // 
             // lblFileName
             // 
-            this.lblFileName.AutoSize = false;
-            this.lblFileName.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.lblFileName.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular);
+            this.lblFileName.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.lblFileName.Location = new System.Drawing.Point(50, 3);
-            this.lblFileName.Size = new System.Drawing.Size(200, 39);
             this.lblFileName.Name = "lblFileName";
+            this.lblFileName.Size = new System.Drawing.Size(200, 39);
             this.lblFileName.TabIndex = 1;
             this.lblFileName.Text = "FileName";
+            this.lblFileName.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblOwner
             // 
-            this.lblOwner.AutoSize = false;
-            this.lblOwner.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.lblOwner.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular);
+            this.lblOwner.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.lblOwner.Location = new System.Drawing.Point(250, 3);
-            this.lblOwner.Size = new System.Drawing.Size(150, 39);
             this.lblOwner.Name = "lblOwner";
+            this.lblOwner.Size = new System.Drawing.Size(150, 39);
             this.lblOwner.TabIndex = 2;
             this.lblOwner.Text = "Owner";
-            // 
-            // lblDeletedAt
-            // 
-            this.lblDeletedAt.AutoSize = false;
-            this.lblDeletedAt.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.lblDeletedAt.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular);
-            this.lblDeletedAt.Location = new System.Drawing.Point(400, 3);
-            this.lblDeletedAt.Size = new System.Drawing.Size(150, 39);
-            this.lblDeletedAt.Name = "lblDeletedAt";
-            this.lblDeletedAt.TabIndex = 3;
-            this.lblDeletedAt.Text = "DeletedAt";
+            this.lblOwner.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblFileSize
             // 
-            this.lblFileSize.AutoSize = false;
-            this.lblFileSize.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.lblFileSize.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular);
+            this.lblFileSize.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.lblFileSize.Location = new System.Drawing.Point(550, 3);
-            this.lblFileSize.Size = new System.Drawing.Size(150, 39);
             this.lblFileSize.Name = "lblFileSize";
+            this.lblFileSize.Size = new System.Drawing.Size(150, 39);
             this.lblFileSize.TabIndex = 4;
             this.lblFileSize.Text = "FileSize";
+            this.lblFileSize.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblFileType
             // 
-            this.lblFileType.AutoSize = false;
-            this.lblFileType.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.lblFileType.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular);
+            this.lblFileType.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.lblFileType.Location = new System.Drawing.Point(700, 3);
-            this.lblFileType.Size = new System.Drawing.Size(100, 39);
             this.lblFileType.Name = "lblFileType";
+            this.lblFileType.Size = new System.Drawing.Size(100, 39);
             this.lblFileType.TabIndex = 5;
             this.lblFileType.Text = "FileType";
+            this.lblFileType.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // btnRestore
             // 
@@ -120,7 +105,7 @@ namespace FileSharingClient
             // 
             this.btnDelete.BackColor = System.Drawing.Color.LightCoral;
             this.btnDelete.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnDelete.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular);
+            this.btnDelete.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnDelete.Location = new System.Drawing.Point(890, 8);
             this.btnDelete.Name = "btnDelete";
             this.btnDelete.Size = new System.Drawing.Size(50, 29);
@@ -129,11 +114,21 @@ namespace FileSharingClient
             this.btnDelete.UseVisualStyleBackColor = false;
             this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
             // 
+            // lblDeletedAt
+            // 
+            this.lblDeletedAt.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.lblDeletedAt.Location = new System.Drawing.Point(400, 3);
+            this.lblDeletedAt.Name = "lblDeletedAt";
+            this.lblDeletedAt.Size = new System.Drawing.Size(150, 39);
+            this.lblDeletedAt.TabIndex = 3;
+            this.lblDeletedAt.Text = "DeletedAt";
+            this.lblDeletedAt.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
             // TrashFileItemControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.Control;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.Controls.Add(this.btnDelete);
             this.Controls.Add(this.btnRestore);

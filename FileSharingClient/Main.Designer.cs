@@ -51,7 +51,7 @@
             // 
             // PanelDashboard
             // 
-            this.PanelDashboard.BackColor = System.Drawing.Color.RosyBrown;
+            this.PanelDashboard.BackColor = System.Drawing.Color.WhiteSmoke;
             this.PanelDashboard.Controls.Add(this.Account);
             this.PanelDashboard.Controls.Add(this.TrashBin_Dashboard);
             this.PanelDashboard.Controls.Add(this.Upload_Dashboard);
@@ -65,13 +65,14 @@
             // 
             // TrashBin_Dashboard
             // 
+            this.TrashBin_Dashboard.BackColor = System.Drawing.Color.WhiteSmoke;
             this.TrashBin_Dashboard.Dock = System.Windows.Forms.DockStyle.Top;
             this.TrashBin_Dashboard.FlatAppearance.BorderSize = 0;
             this.TrashBin_Dashboard.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.TrashBin_Dashboard.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(163)));
-            this.TrashBin_Dashboard.ForeColor = System.Drawing.Color.White;
+            this.TrashBin_Dashboard.ForeColor = System.Drawing.Color.Gray;
             this.TrashBin_Dashboard.IconChar = FontAwesome.Sharp.IconChar.Trash;
-            this.TrashBin_Dashboard.IconColor = System.Drawing.Color.White;
+            this.TrashBin_Dashboard.IconColor = System.Drawing.Color.Gray;
             this.TrashBin_Dashboard.IconFont = FontAwesome.Sharp.IconFont.Auto;
             this.TrashBin_Dashboard.Location = new System.Drawing.Point(0, 145);
             this.TrashBin_Dashboard.Name = "TrashBin_Dashboard";
@@ -82,16 +83,18 @@
             this.TrashBin_Dashboard.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
             this.TrashBin_Dashboard.UseVisualStyleBackColor = true;
             this.TrashBin_Dashboard.Click += new System.EventHandler(this.TrashBin_Dashboard_Click);
+            this.TrashBin_Dashboard.UseCompatibleTextRendering = true;
             // 
             // Upload_Dashboard
             // 
+            this.Upload_Dashboard.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Upload_Dashboard.Dock = System.Windows.Forms.DockStyle.Top;
             this.Upload_Dashboard.FlatAppearance.BorderSize = 0;
             this.Upload_Dashboard.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.Upload_Dashboard.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(163)));
-            this.Upload_Dashboard.ForeColor = System.Drawing.Color.White;
+            this.Upload_Dashboard.ForeColor = System.Drawing.Color.Gray;
             this.Upload_Dashboard.IconChar = FontAwesome.Sharp.IconChar.Upload;
-            this.Upload_Dashboard.IconColor = System.Drawing.Color.White;
+            this.Upload_Dashboard.IconColor = System.Drawing.Color.Gray;
             this.Upload_Dashboard.IconFont = FontAwesome.Sharp.IconFont.Auto;
             this.Upload_Dashboard.Location = new System.Drawing.Point(0, 98);
             this.Upload_Dashboard.Name = "Upload_Dashboard";
@@ -102,16 +105,18 @@
             this.Upload_Dashboard.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
             this.Upload_Dashboard.UseVisualStyleBackColor = true;
             this.Upload_Dashboard.Click += new System.EventHandler(this.Upload_Dashboard_Click);
+            this.Upload_Dashboard.UseCompatibleTextRendering = true;
             // 
             // Share_Dashboard
             // 
+            this.Share_Dashboard.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Share_Dashboard.Dock = System.Windows.Forms.DockStyle.Top;
             this.Share_Dashboard.FlatAppearance.BorderSize = 0;
             this.Share_Dashboard.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.Share_Dashboard.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(163)));
-            this.Share_Dashboard.ForeColor = System.Drawing.Color.White;
+            this.Share_Dashboard.ForeColor = System.Drawing.Color.Gray;
             this.Share_Dashboard.IconChar = FontAwesome.Sharp.IconChar.Share;
-            this.Share_Dashboard.IconColor = System.Drawing.Color.White;
+            this.Share_Dashboard.IconColor = System.Drawing.Color.Gray;
             this.Share_Dashboard.IconFont = FontAwesome.Sharp.IconFont.Auto;
             this.Share_Dashboard.Location = new System.Drawing.Point(0, 49);
             this.Share_Dashboard.Name = "Share_Dashboard";
@@ -122,17 +127,18 @@
             this.Share_Dashboard.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
             this.Share_Dashboard.UseVisualStyleBackColor = true;
             this.Share_Dashboard.Click += new System.EventHandler(this.Share_Dashboard_Click);
+            this.Share_Dashboard.UseCompatibleTextRendering = true;
             // 
             // MyFile_Dashboard
             // 
-            this.MyFile_Dashboard.BackColor = System.Drawing.Color.DodgerBlue;
+            this.MyFile_Dashboard.BackColor = System.Drawing.Color.WhiteSmoke;
             this.MyFile_Dashboard.Dock = System.Windows.Forms.DockStyle.Top;
             this.MyFile_Dashboard.FlatAppearance.BorderSize = 0;
             this.MyFile_Dashboard.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.MyFile_Dashboard.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(163)));
-            this.MyFile_Dashboard.ForeColor = System.Drawing.Color.Black;
+            this.MyFile_Dashboard.ForeColor = System.Drawing.Color.Gray;
             this.MyFile_Dashboard.IconChar = FontAwesome.Sharp.IconChar.File;
-            this.MyFile_Dashboard.IconColor = System.Drawing.Color.White;
+            this.MyFile_Dashboard.IconColor = System.Drawing.Color.Gray;
             this.MyFile_Dashboard.IconFont = FontAwesome.Sharp.IconFont.Auto;
             this.MyFile_Dashboard.IconSize = 40;
             this.MyFile_Dashboard.Location = new System.Drawing.Point(0, 0);
@@ -145,9 +151,11 @@
             this.MyFile_Dashboard.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
             this.MyFile_Dashboard.UseVisualStyleBackColor = false;
             this.MyFile_Dashboard.Click += new System.EventHandler(this.MyFile_Dashboard_Click);
+            this.MyFile_Dashboard.UseCompatibleTextRendering = true;
             // 
             // MainContentPanel
             // 
+            this.MainContentPanel.BackColor = System.Drawing.Color.LightGray;
             this.MainContentPanel.Location = new System.Drawing.Point(200, 0);
             this.MainContentPanel.Name = "MainContentPanel";
             this.MainContentPanel.Size = new System.Drawing.Size(1104, 595);
@@ -157,14 +165,14 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.AntiqueWhite;
+            this.BackColor = System.Drawing.Color.AliceBlue;
             this.ClientSize = new System.Drawing.Size(1304, 599);
             this.Controls.Add(this.MainContentPanel);
             this.Controls.Add(this.PanelDashboard);
             this.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.Name = "Main";
             this.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.Text = "Form1";
+            this.Text = "FileSharingApp";
             this.Load += new System.EventHandler(this.Main_Load);
             this.PanelDashboard.ResumeLayout(false);
             this.ResumeLayout(false);

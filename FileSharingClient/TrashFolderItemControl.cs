@@ -40,13 +40,14 @@ namespace FileSharingClient
             btnPermanentDelete.BackColor = Color.LightCoral;
 
             // Add hover effects
-            this.MouseEnter += (s, e) => this.BackColor = Color.LightGray;
-            this.MouseLeave += (s, e) => this.BackColor = Color.LightBlue;
+            this.MouseEnter += (s, e) => this.BackColor = Color.LightBlue;
+            this.MouseLeave += (s, e) => this.BackColor = Color.WhiteSmoke;
 
             // Set layout
             this.Height = 45;
-            this.Width = 1100;
+            this.Width = 1080;
             this.BorderStyle = BorderStyle.FixedSingle;
+            this.BackColor = Color.WhiteSmoke;
 
             // Configure event handlers
             btnRestore.Click += BtnRestore_Click;
