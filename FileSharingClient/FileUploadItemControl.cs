@@ -56,6 +56,9 @@ namespace FileSharingClient
             // Set up hover effects
             this.BackColor = originalBackColor;
             SetupHoverEffects();
+            
+            // Wire up button click event
+            btnRemove.Click += btnRemove_Click;
         }
 
         private void SetupHoverEffects()

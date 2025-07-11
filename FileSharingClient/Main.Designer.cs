@@ -40,7 +40,7 @@
             // 
             // Account
             // 
-            this.Account.Location = new System.Drawing.Point(24, 917);
+            this.Account.Location = new System.Drawing.Point(21, 541);
             this.Account.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.Account.Name = "Account";
             this.Account.Size = new System.Drawing.Size(144, 46);
@@ -57,11 +57,10 @@
             this.PanelDashboard.Controls.Add(this.Upload_Dashboard);
             this.PanelDashboard.Controls.Add(this.Share_Dashboard);
             this.PanelDashboard.Controls.Add(this.MyFile_Dashboard);
-            this.PanelDashboard.Dock = System.Windows.Forms.DockStyle.Left;
             this.PanelDashboard.Location = new System.Drawing.Point(0, 0);
             this.PanelDashboard.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.PanelDashboard.Name = "PanelDashboard";
-            this.PanelDashboard.Size = new System.Drawing.Size(200, 985);
+            this.PanelDashboard.Size = new System.Drawing.Size(200, 595);
             this.PanelDashboard.TabIndex = 15;
             // 
             // TrashBin_Dashboard
@@ -149,10 +148,9 @@
             // 
             // MainContentPanel
             // 
-            this.MainContentPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainContentPanel.Location = new System.Drawing.Point(200, 0);
             this.MainContentPanel.Name = "MainContentPanel";
-            this.MainContentPanel.Size = new System.Drawing.Size(1704, 985);
+            this.MainContentPanel.Size = new System.Drawing.Size(1104, 595);
             this.MainContentPanel.TabIndex = 17;
             // 
             // Main
@@ -160,7 +158,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.AntiqueWhite;
-            this.ClientSize = new System.Drawing.Size(1904, 985);
+            this.ClientSize = new System.Drawing.Size(1304, 599);
             this.Controls.Add(this.MainContentPanel);
             this.Controls.Add(this.PanelDashboard);
             this.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);

@@ -13,6 +13,8 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Configuration;
+using System.Security.Cryptography;
 
 namespace FileSharingClient
 {
@@ -34,16 +36,19 @@ namespace FileSharingClient
             }
         }
         private long totalStorageUsed = 0;
+        private string serverIp = ConfigurationManager.AppSettings["ServerIP"];
+        private int serverPort = int.Parse(ConfigurationManager.AppSettings["ServerPort"]);
+        private int chunkSize = int.Parse(ConfigurationManager.AppSettings["ChunkSize"]);
         private async Task SendFile(string filePath)
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
-                using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
+                using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: chunkSize, useAsync: true))
                 {
                     long totalBytes = fileStream.Length;
-                    byte[] buffer = new byte[4096];
+                    byte[] buffer = new byte[chunkSize];
                     int bytesRead;
                     long totalSent = 0;
                     while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
@@ -55,7 +60,7 @@ namespace FileSharingClient
                         int progress = (int)((totalSent * 100) / totalBytes);
                     }
                     totalStorageUsed += totalSent;
-                    MessageBox.Show("File d� g?i xong!");
+                    MessageBox.Show("File đã gửi xong!");
                 }
             }
             catch (Exception ex)

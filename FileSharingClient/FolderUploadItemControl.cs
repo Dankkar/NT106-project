@@ -57,6 +57,9 @@ namespace FileSharingClient
             lblOwner.Click += FolderUploadItemControl_Click;
             lblFolderSize.Click += FolderUploadItemControl_Click;
             lblFolderType.Click += FolderUploadItemControl_Click;
+            
+            // Wire up remove button click event
+            btnRemove.Click += btnRemove_Click;
         }
 
         private void FolderUploadItemControl_Click(object sender, EventArgs e)

@@ -58,7 +58,7 @@ namespace FileSharingClient
 
             // Set layout giống folder
             this.Height = 45;
-            this.Width = 790;
+            this.Width = 1100;
             this.BorderStyle = BorderStyle.FixedSingle;
             this.BackColor = Color.LightGray;
         }

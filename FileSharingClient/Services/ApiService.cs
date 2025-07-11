@@ -1,18 +1,32 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.SQLite;
+using System.Diagnostics.Eventing.Reader;
+using System.Drawing;
+using System.Drawing.Text;
+using System.IO;
+using System.Linq;
 using System.Net.Sockets;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO;
-using FileSharingClient;
+using System.Configuration;
+using System.Security.Cryptography;
 
 namespace FileSharingClient.Services
 {
     public class ApiService
     {
-        private const string SERVER_IP = "127.0.0.1";
-        private const int SERVER_PORT = 5000; // Connect directly to backend server for testing
+        private static string serverIp = ConfigurationManager.AppSettings["ServerIP"];
+        private static int serverPort = int.Parse(ConfigurationManager.AppSettings["ServerPort"]);
+        private static int chunkSize = int.Parse(ConfigurationManager.AppSettings["ChunkSize"]);
+        private static long maxFileSize = long.Parse(ConfigurationManager.AppSettings["MaxFileSizeMB"]) * 1024 * 1024;
+        private static string uploadsPath = ConfigurationManager.AppSettings["UploadsPath"];
+        private static string databasePath = ConfigurationManager.AppSettings["DatabasePath"];
+
         private const int MAX_RETRY_ATTEMPTS = 3;
         private const int RETRY_DELAY_MS = 500;
 
@@ -49,7 +63,7 @@ namespace FileSharingClient.Services
         {
             return await RetryApiCall(async () =>
             {
-                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 var sslStream = connection.sslStream;
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -87,7 +101,7 @@ namespace FileSharingClient.Services
             {
                 Console.WriteLine($"[DEBUG][GetUserFilesAsync] Calling with userId: {userId}, folderId: {folderId}");
                 
-                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 var sslStream = connection.sslStream;
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -149,7 +163,7 @@ namespace FileSharingClient.Services
             {
                 Console.WriteLine($"[DEBUG][GetUserFoldersAsync] Calling with userId: {userId}, folderId: {folderId}");
                 
-                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 var sslStream = connection.sslStream;
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -211,7 +225,7 @@ namespace FileSharingClient.Services
             {
                 Console.WriteLine($"[DEBUG][GetSharedFilesAsync] Calling with userId: {userId}");
                 
-                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 var sslStream = connection.sslStream;
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -272,7 +286,7 @@ namespace FileSharingClient.Services
             {
                 Console.WriteLine($"[DEBUG][GetSharedFoldersAsync] Calling with userId: {userId}");
                 
-                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 var sslStream = connection.sslStream;
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -333,7 +347,7 @@ namespace FileSharingClient.Services
             {
                 Console.WriteLine($"[DEBUG] CreateFolderAsync called: userId={userId}, folderName={folderName}, parentFolderId={parentFolderId}");
                 
-                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 var sslStream = connection.sslStream;
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -368,7 +382,7 @@ namespace FileSharingClient.Services
         {
             try
             {
-                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 var sslStream = connection.sslStream;
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -393,7 +407,7 @@ namespace FileSharingClient.Services
         {
             try
             {
-                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 var sslStream = connection.sslStream;
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
@@ -418,7 +432,7 @@ namespace FileSharingClient.Services
         {
             try
             {
-                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(SERVER_IP, SERVER_PORT);
+                var connection = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 var sslStream = connection.sslStream;
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))

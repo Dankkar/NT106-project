@@ -1,21 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Data;
+using System.Data.SQLite;
+using System.Diagnostics.Eventing.Reader;
+using System.Drawing;
+using System.Drawing.Text;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO;
+using System.Configuration;
 using FileSharingClient.Services;
-using System.IO.Compression;
-using System.Net.Sockets;
+using System.Security.Cryptography;
 
 namespace FileSharingClient
 {
-    public partial class MyFileView: UserControl
+    public partial class MyFileView : UserControl
     {
+        private string serverIp = ConfigurationManager.AppSettings["ServerIP"];
+        private int serverPort = int.Parse(ConfigurationManager.AppSettings["ServerPort"]);
+        private int chunkSize = int.Parse(ConfigurationManager.AppSettings["ChunkSize"]);
+        private long maxFileSize = long.Parse(ConfigurationManager.AppSettings["MaxFileSizeMB"]) * 1024 * 1024;
+        private string uploadsPath = ConfigurationManager.AppSettings["UploadsPath"];
+        private string databasePath = ConfigurationManager.AppSettings["DatabasePath"];
+
         private List<Services.FileItem> allFiles = new List<Services.FileItem>();
         private List<Services.FolderItem> allFolders = new List<Services.FolderItem>();
         private int? currentFolderId = null; // null = root level
@@ -360,8 +372,10 @@ namespace FileSharingClient
                     string sharePassword = await GetFileSharePasswordAsync(fileName);
                     if (!string.IsNullOrEmpty(sharePassword))
                     {
-                        MessageBox.Show($"File '{fileName}' đã được chia sẻ thành công với quyền {permission}!\nMật khẩu chia sẻ: {sharePassword}", 
-                            "Thành công chia sẻ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        using (var form = new SharePasswordForm(fileName, permission, sharePassword, isFolder: false))
+                        {
+                            form.ShowDialog();
+                        }
                     }
                     else
                     {
@@ -403,8 +417,10 @@ namespace FileSharingClient
                     string sharePassword = await GetFolderSharePasswordAsync(folderName);
                     if (!string.IsNullOrEmpty(sharePassword))
                     {
-                        MessageBox.Show($"Folder '{folderName}' đã được chia sẻ thành công với quyền {permission}!\nMật khẩu chia sẻ: {sharePassword}", 
-                            "Thành công chia sẻ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        using (var form = new SharePasswordForm(folderName, permission, sharePassword, isFolder: true))
+                        {
+                            form.ShowDialog();
+                        }
                     }
                     else
                     {
@@ -470,7 +486,7 @@ namespace FileSharingClient
             try
             {
                 // Kết nối đến server để lấy danh sách files trong folder
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -526,7 +542,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -571,7 +587,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (var reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -619,7 +635,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (var reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -751,7 +767,7 @@ namespace FileSharingClient
             {
                 Console.WriteLine($"[DEBUG] Sending DELETE_FILE request: fileName={fileName}, userId={userId}");
                 
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -794,7 +810,7 @@ namespace FileSharingClient
             {
                 Console.WriteLine($"[DEBUG] Sending DELETE_FOLDER request: folderId={folderId}, userId={userId}");
                 
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -1132,7 +1148,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (var reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -1166,7 +1182,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (var reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -1289,7 +1305,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (var reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -1319,7 +1335,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (var reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -1358,7 +1374,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (var reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -1385,7 +1401,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (var reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (var writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -1419,7 +1435,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -1493,7 +1509,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })
@@ -1530,7 +1546,7 @@ namespace FileSharingClient
         {
             try
             {
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("localhost", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 using (StreamReader reader = new StreamReader(sslStream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(sslStream, Encoding.UTF8) { AutoFlush = true })

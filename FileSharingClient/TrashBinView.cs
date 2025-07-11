@@ -1,20 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Data;
+using System.Data.SQLite;
+using System.Diagnostics.Eventing.Reader;
+using System.Drawing;
+using System.Drawing.Text;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Net.Sockets;
-using System.IO;
-using System.Data.SQLite;
+using System.Configuration;
+using System.Security.Cryptography;
 
 namespace FileSharingClient
 {
     public partial class TrashBinView: UserControl
     {
+        private string serverIp = ConfigurationManager.AppSettings["ServerIP"];
+        private int serverPort = int.Parse(ConfigurationManager.AppSettings["ServerPort"]);
+        private int chunkSize = int.Parse(ConfigurationManager.AppSettings["ChunkSize"]);
+        private long maxFileSize = long.Parse(ConfigurationManager.AppSettings["MaxFileSizeMB"]) * 1024 * 1024;
+        private string uploadsPath = ConfigurationManager.AppSettings["UploadsPath"];
+        private string databasePath = ConfigurationManager.AppSettings["DatabasePath"];
         private static string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
         private static string dbPath = Path.Combine(projectRoot, "test.db");
         private static string connectionString = $"Data Source={dbPath};Version=3;Pooling=True";
@@ -592,9 +603,9 @@ namespace FileSharingClient
         {
             try
             {
-                Console.WriteLine($"[DEBUG] SendRequestToServer - Connecting via LoadBalancer to 127.0.0.1:5000");
+                Console.WriteLine($"[DEBUG] SendRequestToServer - Connecting via LoadBalancer to {serverIp}:{serverPort}");
                 
-                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync("127.0.0.1", 5000);
+                var (sslStream, _) = await SecureChannelHelper.ConnectToLoadBalancerAsync(serverIp, serverPort);
                 using (sslStream)
                 {
                     Console.WriteLine($"[DEBUG] SendRequestToServer - Connected successfully via TLS");

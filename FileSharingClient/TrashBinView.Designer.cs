@@ -61,7 +61,7 @@
             this.TrashFileLayoutPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.TrashFileLayoutPanel.Location = new System.Drawing.Point(0, 50);
             this.TrashFileLayoutPanel.Name = "TrashFileLayoutPanel";
-            this.TrashFileLayoutPanel.Size = new System.Drawing.Size(800, 400);
+            this.TrashFileLayoutPanel.Size = new System.Drawing.Size(1080, 588);
             this.TrashFileLayoutPanel.TabIndex = 1;
             this.TrashFileLayoutPanel.WrapContents = false;
             // 
@@ -69,7 +69,7 @@
             // 
             this.lblFileName.AutoSize = true;
             this.lblFileName.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFileName.Location = new System.Drawing.Point(32, 32);
+            this.lblFileName.Location = new System.Drawing.Point(50, 32);
             this.lblFileName.Name = "lblFileName";
             this.lblFileName.Size = new System.Drawing.Size(53, 17);
             this.lblFileName.TabIndex = 2;
@@ -79,7 +79,7 @@
             // 
             this.lblOwner.AutoSize = true;
             this.lblOwner.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblOwner.Location = new System.Drawing.Point(200, 32);
+            this.lblOwner.Location = new System.Drawing.Point(250, 32);
             this.lblOwner.Name = "lblOwner";
             this.lblOwner.Size = new System.Drawing.Size(91, 17);
             this.lblOwner.TabIndex = 3;
@@ -89,7 +89,7 @@
             // 
             this.lblDeletedAt.AutoSize = true;
             this.lblDeletedAt.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblDeletedAt.Location = new System.Drawing.Point(320, 32);
+            this.lblDeletedAt.Location = new System.Drawing.Point(400, 32);
             this.lblDeletedAt.Name = "lblDeletedAt";
             this.lblDeletedAt.Size = new System.Drawing.Size(66, 17);
             this.lblDeletedAt.TabIndex = 4;
@@ -99,7 +99,7 @@
             // 
             this.lblSize.AutoSize = true;
             this.lblSize.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblSize.Location = new System.Drawing.Point(450, 32);
+            this.lblSize.Location = new System.Drawing.Point(550, 32);
             this.lblSize.Name = "lblSize";
             this.lblSize.Size = new System.Drawing.Size(72, 17);
             this.lblSize.TabIndex = 5;
@@ -109,7 +109,7 @@
             // 
             this.lblType.AutoSize = true;
             this.lblType.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblType.Location = new System.Drawing.Point(550, 32);
+            this.lblType.Location = new System.Drawing.Point(700, 32);
             this.lblType.Name = "lblType";
             this.lblType.Size = new System.Drawing.Size(32, 17);
             this.lblType.TabIndex = 6;
@@ -119,7 +119,7 @@
             // 
             this.lblActions.AutoSize = true;
             this.lblActions.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblActions.Location = new System.Drawing.Point(650, 32);
+            this.lblActions.Location = new System.Drawing.Point(810, 32);
             this.lblActions.Name = "lblActions";
             this.lblActions.Size = new System.Drawing.Size(60, 17);
             this.lblActions.TabIndex = 7;
@@ -138,7 +138,7 @@
             this.btnRefresh});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(800, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(1080, 25);
             this.toolStrip1.TabIndex = 8;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -167,7 +167,7 @@
             // 
             this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(111, 25);
+            this.txtSearch.Size = new System.Drawing.Size(200, 25);
             this.txtSearch.Text = "Tìm kiếm file...";
             this.txtSearch.ToolTipText = "Nhập tên file để tìm kiếm";
             this.txtSearch.Enter += new System.EventHandler(this.txtSearch_Enter);
@@ -207,8 +207,9 @@
             this.Controls.Add(this.lblOwner);
             this.Controls.Add(this.lblFileName);
             this.Controls.Add(this.TrashFileLayoutPanel);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "TrashBinView";
-            this.Size = new System.Drawing.Size(800, 450);
+            this.Size = new System.Drawing.Size(1080, 638);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
             this.ResumeLayout(false);
